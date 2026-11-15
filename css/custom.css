@@ -219,3 +219,98 @@ body {
   background-color: #fff1f2 !important;
 }
 
+/* State Machine Item Status Badges */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.status-available {
+  background-color: #ecfdf5;
+  color: #047857;
+  border: 1px solid #a7f3d0;
+}
+
+.status-requested {
+  background-color: #fffbeb;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.1);
+}
+
+.status-borrowed {
+  background-color: #f5f3ff;
+  color: #6d28d9;
+  border: 1px solid #ddd6fe;
+}
+
+.status-in-exchange {
+  background-color: #f0f9ff;
+  color: #0369a1;
+  border: 1px solid #bae6fd;
+}
+
+.status-completed {
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+/* Dashboard Tabs */
+.dash-tab {
+  transition: all 0.2s ease;
+  font-weight: 600;
+  position: relative;
+}
+
+.dash-tab.active {
+  color: #4f46e5;
+  border-color: #4f46e5;
+  background-color: #eef2ff;
+}
+
+/* Interactive Star Rating */
+.star-rating-btn {
+  transition: transform 0.15s ease, color 0.15s ease;
+  cursor: pointer;
+}
+
+.star-rating-btn:hover {
+  transform: scale(1.25);
+}
+
+.star-gold {
+  color: #f59e0b;
+}
+
+.star-empty {
+  color: #cbd5e1;
+}
+
+/* Due-date countdown alert */
+.countdown-normal {
+  background-color: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.countdown-urgent {
+  background-color: #fff1f2;
+  color: #e11d48;
+  border: 1px solid #fecdd3;
+  animation: pulseCountdown 2s infinite;
+}
+
+@keyframes pulseCountdown {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.75; }
+}
+
+

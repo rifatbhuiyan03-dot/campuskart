@@ -1,91 +1,97 @@
-# CampusKart - Modern Campus Marketplace UI with NUB Authentication
+# CampusKart - Campus Marketplace UI with State Machine & Peer Ratings
 
 CampusKart is a responsive, student-centered campus marketplace web application built with **HTML5**, **Tailwind CSS**, and **Vanilla JavaScript**. It connects university students directly to buy, sell, borrow, and trade textbooks, graphing calculators, lab gear, and dorm equipment with safety and peer verification.
 
-Now featuring an **Authentication System** strictly restricted to official Northern University Bangladesh emails (`@nub.ac.bd`).
+Featuring:
+1. **Official NUB Authentication**: Strictly restricted to `@nub.ac.bd` university accounts.
+2. **Peer Borrow & Exchange State Machine**: Full lifecycle tracking (`Available` ➔ `Requested` ➔ `Borrowed / In Exchange` ➔ `Returned`).
+3. **Student Transactions Dashboard**: Dedicated hub for Incoming Requests, Active Listings, and Borrowed Items with real-time due date countdowns.
+4. **Peer & Seller Rating System**: Interactive 5-star review engine with dynamic average calculations.
 
 ---
 
-## 🔐 Authentication & Session System
+## 🔄 Borrow & Exchange State Machine
 
-### 1. Strict Domain Restriction (`@nub.ac.bd`)
-- Registration is strictly gated to official university email addresses ending with `@nub.ac.bd`.
-- Built-in live client-side regex check (`/^[a-zA-Z0-9._%+-]+@nub\.ac\.bd$/i`) that evaluates input in real-time:
-  - Non-NUB domains (e.g. `@gmail.com`, `@yahoo.com`, or other institutions) are rejected with clear visual warning indicators.
-  - Valid `@nub.ac.bd` emails are highlighted with a green success badge.
+```
+   [ Available ] 
+         │ (Student submits request with duration or trade offer)
+         ▼
+   [ Requested ] 
+         │
+   ┌─────┴──────────────────┐
+   ▼                        ▼
+[ Decline ]          [ Approve & Set Due Date ]
+ (Reverts to               │ (Owner sets 7d, 14d, 30d, or custom date)
+  Available)               ▼
+                     [ Borrowed / In Exchange ]
+                           │
+                           │ (Owner clicks "Mark as Returned")
+                           ▼
+                     [ Returned / Completed ]
+                           │ (Borrower leaves 1-5 star review)
+                           ▼
+                     [ Available Again ]
+```
 
-### 2. Comprehensive Student Registration
-- **Student Full Name**
-- **Official University Email** (`@nub.ac.bd` domain strictly enforced)
-- **Student ID** (e.g., `202110045`)
-- **Department / Major** (CSE, BBA, EEE, Textile, Pharmacy, English, Law)
-- **Password & Confirm Password** (with show/hide eye toggle & 6-character minimum)
-- **Student Enrollment Confirmation Checkbox**
+### State Machine Workflow:
+1. **Requesting an Item**:
+   - A logged-in student clicks **"Borrow"** or **"Exchange"** on an available item card or within the details modal.
+   - The student specifies needed duration (e.g. 7 days, 14 days, Exam month) or specifies the item they are offering in trade.
+   - The item status immediately transitions to **`Requested`**, locking it from conflicting requests.
+2. **Owner Review & Due Date Scheduling**:
+   - The item owner receives an alert in their **Transactions Dashboard** under **"Incoming Requests"** (with live badge counter in the navbar).
+   - The owner can **"Approve"** or **"Decline"** with 1 click.
+   - On approval, the owner sets an expected return due-date via presets (`7 Days`, `14 Days`, `30 Days`) or a custom date picker.
+   - The item transitions to **`Borrowed`** or **`In Exchange`**.
+3. **Return & Completion**:
+   - When the borrowing period concludes, the owner clicks **"Mark as Returned"** in their dashboard.
+   - The item safely reverts back to **`Available`** status, ready for future campus peers.
+4. **Peer & Seller Rating**:
+   - The borrower is prompted with a **"Rate Lender"** button.
+   - Submitting a 1–5 star rating and feedback automatically updates the seller's average score across all their active listings.
 
-### 3. Dynamic Session & Authentication State
-- **Guest (Logged Out) State**:
-  - Navbar presents "Sign In" and "Register" buttons.
-  - Attempting to click **"Post an Item"** triggers an auth guard that opens the Auth Modal with a contextual notice: *"Please sign in with your official @nub.ac.bd account to post an item."*
-  - Attempting to message a seller prompts for login.
-- **Authenticated (Logged In) State**:
-  - Navbar dynamically renders the verified student avatar, active status indicator, student name, verified `.edu` shield, and student ID.
-  - Interactive profile dropdown menu showing:
-    - Student details (Full Name, ID, Department, Email)
-    - "My Active Listings" shortcut (filters marketplace listings by Student ID)
-    - "My Saved Items" shortcut
-    - "Sign Out" button
-  - Publishing a new listing automatically attributes the post to the authenticated student's Name, Student ID, and Department.
-- **Logout Action**:
-  - Safely clears the session from `localStorage` without a full page reload, reverts the UI to guest mode, and shows a toast notification.
-- **Pre-registered Demo Account**:
+---
+
+## 📊 User Transactions Dashboard ("My Transactions")
+
+Accessible via the navbar shortcut button or the student profile dropdown:
+
+1. **Incoming Requests Tab**:
+   - Lists all requests pending owner decision.
+   - Displays borrower identity: Name, Student ID, Department, Email, requested duration, and meetup notes.
+   - Immediate **"Approve & Set Due Date"** and **"Decline"** controls.
+2. **My Listings Tab**:
+   - Displays all items created by the logged-in student.
+   - Live filter tabs: `All`, `Available`, `Requested`, and `Borrowed / In Exchange`.
+   - **"Mark as Returned"** action button for active borrows.
+3. **Items I Borrowed Tab**:
+   - Displays all items requested or borrowed by the current user.
+   - **Real-Time Due Date Countdown**:
+     - Normal countdown (e.g., `Due in 7 days`).
+     - Urgent highlight when $\le 2$ days remaining (animated pulse).
+     - Overdue status indicator if the due date has passed.
+   - **"Rate Lender ★"** button appears once an item has been marked as returned.
+
+---
+
+## ⭐ Seller & Peer Rating System
+
+- **5-Star Interactive Selector**: Click or hover to select 1 to 5 stars with live rating sentiment descriptions (e.g., *"5 Stars - Outstanding Peer!"*).
+- **Quick-Tag Pills**: 1-click presets: `+ Punctual & Friendly`, `+ Item in great condition`, `+ Smooth return`, `+ Helpful classmate`.
+- **Dynamic Score Updating**: Ratings are stored in `campuskart_reviews_v1`, and the seller's average rating (e.g. `★ 4.9`) and total review count automatically recalculate and display on item cards and in the details modal.
+
+---
+
+## 🔐 University Authentication (`@nub.ac.bd`)
+
+- **Strict Domain Validation**: Only emails ending with `@nub.ac.bd` are accepted for registration.
+- **Interactive Live Validator**: Input field displays instant visual indicators (green checkmark for valid `@nub.ac.bd`, red warning for external domains).
+- **Session Persistence**: Sessions persist in `localStorage` across page reloads.
+- **Pre-configured Demo Student**:
   - Email: `student@nub.ac.bd`
-  - Password: `campus123`
   - Student ID: `202110045` (Tanvir Ahmed - CSE)
-  - Features a 1-click **"Auto-fill Demo"** button on the Login form for instant testing.
-
----
-
-## 🌟 Marketplace Features
-
-### 1. Clean & Responsive Navigation Bar
-- **CampusKart Branding**: Logo with custom graduation cap and shopping basket badge.
-- **NUB Campus Indicator**: Ashkona Permanent Campus selector.
-- **Navigation Shortcuts**: Quick category filtering for Textbooks, Tech & Electronics, Lab Gear, and Dorm Essentials.
-- **Saved / Wishlist Counter**: Real-time counter of bookmarked items with interactive heart animations.
-- **Primary CTA**: Prominent "Post an Item" button (guarded by login).
-- **Mobile Drawer**: Responsive hamburger slide-down menu with dynamic mobile authentication card.
-
-### 2. Multi-Dimensional Search & Filtering Console
-- **Instant Keyword Search**: Real-time search by title, description, course code, category, and campus meetup spot.
-- **Course-Code Filters**:
-  - Dropdown containing campus courses (`CSE 111`, `MATH 201`, `CS 101`, `CS 201`, `EEE 101`, `BBA 202`, `CHEM 121`, `PHYS 102`, `BIO 110`, `ECON 101`, `ARCH 110`, `ENGR 210`, etc.).
-  - 1-click popular course chips for rapid course filtering.
-- **Category Filters**: Textbooks, Tech & Electronics, Lab & Engineering, Dorm & Living, Notes & Study Kits.
-- **Transaction Type Tabs**:
-  - `All`
-  - `Sell`: Outright discount purchases with original retail price comparisons.
-  - `Borrow`: Peer rentals with weekly rates and deposit terms.
-  - `Exchange`: Barter/trade listings specifying requested items.
-- **Condition Badges & Selectors**:
-  - `Brand New` (Mint / unopened)
-  - `Like New` (Barely used, flawless condition)
-  - `Good` (Normal academic use, 100% operational)
-  - `Fair` (Noticeable wear or annotations, fully usable)
-- **Sorting**: Featured First, Recently Posted, Price: Low to High, Price: High to Low.
-- **Active Filter Badges**: Dynamic pill indicators showing active filters with a one-click "Clear all" action.
-
-### 3. Dynamic Item Cards
-- High-resolution imagery with hover zoom effect and gradient overlays.
-- Color-coded condition badge (`Brand New`, `Like New`, `Good`, `Fair`).
-- Distinct transaction pill (`FOR SALE`, `BORROW`, `EXCHANGE`).
-- Mono-styled Course Code pill (e.g., `MATH 201`, `CSE 111`).
-- Card body with category, time posted, title, and descriptive snippet.
-- Financial detail callout:
-  - If Sell: Price + retail comparison.
-  - If Borrow: Weekly rental rate + deposit notice.
-  - If Exchange: Trade wishlist item.
-- Verified student seller profile: Student avatar, name, verified checkmark, and campus meetup spot (e.g., NUB Central Library, Ashkona Cafeteria).
-- "View" button opening full item details and peer messaging.
+  - Password: `campus123`
+  - *Pre-seeded with 1 incoming borrow request on the Arduino Starter Kit so you can immediately test the approval and due date workflow!*
 
 ---
 
@@ -93,21 +99,27 @@ Now featuring an **Authentication System** strictly restricted to official North
 
 ```
 Software Devlopment Project/
-├── index.html          # Semantic HTML5 layout with Tailwind CSS & modals (Post, Details, Auth)
+├── index.html          # Semantic HTML5 layout with Tailwind CSS & interactive modals
 ├── css/
-│   └── custom.css      # Badge styles, animations, custom scrollbars, dropdown & auth indicators
+│   └── custom.css      # Status badges, countdown animations, star ratings & tab styles
 ├── js/
-│   ├── data.js         # Dataset with course codes, conditions & transactions
-│   └── app.js          # Authentication engine, filtering, modal handlers, and DOM rendering
-└── README.md           # Documentation and user guide
+│   ├── data.js         # Seed items with state machine statuses, student IDs & seed reviews
+│   └── app.js          # Authentication, state machine transitions, dashboard & rating engine
+└── README.md           # Documentation and guide
 ```
 
 ---
 
-## 🚀 How to Run
+## 🚀 How to Run & Test
 
-1. Open `index.html` in any modern web browser (Chrome, Firefox, Edge, Safari).
-2. Or open directly from PowerShell:
+1. Open `index.html` in your browser:
    ```powershell
    Start-Process "index.html"
    ```
+2. Click **"Sign In"** in the top navbar and click **"Auto-fill Demo"** (logs in as `Tanvir Ahmed`, ID: `202110045`).
+3. Notice the amber badge `1` on the **Transactions** button in the navbar:
+   - Click it to view the **Incoming Request** from *Ayesha Siddiqua* for the *Arduino Uno Starter Kit*.
+   - Click **"Approve & Set Due Date"**, choose **"7 Days"**, and confirm.
+   - Status changes to **`Borrowed`** with due date!
+   - Click **"Mark as Returned"** to complete the cycle and reopen the item for reviews!
+4. Try requesting a book (e.g., *Stewart Calculus* or *CLRS Algorithms*) to test borrower requests!

@@ -1,6 +1,7 @@
 /**
  * CampusKart - Sample Dataset
- * Campus Marketplace Items featuring Course Codes, Conditions, and Transaction Tags
+ * Campus Marketplace Items featuring Course Codes, Conditions, Transaction Tags,
+ * and Peer Exchange / Borrow State Machine integration.
  */
 
 const INITIAL_ITEMS = [
@@ -11,6 +12,7 @@ const INITIAL_ITEMS = [
     courseCode: "MATH 201",
     condition: "Like New",
     transaction: "Sell",
+    status: "Available",
     price: 38,
     priceLabel: "$38",
     originalPrice: "$180 Retail",
@@ -18,19 +20,22 @@ const INITIAL_ITEMS = [
     borrowTerms: null,
     image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80",
     description: "Hardcover in mint condition. No highlighting or margin notes. Includes unopened WebAssign online access scratch code for Fall/Spring semesters.",
-    location: "Science & Engineering Library, 2nd Fl",
+    location: "NUB Central Library, 2nd Fl (Ashkona)",
     seller: {
       name: "Maya Lin",
+      studentId: "202010012",
       avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
-      major: "Applied Mathematics '26",
-      badge: "Verified Student",
+      major: "CSE '26 (NUB)",
+      badge: "NUB Verified Student",
       rating: 4.9,
       reviewsCount: 14,
       responseTime: "< 15 mins"
     },
     postedAt: "2 hours ago",
     featured: true,
-    views: 89
+    views: 89,
+    activeRequest: null,
+    borrowDetails: null
   },
   {
     id: "ck-102",
@@ -39,26 +44,30 @@ const INITIAL_ITEMS = [
     courseCode: "MATH 101",
     condition: "Brand New",
     transaction: "Borrow",
+    status: "Available",
     price: 6,
     priceLabel: "$6 / week",
     originalPrice: "$139 Retail",
     exchangeFor: null,
-    borrowTerms: "Deposit $30 required, refundable upon return in original state.",
+    borrowTerms: "Deposit $20 required, refundable upon return in original state.",
     image: "https://images.unsplash.com/photo-1587145820266-a5951ee6f620?auto=format&fit=crop&w=800&q=80",
     description: "Includes original slide cover, USB-A charging cable, and freshly installed rechargeable battery. Exam-mode ready for midterms and finals.",
-    location: "Computing Commons / North Quad",
+    location: "NUB Ashkona Campus Cafeteria",
     seller: {
-      name: "David Chen",
-      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
-      major: "Computer Science '27",
-      badge: "Verified Student",
+      name: "Tanvir Ahmed",
+      studentId: "202110045", // Demo student
+      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+      major: "Computer Science & Engineering (CSE)",
+      badge: "NUB Verified Student",
       rating: 5.0,
-      reviewsCount: 22,
+      reviewsCount: 8,
       responseTime: "< 5 mins"
     },
     postedAt: "5 hours ago",
     featured: true,
-    views: 142
+    views: 142,
+    activeRequest: null,
+    borrowDetails: null
   },
   {
     id: "ck-103",
@@ -67,6 +76,7 @@ const INITIAL_ITEMS = [
     courseCode: "CHEM 121",
     condition: "Good",
     transaction: "Exchange",
+    status: "Available",
     price: 0,
     priceLabel: "Trade Only",
     originalPrice: "$45 Value",
@@ -74,19 +84,22 @@ const INITIAL_ITEMS = [
     borrowTerms: null,
     image: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=800&q=80",
     description: "Full Prentice Hall molecular model set for visualizing stereochemistry, chair conformations, and functional groups. All atoms & links accounted for in latch box.",
-    location: "Chemistry Annex Lobby",
+    location: "NUB Pharmacy Lab Building",
     seller: {
       name: "Priya Patel",
+      studentId: "202110088",
       avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80",
-      major: "Biochemistry / Pre-Med '25",
-      badge: "Verified Student",
+      major: "Pharmacy '25 (NUB)",
+      badge: "NUB Verified Student",
       rating: 4.8,
       reviewsCount: 9,
       responseTime: "~ 1 hour"
     },
     postedAt: "Yesterday",
     featured: false,
-    views: 64
+    views: 64,
+    activeRequest: null,
+    borrowDetails: null
   },
   {
     id: "ck-104",
@@ -95,6 +108,7 @@ const INITIAL_ITEMS = [
     courseCode: "CS 201",
     condition: "Like New",
     transaction: "Sell",
+    status: "Available",
     price: 45,
     priceLabel: "$45",
     originalPrice: "$95 Retail",
@@ -102,19 +116,22 @@ const INITIAL_ITEMS = [
     borrowTerms: null,
     image: "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=800&q=80",
     description: "The bible of algorithms. Pristine spine, no tears or markings. Perfect for Data Structures and Algorithm Analysis exams and technical interview prep.",
-    location: "Engineering Quad & Atrium",
+    location: "Computer Lab 4 (Ashkona)",
     seller: {
       name: "Jordan Hayes",
+      studentId: "202210045",
       avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
-      major: "Data Science & CS '26",
-      badge: "Verified Student",
+      major: "CSE '26 (NUB)",
+      badge: "NUB Verified Student",
       rating: 4.9,
       reviewsCount: 18,
       responseTime: "< 20 mins"
     },
     postedAt: "1 day ago",
     featured: true,
-    views: 210
+    views: 210,
+    activeRequest: null,
+    borrowDetails: null
   },
   {
     id: "ck-105",
@@ -123,6 +140,7 @@ const INITIAL_ITEMS = [
     courseCode: "General",
     condition: "Good",
     transaction: "Sell",
+    status: "Available",
     price: 52,
     priceLabel: "$52",
     originalPrice: "$160 Retail",
@@ -130,19 +148,22 @@ const INITIAL_ITEMS = [
     borrowTerms: null,
     image: "https://images.unsplash.com/photo-1584992236310-6edddc08acff?auto=format&fit=crop&w=800&q=80",
     description: "Quiet energy-star certified dorm mini fridge. Cleaned, defrosted, and tested cold. Perfect for keeping drinks, snacks, and meal preps. Fits under bed risers.",
-    location: "Maple Residence Hall Rm 314",
+    location: "Ashkona Student Hostel Block B",
     seller: {
       name: "Sarah Jenkins",
+      studentId: "202310019",
       avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
-      major: "Marketing & Business '25",
-      badge: "Verified Student",
+      major: "BBA '25 (NUB)",
+      badge: "NUB Verified Student",
       rating: 4.7,
       reviewsCount: 11,
       responseTime: "< 30 mins"
     },
     postedAt: "2 days ago",
     featured: false,
-    views: 185
+    views: 185,
+    activeRequest: null,
+    borrowDetails: null
   },
   {
     id: "ck-106",
@@ -151,6 +172,7 @@ const INITIAL_ITEMS = [
     courseCode: "General",
     condition: "Like New",
     transaction: "Exchange",
+    status: "Available",
     price: 0,
     priceLabel: "Trade Only",
     originalPrice: "$348 Value",
@@ -158,19 +180,22 @@ const INITIAL_ITEMS = [
     borrowTerms: null,
     image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80",
     description: "Midnight black, battery health 98%. Incredible 30hr battery life and industry-leading noise cancellation. Comes with protective hardshell case, aux cord, and plane adapter.",
-    location: "Student Union Coffee Shop",
+    location: "NUB Student Union / Canteen",
     seller: {
-      name: "Marcus Thorne",
-      avatar: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=200&q=80",
-      major: "Mechanical Engineering '27",
-      badge: "Verified Student",
+      name: "Ayesha Siddiqua",
+      studentId: "202220118",
+      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80",
+      major: "Business Administration (BBA)",
+      badge: "NUB Verified Student",
       rating: 5.0,
       reviewsCount: 7,
       responseTime: "< 10 mins"
     },
     postedAt: "3 days ago",
     featured: true,
-    views: 312
+    views: 312,
+    activeRequest: null,
+    borrowDetails: null
   },
   {
     id: "ck-107",
@@ -179,6 +204,7 @@ const INITIAL_ITEMS = [
     courseCode: "PHYS 102",
     condition: "Fair",
     transaction: "Sell",
+    status: "Available",
     price: 22,
     priceLabel: "$22",
     originalPrice: "$210 Retail",
@@ -186,19 +212,22 @@ const INITIAL_ITEMS = [
     borrowTerms: null,
     image: "https://images.unsplash.com/photo-1532012164546-f432f2e3777f?auto=format&fit=crop&w=800&q=80",
     description: "Some yellow highlighting on chapters 4-12, but spine and all pages intact. Great budget choice if you just need the problem sets and reference diagrams.",
-    location: "Physics Hall South Wing",
+    location: "NUB Physics Lab / Ground Floor",
     seller: {
       name: "Liam Cooper",
+      studentId: "202010091",
       avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=200&q=80",
-      major: "Aerospace Engineering '28",
-      badge: "Verified Student",
+      major: "EEE '28 (NUB)",
+      badge: "NUB Verified Student",
       rating: 4.6,
       reviewsCount: 6,
       responseTime: "~ 2 hours"
     },
     postedAt: "3 days ago",
     featured: false,
-    views: 98
+    views: 98,
+    activeRequest: null,
+    borrowDetails: null
   },
   {
     id: "ck-108",
@@ -207,6 +236,7 @@ const INITIAL_ITEMS = [
     courseCode: "ARCH 110",
     condition: "Like New",
     transaction: "Borrow",
+    status: "Available",
     price: 0,
     priceLabel: "Free Borrow",
     originalPrice: "$60 Value",
@@ -214,47 +244,54 @@ const INITIAL_ITEMS = [
     borrowTerms: "Free to borrow for studio project week! Please return clean and unchipped.",
     image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
     description: "Heavy acrylic 36-inch T-square, triangular architectural scale, and 45/90 triangle set. Perfect for studio foundation finals.",
-    location: "Design & Architecture Studio Building B",
+    location: "Design Studio Building B, NUB",
     seller: {
       name: "Chloe Dupuis",
+      studentId: "202110034",
       avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80",
       major: "Architecture '26",
-      badge: "Verified Student",
+      badge: "NUB Verified Student",
       rating: 4.9,
       reviewsCount: 15,
       responseTime: "< 15 mins"
     },
     postedAt: "4 days ago",
     featured: false,
-    views: 77
+    views: 77,
+    activeRequest: null,
+    borrowDetails: null
   },
   {
     id: "ck-109",
-    title: "iClicker 2 Student Remote (Latest Campus Firmware)",
-    category: "Tech & Electronics",
-    courseCode: "BIO 110",
-    condition: "Good",
+    title: "Structured Programming in C (Balagurusamy 8th Ed)",
+    category: "Textbooks",
+    courseCode: "CSE 111",
+    condition: "Like New",
     transaction: "Sell",
-    price: 18,
-    priceLabel: "$18",
-    originalPrice: "$65 Bookstore",
+    status: "Available",
+    price: 15,
+    priceLabel: "$15",
+    originalPrice: "$35 Retail",
     exchangeFor: null,
     borrowTerms: null,
-    image: "https://images.unsplash.com/photo-1580894732444-8ecded7900cd?auto=format&fit=crop&w=800&q=80",
-    description: "Registered and reset for immediate connection in lecture halls. LCD screen is clear with brand-new AAA batteries included.",
-    location: "BioSciences Building Cafe",
+    image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80",
+    description: "Essential for 1st year CSE 111 structured programming. Clean pages with pointer exercise diagrams highlighted.",
+    location: "NUB Central Library Front Desk",
     seller: {
-      name: "Noah Kim",
+      name: "Farhan Hossain",
+      studentId: "202210077",
       avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=200&q=80",
-      major: "Biology '27",
-      badge: "Verified Student",
+      major: "CSE '25 (NUB)",
+      badge: "NUB Verified Student",
       rating: 4.8,
-      reviewsCount: 8,
-      responseTime: "< 45 mins"
+      reviewsCount: 10,
+      responseTime: "< 30 mins"
     },
     postedAt: "4 days ago",
     featured: false,
-    views: 114
+    views: 114,
+    activeRequest: null,
+    borrowDetails: null
   },
   {
     id: "ck-110",
@@ -263,6 +300,7 @@ const INITIAL_ITEMS = [
     courseCode: "General",
     condition: "Fair",
     transaction: "Exchange",
+    status: "Available",
     price: 0,
     priceLabel: "Trade Only",
     originalPrice: "$120 Retail",
@@ -270,55 +308,63 @@ const INITIAL_ITEMS = [
     borrowTerms: null,
     image: "https://images.unsplash.com/photo-1580481077195-c3a821a58875?auto=format&fit=crop&w=800&q=80",
     description: "Breathable back mesh with roller casters. Light cosmetic scratch on the left armrest, but hydraulics and tilt lock work perfectly.",
-    location: "South Tower Dormitory Lobby",
+    location: "Ashkona Dormitory Reception",
     seller: {
       name: "Elena Rostova",
+      studentId: "202310022",
       avatar: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=80",
-      major: "Economics & Stats '26",
-      badge: "Verified Student",
+      major: "English & Humanities '26",
+      badge: "NUB Verified Student",
       rating: 4.9,
       reviewsCount: 16,
       responseTime: "< 25 mins"
     },
     postedAt: "5 days ago",
     featured: false,
-    views: 160
+    views: 160,
+    activeRequest: null,
+    borrowDetails: null
   },
   {
     id: "ck-111",
-    title: "ECON 101 Master Study Kit (Annotated Diagrams & Summaries)",
+    title: "BBA 202 Master Study Kit (Accounting Principles)",
     category: "Notes & Study Kits",
-    courseCode: "ECON 101",
+    courseCode: "BBA 202",
     condition: "Brand New",
     transaction: "Sell",
+    status: "Available",
     price: 14,
     priceLabel: "$14",
     originalPrice: "Priceless A+ Prep",
     exchangeFor: null,
     borrowTerms: null,
     image: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=800&q=80",
-    description: "Laser-printed spiral binder containing comprehensive lecture summaries, elasticity formulas, and 8 years of worked practice midterms with answer keys.",
-    location: "School of Management Atrium",
+    description: "Laser-printed spiral binder containing ledger formulas, balance sheet sheets, and past 5 semesters of solved midterms.",
+    location: "NUB School of Business Atrium",
     seller: {
       name: "Jackson Lee",
+      studentId: "202010055",
       avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80",
-      major: "Finance & Analytics '25",
-      badge: "Verified Student",
+      major: "BBA '25 (NUB)",
+      badge: "NUB Verified Student",
       rating: 5.0,
       reviewsCount: 31,
       responseTime: "< 10 mins"
     },
     postedAt: "5 days ago",
     featured: true,
-    views: 245
+    views: 245,
+    activeRequest: null,
+    borrowDetails: null
   },
   {
     id: "ck-112",
     title: "Arduino Uno Ultimate Starter Kit (Robotics & Sensors)",
     category: "Lab & Engineering",
-    courseCode: "ENGR 210",
+    courseCode: "CSE 111",
     condition: "Brand New",
     transaction: "Borrow",
+    status: "Requested", // Pre-seeded as Requested for demo testing!
     price: 5,
     priceLabel: "$5 / week",
     originalPrice: "$65 Value",
@@ -326,19 +372,64 @@ const INITIAL_ITEMS = [
     borrowTerms: "Return all 30 sensor modules in plastic organizer tray. Ideal for term lab assignments.",
     image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80",
     description: "Complete electronics kit featuring microcontrollers, breadboard, LCD 1602 display, servo motor, ultrasonic sensor, resistors, and jumper wire bundle.",
-    location: "Student Innovation Makerspace Rm 14",
+    location: "NUB Maker Space Room 14 (Ashkona)",
     seller: {
-      name: "Aisha Morales",
-      avatar: "https://images.unsplash.com/photo-1534751516642-a171ed28a0e5?auto=format&fit=crop&w=200&q=80",
-      major: "Electrical Engineering '26",
-      badge: "Verified Student",
-      rating: 4.9,
-      reviewsCount: 20,
-      responseTime: "< 15 mins"
+      name: "Tanvir Ahmed",
+      studentId: "202110045", // Demo student is the owner!
+      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+      major: "Computer Science & Engineering (CSE)",
+      badge: "NUB Verified Student",
+      rating: 5.0,
+      reviewsCount: 8,
+      responseTime: "< 5 mins"
     },
     postedAt: "6 days ago",
-    featured: false,
-    views: 173
+    featured: true,
+    views: 173,
+    activeRequest: {
+      requesterId: "202220118",
+      requesterName: "Ayesha Siddiqua",
+      requesterEmail: "ayesha.bba@nub.ac.bd",
+      requesterDept: "Business Administration (BBA)",
+      requestDate: "2026-11-15T18:00:00.000Z",
+      note: "Hi Tanvir! I need this Arduino sensor set for our inter-department robotics assignment this week. Can pick it up at the library!",
+      durationRequested: "14 Days (2 Weeks)"
+    },
+    borrowDetails: null
+  }
+];
+
+// Seed reviews for sellers
+const INITIAL_REVIEWS = [
+  {
+    id: "rev-01",
+    sellerId: "202110045", // Tanvir Ahmed
+    reviewerId: "202220118",
+    reviewerName: "Ayesha Siddiqua",
+    rating: 5,
+    comment: "Super friendly classmate! Lent me the calculator for my Calculus midterm, battery was 100% full.",
+    date: "2 days ago",
+    itemTitle: "TI-84 Plus CE Color Graphing Calculator"
+  },
+  {
+    id: "rev-02",
+    sellerId: "202110045",
+    reviewerId: "202010012",
+    reviewerName: "Maya Lin",
+    rating: 5,
+    comment: "Smooth transaction. Met right in front of the Ashkona central library desk on time.",
+    date: "1 week ago",
+    itemTitle: "Arduino Sensor Kit"
+  },
+  {
+    id: "rev-03",
+    sellerId: "202220118", // Ayesha Siddiqua
+    reviewerId: "202110045",
+    reviewerName: "Tanvir Ahmed",
+    rating: 5,
+    comment: "Great trade partner! Exchanged books seamlessly with zero hassle.",
+    date: "3 days ago",
+    itemTitle: "Sony WH-1000XM4 Headphones"
   }
 ];
 

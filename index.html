@@ -124,6 +124,17 @@
             </span>
           </button>
 
+          <!-- My Transactions & Borrow Dashboard Shortcut Button -->
+          <button type="button" 
+                  id="navTransactionsBtn" 
+                  title="My Transactions & Borrows"
+                  class="relative p-2 rounded-xl text-slate-600 hover:text-indigo-600 hover:bg-slate-100 border border-slate-200/80 transition flex items-center justify-center">
+            <i class="fa-solid fa-arrows-rotate text-base text-slate-700"></i>
+            <span id="navRequestsBadge" class="hidden absolute -top-1.5 -right-1.5 min-w-[17px] h-4 px-1 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
+              0
+            </span>
+          </button>
+
           <!-- Post Item CTA Button -->
           <button type="button" 
                   class="open-post-modal-btn bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-sm shadow-indigo-600/30 flex items-center space-x-1.5 active:scale-95">
@@ -924,6 +935,294 @@
 
     </div>
   </div>
+
+  <!-- ================= USER DASHBOARD & MY TRANSACTIONS MODAL ================= -->
+  <div id="dashboardModal" class="hidden fixed inset-0 z-50 overflow-y-auto modal-backdrop flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-4xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 animate-pop my-8 relative flex flex-col max-h-[90vh]">
+      
+      <!-- Close button -->
+      <button type="button" 
+              id="closeDashboardModal" 
+              class="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition z-10"
+              title="Close modal">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <!-- Dashboard Header -->
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+        <div class="flex items-center space-x-3">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xl shadow-md shadow-indigo-600/30">
+            <i class="fa-solid fa-chart-line"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-lg sm:text-xl font-bold text-slate-900">Campus Transactions & Dashboard</h3>
+              <span class="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full">NUB Portal</span>
+            </div>
+            <p id="dashUserSub" class="text-xs text-slate-500">Manage your active listings, borrowing schedules, and peer exchange requests</p>
+          </div>
+        </div>
+
+        <button type="button" id="dashPostShortcutBtn" class="self-start sm:self-auto px-3.5 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-xl border border-indigo-200 transition flex items-center gap-1.5">
+          <i class="fa-solid fa-plus text-[10px]"></i>
+          <span>New Listing</span>
+        </button>
+      </div>
+
+      <!-- Dashboard Navigation Tabs -->
+      <div class="flex items-center border-b border-slate-200 pt-3 bg-slate-50/60 px-2 rounded-xl mt-3 overflow-x-auto no-scrollbar gap-1">
+        <button type="button" 
+                id="dashTabRequestsBtn" 
+                class="dash-tab active px-4 py-2.5 text-xs sm:text-sm rounded-lg flex items-center gap-2 border-b-2">
+          <i class="fa-solid fa-bell text-xs"></i>
+          <span>Incoming Requests</span>
+          <span id="dashRequestsCountBadge" class="ml-1 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">0</span>
+        </button>
+
+        <button type="button" 
+                id="dashTabListingsBtn" 
+                class="dash-tab px-4 py-2.5 text-xs sm:text-sm text-slate-600 hover:text-indigo-600 rounded-lg flex items-center gap-2 border-b-2 border-transparent">
+          <i class="fa-solid fa-box-open text-xs"></i>
+          <span>My Listings</span>
+          <span id="dashListingsCountBadge" class="ml-1 bg-slate-200 text-slate-700 text-[10px] font-bold px-1.5 py-0.2 rounded-full">0</span>
+        </button>
+
+        <button type="button" 
+                id="dashTabBorrowedBtn" 
+                class="dash-tab px-4 py-2.5 text-xs sm:text-sm text-slate-600 hover:text-indigo-600 rounded-lg flex items-center gap-2 border-b-2 border-transparent">
+          <i class="fa-solid fa-clock-rotate-left text-xs"></i>
+          <span>Items I Borrowed</span>
+          <span id="dashBorrowedCountBadge" class="ml-1 bg-slate-200 text-slate-700 text-[10px] font-bold px-1.5 py-0.2 rounded-full">0</span>
+        </button>
+      </div>
+
+      <!-- Tab Content Area (Scrollable) -->
+      <div class="flex-1 overflow-y-auto py-4 min-h-[300px] max-h-[58vh] pr-1">
+        
+        <!-- PANEL 1: INCOMING REQUESTS -->
+        <div id="dashRequestsPanel" class="space-y-3">
+          <!-- Populated by app.js: renderDashboard() -->
+        </div>
+
+        <!-- PANEL 2: MY LISTINGS -->
+        <div id="dashListingsPanel" class="hidden space-y-3">
+          <!-- Sub-filters for listings -->
+          <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 flex-wrap gap-2 text-xs">
+            <div class="flex items-center gap-1.5">
+              <span class="text-slate-400 font-medium">Filter status:</span>
+              <button type="button" onclick="filterDashListings('all')" class="dash-listing-filter px-2 py-0.5 rounded-lg bg-indigo-600 text-white font-medium">All</button>
+              <button type="button" onclick="filterDashListings('Available')" class="dash-listing-filter px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200">Available</button>
+              <button type="button" onclick="filterDashListings('Requested')" class="dash-listing-filter px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200">Requested</button>
+              <button type="button" onclick="filterDashListings('Borrowed')" class="dash-listing-filter px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200">Borrowed / In Exchange</button>
+            </div>
+            <span id="dashListingsSummaryText" class="text-slate-500 text-[11px]"></span>
+          </div>
+
+          <div id="dashListingsContainer" class="space-y-3"></div>
+        </div>
+
+        <!-- PANEL 3: ITEMS I BORROWED -->
+        <div id="dashBorrowedPanel" class="hidden space-y-3">
+          <!-- Populated by app.js -->
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= REQUEST TO BORROW / EXCHANGE MODAL ================= -->
+  <div id="requestModal" class="hidden fixed inset-0 z-50 overflow-y-auto modal-backdrop flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-pop my-8 relative">
+      <button type="button" id="closeRequestModal" class="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="flex items-center space-x-3 mb-4">
+        <div id="requestModalIcon" class="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-clock"></i>
+        </div>
+        <div>
+          <h3 id="requestModalTitle" class="text-base font-bold text-slate-900">Request Item</h3>
+          <p id="requestModalSub" class="text-xs text-slate-500">Send borrowing or exchange proposal</p>
+        </div>
+      </div>
+
+      <!-- Item Preview Card -->
+      <div id="requestItemPreview" class="p-3 bg-slate-50 border border-slate-200/90 rounded-2xl mb-4 flex items-center space-x-3">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <form id="requestForm" class="space-y-3.5">
+        <input type="hidden" id="requestItemId" />
+
+        <!-- Conditional Duration or Trade Item -->
+        <div id="requestDurationField">
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+            Duration Needed
+          </label>
+          <select id="requestDurationSelect" class="w-full text-xs py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="3 Days">3 Days (Quick Lab/Exam review)</option>
+            <option value="7 Days (1 Week)" selected>7 Days (1 Week)</option>
+            <option value="14 Days (2 Weeks)">14 Days (2 Weeks)</option>
+            <option value="30 Days (Full Month)">30 Days (Full Exam Month)</option>
+          </select>
+        </div>
+
+        <div id="requestExchangeField" class="hidden">
+          <label for="requestOfferedItemInput" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+            What item will you give in exchange? <span class="text-rose-500">*</span>
+          </label>
+          <input type="text" 
+                 id="requestOfferedItemInput" 
+                 placeholder="e.g. My CSE 111 C Programming Book or Casio fx-991EX" 
+                 class="w-full text-sm px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+
+        <div>
+          <label for="requestNoteInput" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+            Message / Pickup Preference
+          </label>
+          <textarea id="requestNoteInput" rows="2" placeholder="e.g. Can meet in front of Ashkona central library or cafeteria around 2 PM..." class="w-full text-xs px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">Hi, I'd like to request this item for my coursework. Can meet anywhere on NUB Ashkona campus!</textarea>
+        </div>
+
+        <button type="submit" id="requestSubmitBtn" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/30 transition flex items-center justify-center gap-1.5 active:scale-95">
+          <i class="fa-solid fa-paper-plane text-xs"></i>
+          <span>Submit Request to Owner</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= APPROVE REQUEST & SET DUE DATE MODAL ================= -->
+  <div id="approvalModal" class="hidden fixed inset-0 z-50 overflow-y-auto modal-backdrop flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-pop my-8 relative">
+      <button type="button" id="closeApprovalModal" class="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="flex items-center space-x-3 mb-4">
+        <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-calendar-check"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Approve & Set Return Due Date</h3>
+          <p class="text-xs text-slate-500">Establish expected return schedule for peer</p>
+        </div>
+      </div>
+
+      <div id="approvalItemPreview" class="p-3 bg-slate-50 border border-slate-200 rounded-2xl mb-4 text-xs">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <form id="approvalForm" class="space-y-4">
+        <input type="hidden" id="approvalItemId" />
+
+        <!-- Due Date Preset Buttons -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+            Select Due Date Period <span class="text-rose-500">*</span>
+          </label>
+          <div class="grid grid-cols-3 gap-2 mb-2">
+            <button type="button" onclick="setApprovalDays(7)" class="due-preset-btn active py-2 px-2 text-xs font-bold rounded-xl border border-indigo-600 bg-indigo-50 text-indigo-700 text-center transition">
+              7 Days
+              <span class="block text-[10px] font-normal text-indigo-500">1 Week</span>
+            </button>
+            <button type="button" onclick="setApprovalDays(14)" class="due-preset-btn py-2 px-2 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-indigo-300 text-center transition">
+              14 Days
+              <span class="block text-[10px] font-normal text-slate-400">2 Weeks</span>
+            </button>
+            <button type="button" onclick="setApprovalDays(30)" class="due-preset-btn py-2 px-2 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-700 hover:border-indigo-300 text-center transition">
+              30 Days
+              <span class="block text-[10px] font-normal text-slate-400">1 Month</span>
+            </button>
+          </div>
+
+          <!-- Custom Date Input -->
+          <div>
+            <label for="approvalCustomDueDate" class="block text-[11px] text-slate-500 mb-1">
+              Or pick specific calendar date:
+            </label>
+            <input type="date" id="approvalCustomDueDate" class="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer" />
+          </div>
+        </div>
+
+        <div>
+          <label for="approvalMeetupNote" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+            Handover Location Note
+          </label>
+          <input type="text" id="approvalMeetupNote" value="NUB Ashkona Central Library Desk" class="w-full text-xs px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+
+        <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/30 transition flex items-center justify-center gap-1.5 active:scale-95">
+          <i class="fa-solid fa-check text-xs"></i>
+          <span>Confirm Approval & Set Status to Borrowed</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= SELLER & PEER RATING MODAL ================= -->
+  <div id="reviewModal" class="hidden fixed inset-0 z-50 overflow-y-auto modal-backdrop flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-pop my-8 relative">
+      <button type="button" id="closeReviewModal" class="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <div class="text-center mb-4">
+        <div class="w-12 h-12 mx-auto mb-2 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-xl shadow-xs">
+          <i class="fa-solid fa-star"></i>
+        </div>
+        <h3 class="text-base font-bold text-slate-900">Peer Exchange Rating</h3>
+        <p id="reviewTargetSub" class="text-xs text-slate-500">Rate your experience with this classmate</p>
+      </div>
+
+      <form id="reviewForm" class="space-y-4">
+        <input type="hidden" id="reviewSellerId" />
+        <input type="hidden" id="reviewItemId" />
+        <input type="hidden" id="reviewRatingValue" value="5" />
+
+        <!-- 5-Star Interactive Selector -->
+        <div class="flex flex-col items-center justify-center p-3 bg-slate-50 rounded-2xl border border-slate-200/80">
+          <div id="starContainer" class="flex items-center space-x-2 text-3xl">
+            <button type="button" data-val="1" class="star-rating-btn star-gold"><i class="fa-solid fa-star"></i></button>
+            <button type="button" data-val="2" class="star-rating-btn star-gold"><i class="fa-solid fa-star"></i></button>
+            <button type="button" data-val="3" class="star-rating-btn star-gold"><i class="fa-solid fa-star"></i></button>
+            <button type="button" data-val="4" class="star-rating-btn star-gold"><i class="fa-solid fa-star"></i></button>
+            <button type="button" data-val="5" class="star-rating-btn star-gold"><i class="fa-solid fa-star"></i></button>
+          </div>
+          <span id="starRatingLabel" class="text-xs font-bold text-amber-600 mt-2">5 Stars - Outstanding Peer!</span>
+        </div>
+
+        <!-- Quick Feedback Tag Pills -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            Quick Feedback Tags
+          </label>
+          <div class="flex flex-wrap gap-1.5" id="reviewQuickTags">
+            <button type="button" onclick="appendReviewTag('Punctual & Friendly')" class="review-tag-btn px-2.5 py-1 text-[11px] rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 transition">+ Punctual & Friendly</button>
+            <button type="button" onclick="appendReviewTag('Item in great condition')" class="review-tag-btn px-2.5 py-1 text-[11px] rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 transition">+ Item in great condition</button>
+            <button type="button" onclick="appendReviewTag('Smooth return')" class="review-tag-btn px-2.5 py-1 text-[11px] rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 transition">+ Smooth return</button>
+            <button type="button" onclick="appendReviewTag('Helpful classmate')" class="review-tag-btn px-2.5 py-1 text-[11px] rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 border border-slate-200 transition">+ Helpful classmate</button>
+          </div>
+        </div>
+
+        <!-- Feedback Textarea -->
+        <div>
+          <label for="reviewCommentInput" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+            Short Feedback Comment
+          </label>
+          <textarea id="reviewCommentInput" rows="2" placeholder="Write a short review to help other students..." class="w-full text-xs px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">Super helpful classmate! Returned the item in pristine condition.</textarea>
+        </div>
+
+        <button type="submit" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-md shadow-amber-500/30 transition flex items-center justify-center gap-1.5 active:scale-95">
+          <i class="fa-solid fa-star text-xs"></i>
+          <span>Submit Peer Rating</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
 
   <!-- ================= FOOTER ================= -->
   <footer class="mt-auto bg-slate-900 text-slate-400 text-xs border-t border-slate-800">

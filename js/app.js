@@ -1,7 +1,11 @@
 /**
  * CampusKart - Main Application Logic
  * Powers search, filtering, item rendering, posting new items, and interactions.
- * Features strict university email authentication (@nub.ac.bd) for Northern University Bangladesh.
+ * Features:
+ * 1. Strict university email authentication (@nub.ac.bd) for Northern University Bangladesh.
+ * 2. Peer Exchange and Borrow/Return State Machine workflow (Available -> Requested -> Borrowed/In Exchange -> Returned).
+ * 3. User Transactions Dashboard with real-time due date countdowns.
+ * 4. Seller and Peer Rating System with dynamic star averages.
  */
 
 // Storage keys
@@ -9,6 +13,7 @@ const STORAGE_ITEMS_KEY = 'campuskart_listings_v1';
 const STORAGE_WISHLIST_KEY = 'campuskart_wishlist_v1';
 const STORAGE_AUTH_KEY = 'campuskart_auth_session_v1';
 const STORAGE_USERS_KEY = 'campuskart_registered_users_v1';
+const STORAGE_REVIEWS_KEY = 'campuskart_reviews_v1';
 
 // Pre-seeded verified NUB student accounts
 const DEFAULT_NUB_USERS = [
@@ -38,8 +43,11 @@ const DEFAULT_NUB_USERS = [
 let items = [];
 let wishlist = new Set();
 let registeredUsers = [];
+let reviews = [];
 let currentUser = null;
 let pendingAuthAction = null;
+let selectedApprovalDays = 7;
+let currentDashListingFilter = 'all';
 
 let activeFilters = {
   searchQuery: '',
@@ -48,8 +56,7 @@ let activeFilters = {
   transaction: 'All',
   condition: 'All',
   sortBy: 'featured',
-  showWishlistOnly: false,
-  sellerFilter: null
+  showWishlistOnly: false
 };
 
 // Preset images for easy item posting
@@ -70,9 +77,11 @@ document.addEventListener('DOMContentLoaded', () => {
   populateDropdowns();
   bindEvents();
   bindAuthEvents();
+  bindStateMachineEvents();
   renderItems();
   updateWishlistCount();
   updateAuthUI();
+  updateNotificationBadges();
 });
 
 /**
@@ -81,10 +90,6 @@ document.addEventListener('DOMContentLoaded', () => {
  * =========================================================================
  */
 
-/**
- * Strict validator for Northern University Bangladesh email domain
- * Pattern: name@nub.ac.bd (strictly ends with @nub.ac.bd)
- */
 function isValidNubEmail(email) {
   if (!email || typeof email !== 'string') return false;
   const trimmed = email.trim().toLowerCase();
@@ -92,9 +97,6 @@ function isValidNubEmail(email) {
   return nubRegex.test(trimmed);
 }
 
-/**
- * Load users and session from localStorage
- */
 function loadAuthData() {
   try {
     const savedUsers = localStorage.getItem(STORAGE_USERS_KEY);
@@ -138,17 +140,12 @@ function saveSessionToStorage(user) {
   }
 }
 
-/**
- * Update UI for Logged In / Logged Out state
- */
 function updateAuthUI() {
   const navContainer = document.getElementById('navAuthContainer');
   const mobileContainer = document.getElementById('mobileAuthContainer');
 
-  // Desktop Navbar Auth Container
   if (navContainer) {
     if (currentUser) {
-      const initials = currentUser.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
       navContainer.innerHTML = `
         <div class="relative">
           <button type="button" 
@@ -188,10 +185,10 @@ function updateAuthUI() {
 
             <div class="py-1">
               <button type="button" 
-                      id="menuMyListingsBtn" 
-                      class="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-2.5">
-                <i class="fa-solid fa-box-archive text-slate-400 text-xs"></i>
-                <span>My Active Listings</span>
+                      id="menuDashboardBtn" 
+                      class="w-full text-left px-4 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50 flex items-center justify-between transition">
+                <span class="flex items-center gap-2"><i class="fa-solid fa-chart-line text-xs"></i> My Transactions</span>
+                <span id="menuRequestBadge" class="hidden bg-amber-500 text-white text-[9px] px-1.5 py-0.2 rounded-full font-bold">0</span>
               </button>
               <button type="button" 
                       id="menuSavedItemsBtn" 
@@ -223,33 +220,23 @@ function updateAuthUI() {
         });
       }
 
-      // Bind menu actions
-      const myItemsBtn = document.getElementById('menuMyListingsBtn');
-      if (myItemsBtn) {
-        myItemsBtn.addEventListener('click', () => {
-          menu.classList.add('hidden');
-          filterByMyListings();
-        });
-      }
+      document.getElementById('menuDashboardBtn')?.addEventListener('click', () => {
+        menu?.classList.add('hidden');
+        openDashboard('requests');
+      });
 
-      const savedBtn = document.getElementById('menuSavedItemsBtn');
-      if (savedBtn) {
-        savedBtn.addEventListener('click', () => {
-          menu.classList.add('hidden');
-          activeFilters.showWishlistOnly = true;
-          updateWishlistNavIndicator();
-          renderItems();
-          showToast(`Showing ${wishlist.size} saved items`, 'info');
-        });
-      }
+      document.getElementById('menuSavedItemsBtn')?.addEventListener('click', () => {
+        menu?.classList.add('hidden');
+        activeFilters.showWishlistOnly = true;
+        updateWishlistNavIndicator();
+        renderItems();
+        showToast(`Showing ${wishlist.size} saved items`, 'info');
+      });
 
-      const logoutBtn = document.getElementById('menuLogoutBtn');
-      if (logoutBtn) {
-        logoutBtn.addEventListener('click', () => {
-          menu.classList.add('hidden');
-          handleLogout();
-        });
-      }
+      document.getElementById('menuLogoutBtn')?.addEventListener('click', () => {
+        menu?.classList.add('hidden');
+        handleLogout();
+      });
 
     } else {
       // Guest state: Show Sign In & Register buttons
@@ -291,12 +278,14 @@ function updateAuthUI() {
               <p class="text-[10px] text-indigo-600 font-medium truncate">${currentUser.department || 'NUB Student'}</p>
             </div>
           </div>
-          <button type="button" 
-                  onclick="handleLogout()" 
-                  class="w-full py-1.5 px-3 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition">
-            <i class="fa-solid fa-arrow-right-from-bracket text-[10px]"></i>
-            <span>Sign Out</span>
-          </button>
+          <div class="grid grid-cols-2 gap-2 mb-2">
+            <button type="button" onclick="openDashboard('requests')" class="py-1.5 px-2 bg-indigo-600 text-white rounded-xl text-xs font-bold text-center">
+              Transactions
+            </button>
+            <button type="button" onclick="handleLogout()" class="py-1.5 px-2 bg-white border border-rose-200 text-rose-600 rounded-xl text-xs font-semibold text-center">
+              Sign Out
+            </button>
+          </div>
         </div>
       `;
     } else {
@@ -329,26 +318,10 @@ function updateAuthUI() {
       postSellerMajor.value = "NUB Student";
     }
   }
+
+  updateNotificationBadges();
 }
 
-/**
- * Filter items by current user's listings
- */
-function filterByMyListings() {
-  if (!currentUser) return;
-  activeFilters.searchQuery = currentUser.studentId;
-  const searchInput = document.getElementById('searchInput');
-  if (searchInput) searchInput.value = currentUser.studentId;
-  renderItems();
-  showToast(`Showing listings by Student ID: ${currentUser.studentId}`, 'info');
-  document.getElementById('marketplace')?.scrollIntoView({ behavior: 'smooth' });
-}
-
-/**
- * Open Authentication Modal
- * @param {'login'|'register'} mode 
- * @param {string|null} noticeMessage 
- */
 function openAuthModal(mode = 'login', noticeMessage = null) {
   const modal = document.getElementById('authModal');
   const noticeBox = document.getElementById('authNotice');
@@ -356,11 +329,8 @@ function openAuthModal(mode = 'login', noticeMessage = null) {
   const alertBox = document.getElementById('authAlert');
 
   if (!modal) return;
-
-  // Clear previous alerts
   if (alertBox) alertBox.classList.add('hidden');
 
-  // Set contextual action notice
   if (noticeBox && noticeText) {
     if (noticeMessage) {
       noticeText.textContent = noticeMessage;
@@ -429,18 +399,11 @@ function showAuthAlert(message, type = 'error') {
   }
 }
 
-/**
- * Authentication Events & Handlers
- */
 function bindAuthEvents() {
-  // Close Auth Modal
   document.getElementById('closeAuthModal')?.addEventListener('click', closeAuthModal);
-
-  // Switch tabs
   document.getElementById('tabLoginBtn')?.addEventListener('click', () => switchAuthTab('login'));
   document.getElementById('tabRegisterBtn')?.addEventListener('click', () => switchAuthTab('register'));
 
-  // Live validator for Registration Email (@nub.ac.bd strictly required)
   const regEmailInput = document.getElementById('regEmail');
   const emailMsg = document.getElementById('emailValidationMsg');
   const emailIcon = document.getElementById('emailValidationIcon');
@@ -482,10 +445,7 @@ function bindAuthEvents() {
     });
   }
 
-  // Auto-fill Demo credentials
   document.getElementById('fillDemoBtn')?.addEventListener('click', fillDemoCredentials);
-
-  // Toggle Password Visibilities
   document.getElementById('toggleLoginPassBtn')?.addEventListener('click', function() {
     togglePasswordVisibility('loginPassword', this);
   });
@@ -496,19 +456,9 @@ function bindAuthEvents() {
     togglePasswordVisibility('regConfirmPassword', this);
   });
 
-  // Handle Login Submit
-  const loginForm = document.getElementById('loginForm');
-  if (loginForm) {
-    loginForm.addEventListener('submit', handleLoginSubmit);
-  }
+  document.getElementById('loginForm')?.addEventListener('submit', handleLoginSubmit);
+  document.getElementById('registerForm')?.addEventListener('submit', handleRegisterSubmit);
 
-  // Handle Register Submit
-  const registerForm = document.getElementById('registerForm');
-  if (registerForm) {
-    registerForm.addEventListener('submit', handleRegisterSubmit);
-  }
-
-  // Click outside to close user profile dropdown
   document.addEventListener('click', (e) => {
     const menu = document.getElementById('userDropdownMenu');
     const btn = document.getElementById('userDropdownBtn');
@@ -554,7 +504,6 @@ function handleLoginSubmit(e) {
     return;
   }
 
-  // Match against registered users
   const user = registeredUsers.find(u => 
     (u.email.toLowerCase() === emailOrId.toLowerCase() || u.studentId.toLowerCase() === emailOrId.toLowerCase()) && 
     u.password === password
@@ -565,7 +514,6 @@ function handleLoginSubmit(e) {
     return;
   }
 
-  // Successful login
   currentUser = { ...user };
   if (remember) {
     saveSessionToStorage(currentUser);
@@ -575,7 +523,6 @@ function handleLoginSubmit(e) {
   closeAuthModal();
   showToast(`Welcome back, ${user.name}! Verified as ${user.studentId} 🎓`, 'success');
 
-  // Execute pending action if any (e.g. user was trying to post an item)
   if (pendingAuthAction) {
     const action = pendingAuthAction;
     pendingAuthAction = null;
@@ -594,14 +541,12 @@ function handleRegisterSubmit(e) {
   const confirmPassword = document.getElementById('regConfirmPassword')?.value;
   const terms = document.getElementById('regTerms')?.checked;
 
-  // 1. Strict Domain Restriction Check
   if (!isValidNubEmail(email)) {
     showAuthAlert('Registration restricted strictly to official university emails ending with @nub.ac.bd.', 'error');
     document.getElementById('regEmail')?.focus();
     return;
   }
 
-  // 2. Field validations
   if (!name || !studentId || !password) {
     showAuthAlert('Please complete all required fields.', 'error');
     return;
@@ -627,7 +572,6 @@ function handleRegisterSubmit(e) {
     return;
   }
 
-  // 3. Duplicate checks
   const existingEmail = registeredUsers.find(u => u.email.toLowerCase() === email);
   if (existingEmail) {
     showAuthAlert('This @nub.ac.bd email is already registered. Please sign in instead.', 'error');
@@ -640,7 +584,6 @@ function handleRegisterSubmit(e) {
     return;
   }
 
-  // 4. Create new verified student account
   const newUser = {
     id: `nub-user-${Date.now().toString().slice(-5)}`,
     name,
@@ -655,7 +598,6 @@ function handleRegisterSubmit(e) {
   registeredUsers.push(newUser);
   saveUsersToStorage();
 
-  // Log in immediately
   currentUser = { ...newUser };
   saveSessionToStorage(currentUser);
 
@@ -665,7 +607,6 @@ function handleRegisterSubmit(e) {
 
   showToast(`🎉 Registration successful! Welcome to CampusKart, ${name} (@nub.ac.bd verified)`, 'success');
 
-  // Execute pending action if any
   if (pendingAuthAction) {
     const action = pendingAuthAction;
     pendingAuthAction = null;
@@ -677,7 +618,833 @@ function handleLogout() {
   currentUser = null;
   saveSessionToStorage(null);
   updateAuthUI();
+  closeDashboardModal();
   showToast('You have been signed out safely.', 'info');
+}
+
+/**
+ * =========================================================================
+ * BORROW & EXCHANGE STATE MACHINE WORKFLOW
+ * =========================================================================
+ */
+
+/**
+ * Open Request Modal for Borrow or Exchange
+ */
+function openRequestModal(itemId) {
+  const item = items.find(i => i.id === itemId);
+  if (!item) return;
+
+  if (!currentUser) {
+    pendingAuthAction = () => openRequestModal(itemId);
+    openAuthModal('login', `Please sign in with your @nub.ac.bd account to request ${item.title}.`);
+    return;
+  }
+
+  if (item.seller.studentId === currentUser.studentId) {
+    showToast('You own this listing! You cannot request your own item.', 'warning');
+    return;
+  }
+
+  if (item.status && item.status !== 'Available') {
+    showToast(`This item is currently ${item.status.toLowerCase()}. You cannot request it right now.`, 'warning');
+    return;
+  }
+
+  const modal = document.getElementById('requestModal');
+  const preview = document.getElementById('requestItemPreview');
+  const modalTitle = document.getElementById('requestModalTitle');
+  const modalSub = document.getElementById('requestModalSub');
+  const modalIcon = document.getElementById('requestModalIcon');
+  const durationField = document.getElementById('requestDurationField');
+  const exchangeField = document.getElementById('requestExchangeField');
+  const itemIdInput = document.getElementById('requestItemId');
+
+  if (!modal) return;
+
+  itemIdInput.value = item.id;
+
+  if (item.transaction === 'Exchange') {
+    modalTitle.textContent = 'Propose an Exchange';
+    modalSub.textContent = `Offer a trade item to ${item.seller.name}`;
+    modalIcon.className = 'w-10 h-10 rounded-xl bg-sky-100 text-sky-600 flex items-center justify-center text-lg';
+    modalIcon.innerHTML = `<i class="fa-solid fa-arrows-rotate"></i>`;
+    durationField.classList.add('hidden');
+    exchangeField.classList.remove('hidden');
+  } else {
+    modalTitle.textContent = 'Request to Borrow';
+    modalSub.textContent = `Set duration to borrow from ${item.seller.name}`;
+    modalIcon.className = 'w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center text-lg';
+    modalIcon.innerHTML = `<i class="fa-solid fa-clock"></i>`;
+    durationField.classList.remove('hidden');
+    exchangeField.classList.add('hidden');
+  }
+
+  preview.innerHTML = `
+    <img src="${item.image}" alt="${item.title}" class="w-12 h-12 rounded-xl object-cover ring-1 ring-slate-200" />
+    <div class="min-w-0 flex-1">
+      <div class="flex items-center gap-1.5">
+        <span class="text-xs font-bold text-slate-900 truncate">${item.title}</span>
+      </div>
+      <p class="text-[11px] text-slate-500">Owner: <strong>${item.seller.name}</strong> • ${item.courseCode}</p>
+      <p class="text-[11px] text-indigo-600 font-semibold">${item.priceLabel}</p>
+    </div>
+  `;
+
+  modal.classList.remove('hidden');
+  document.body.classList.add('overflow-hidden');
+}
+
+function closeRequestModal() {
+  const modal = document.getElementById('requestModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+  }
+}
+
+function handleRequestFormSubmit(e) {
+  e.preventDefault();
+  const itemId = document.getElementById('requestItemId')?.value;
+  const item = items.find(i => i.id === itemId);
+  if (!item || !currentUser) return;
+
+  const duration = document.getElementById('requestDurationSelect')?.value;
+  const offeredItem = document.getElementById('requestOfferedItemInput')?.value.trim();
+  const note = document.getElementById('requestNoteInput')?.value.trim();
+
+  if (item.transaction === 'Exchange' && !offeredItem) {
+    showToast('Please specify what item you are offering in trade.', 'warning');
+    return;
+  }
+
+  // State Transition: Available -> Requested
+  item.status = 'Requested';
+  item.activeRequest = {
+    requesterId: currentUser.studentId,
+    requesterName: currentUser.name,
+    requesterEmail: currentUser.email,
+    requesterDept: currentUser.department,
+    requestDate: new Date().toISOString(),
+    durationRequested: item.transaction === 'Exchange' ? null : duration,
+    offeredItem: item.transaction === 'Exchange' ? offeredItem : null,
+    note: note
+  };
+
+  saveItemsToStorage();
+  closeRequestModal();
+  renderItems();
+  updateNotificationBadges();
+
+  showToast(`🎉 Request sent to ${item.seller.name}! Awaiting their approval in their dashboard.`, 'success');
+}
+
+/**
+ * Open Approval & Due Date Modal (for Owner)
+ */
+function openApprovalModal(itemId) {
+  const item = items.find(i => i.id === itemId);
+  if (!item || !item.activeRequest) return;
+
+  const modal = document.getElementById('approvalModal');
+  const preview = document.getElementById('approvalItemPreview');
+  const itemIdInput = document.getElementById('approvalItemId');
+  const customDateInput = document.getElementById('approvalCustomDueDate');
+
+  if (!modal) return;
+
+  itemIdInput.value = item.id;
+
+  // Set default due date to 7 days from now
+  selectedApprovalDays = 7;
+  const defaultDueDate = new Date();
+  defaultDueDate.setDate(defaultDueDate.getDate() + 7);
+  if (customDateInput) {
+    customDateInput.value = defaultDueDate.toISOString().split('T')[0];
+    customDateInput.min = new Date().toISOString().split('T')[0];
+  }
+
+  preview.innerHTML = `
+    <div class="flex items-center space-x-3 mb-2">
+      <img src="${item.image}" alt="${item.title}" class="w-12 h-12 rounded-xl object-cover ring-1 ring-slate-200" />
+      <div>
+        <h4 class="font-bold text-slate-900">${item.title}</h4>
+        <span class="text-indigo-600 font-semibold">${item.transaction === 'Exchange' ? 'Peer Exchange' : 'Borrow Request'}</span>
+      </div>
+    </div>
+    <div class="p-2.5 bg-white rounded-xl border border-slate-200 text-[11px] text-slate-600 space-y-1">
+      <p>Requester: <strong>${item.activeRequest.requesterName}</strong> (ID: ${item.activeRequest.requesterId})</p>
+      <p>Email: <span class="font-mono">${item.activeRequest.requesterEmail}</span></p>
+      ${item.activeRequest.durationRequested ? `<p>Duration requested: <strong class="text-purple-700">${item.activeRequest.durationRequested}</strong></p>` : ''}
+      ${item.activeRequest.offeredItem ? `<p>Offered in trade: <strong class="text-sky-700">${item.activeRequest.offeredItem}</strong></p>` : ''}
+      ${item.activeRequest.note ? `<p class="italic text-slate-500">"${item.activeRequest.note}"</p>` : ''}
+    </div>
+  `;
+
+  modal.classList.remove('hidden');
+  document.body.classList.add('overflow-hidden');
+}
+
+function closeApprovalModal() {
+  const modal = document.getElementById('approvalModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+  }
+}
+
+function setApprovalDays(days) {
+  selectedApprovalDays = days;
+  const btns = document.querySelectorAll('.due-preset-btn');
+  btns.forEach(btn => {
+    btn.classList.remove('active', 'border-indigo-600', 'bg-indigo-50', 'text-indigo-700');
+    btn.classList.add('border-slate-200', 'bg-white', 'text-slate-700');
+  });
+
+  const activeBtn = Array.from(btns).find(b => b.textContent.includes(`${days} Days`));
+  if (activeBtn) {
+    activeBtn.classList.add('active', 'border-indigo-600', 'bg-indigo-50', 'text-indigo-700');
+    activeBtn.classList.remove('border-slate-200', 'bg-white', 'text-slate-700');
+  }
+
+  const customDateInput = document.getElementById('approvalCustomDueDate');
+  if (customDateInput) {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    customDateInput.value = d.toISOString().split('T')[0];
+  }
+}
+
+function handleApprovalFormSubmit(e) {
+  e.preventDefault();
+  const itemId = document.getElementById('approvalItemId')?.value;
+  const item = items.find(i => i.id === itemId);
+  if (!item || !item.activeRequest) return;
+
+  const customDate = document.getElementById('approvalCustomDueDate')?.value;
+  const meetupNote = document.getElementById('approvalMeetupNote')?.value.trim();
+
+  let finalDueDate;
+  if (customDate) {
+    finalDueDate = new Date(customDate).toISOString();
+  } else {
+    const d = new Date();
+    d.setDate(d.getDate() + selectedApprovalDays);
+    finalDueDate = d.toISOString();
+  }
+
+  // State Transition: Requested -> Borrowed / In Exchange
+  const nextStatus = item.transaction === 'Exchange' ? 'In Exchange' : 'Borrowed';
+  item.status = nextStatus;
+  item.borrowDetails = {
+    borrowerId: item.activeRequest.requesterId,
+    borrowerName: item.activeRequest.requesterName,
+    borrowerEmail: item.activeRequest.requesterEmail,
+    borrowerDept: item.activeRequest.requesterDept,
+    approvedDate: new Date().toISOString(),
+    dueDate: finalDueDate,
+    meetupNote: meetupNote,
+    returnStatus: 'Active',
+    isReviewed: false
+  };
+  item.activeRequest = null;
+
+  saveItemsToStorage();
+  closeApprovalModal();
+  renderItems();
+  renderDashboard();
+  updateNotificationBadges();
+
+  showToast(`✅ Approved! Status changed to ${nextStatus}. Return due date set to ${formatDate(finalDueDate)}.`, 'success');
+}
+
+function handleDeclineRequest(itemId) {
+  const item = items.find(i => i.id === itemId);
+  if (!item) return;
+
+  // Revert status to Available
+  item.status = 'Available';
+  item.activeRequest = null;
+
+  saveItemsToStorage();
+  renderItems();
+  renderDashboard();
+  updateNotificationBadges();
+
+  showToast('Request declined. Item status reverted back to Available.', 'info');
+}
+
+/**
+ * Mark as Returned (Owner completes the borrow cycle)
+ */
+function handleMarkAsReturned(itemId) {
+  const item = items.find(i => i.id === itemId);
+  if (!item) return;
+
+  // State Transition: Borrowed/In Exchange -> Available (Completed)
+  item.status = 'Available';
+  if (item.borrowDetails) {
+    item.borrowDetails.returnStatus = 'Returned';
+    item.borrowDetails.returnedDate = new Date().toISOString();
+  }
+
+  saveItemsToStorage();
+  renderItems();
+  renderDashboard();
+  updateNotificationBadges();
+
+  showToast(`🎉 Item "${item.title}" successfully marked as returned! It is now available again on CampusKart.`, 'success');
+}
+
+/**
+ * =========================================================================
+ * SELLER & PEER RATING SYSTEM
+ * =========================================================================
+ */
+
+function openReviewModal(itemId) {
+  const item = items.find(i => i.id === itemId);
+  if (!item) return;
+
+  const modal = document.getElementById('reviewModal');
+  const targetSub = document.getElementById('reviewTargetSub');
+  const reviewSellerId = document.getElementById('reviewSellerId');
+  const reviewItemId = document.getElementById('reviewItemId');
+
+  if (!modal) return;
+
+  reviewSellerId.value = item.seller.studentId;
+  reviewItemId.value = item.id;
+
+  targetSub.textContent = `Rate ${item.seller.name} for "${item.title}"`;
+  setStarRating(5);
+
+  modal.classList.remove('hidden');
+  document.body.classList.add('overflow-hidden');
+}
+
+function closeReviewModal() {
+  const modal = document.getElementById('reviewModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+  }
+}
+
+function setStarRating(val) {
+  const hiddenInput = document.getElementById('reviewRatingValue');
+  const label = document.getElementById('starRatingLabel');
+  const starBtns = document.querySelectorAll('.star-rating-btn');
+
+  if (hiddenInput) hiddenInput.value = val;
+
+  const labels = {
+    1: '1 Star - Needs Improvement',
+    2: '2 Stars - Below Average',
+    3: '3 Stars - Acceptable Exchange',
+    4: '4 Stars - Great Classmate!',
+    5: '5 Stars - Outstanding Peer!'
+  };
+
+  if (label) label.textContent = labels[val] || `${val} Stars`;
+
+  starBtns.forEach(btn => {
+    const starVal = parseInt(btn.getAttribute('data-val') || 1);
+    if (starVal <= val) {
+      btn.className = 'star-rating-btn star-gold';
+    } else {
+      btn.className = 'star-rating-btn star-empty';
+    }
+  });
+}
+
+function appendReviewTag(tagText) {
+  const textarea = document.getElementById('reviewCommentInput');
+  if (!textarea) return;
+  if (!textarea.value.includes(tagText)) {
+    textarea.value = textarea.value.trim() ? `${textarea.value.trim()} • ${tagText}` : tagText;
+  }
+}
+
+function handleReviewFormSubmit(e) {
+  e.preventDefault();
+  const itemId = document.getElementById('reviewItemId')?.value;
+  const sellerId = document.getElementById('reviewSellerId')?.value;
+  const rating = parseInt(document.getElementById('reviewRatingValue')?.value || 5);
+  const comment = document.getElementById('reviewCommentInput')?.value.trim();
+
+  const item = items.find(i => i.id === itemId);
+  if (!item || !currentUser) return;
+
+  const newReview = {
+    id: `rev-${Date.now().toString().slice(-5)}`,
+    sellerId: sellerId,
+    reviewerId: currentUser.studentId,
+    reviewerName: currentUser.name,
+    rating: rating,
+    comment: comment || 'Smooth and friendly peer transaction!',
+    date: 'Just now',
+    itemTitle: item.title
+  };
+
+  reviews.unshift(newReview);
+  saveReviewsToStorage();
+
+  // Mark as reviewed on the item
+  if (item.borrowDetails) {
+    item.borrowDetails.isReviewed = true;
+  }
+
+  // Recalculate average star rating for seller
+  const sellerReviews = reviews.filter(r => r.sellerId === sellerId);
+  const avg = sellerReviews.reduce((sum, r) => sum + r.rating, 0) / sellerReviews.length;
+  const formattedAvg = parseFloat(avg.toFixed(1));
+
+  // Update on all items owned by this seller
+  items.forEach(it => {
+    if (it.seller.studentId === sellerId) {
+      it.seller.rating = formattedAvg;
+      it.seller.reviewsCount = sellerReviews.length;
+    }
+  });
+
+  saveItemsToStorage();
+  closeReviewModal();
+  renderItems();
+  renderDashboard();
+
+  showToast(`⭐ Thank you! Your ${rating}-star review for ${item.seller.name} has been published.`, 'success');
+}
+
+/**
+ * =========================================================================
+ * USER TRANSACTIONS DASHBOARD
+ * =========================================================================
+ */
+
+function openDashboard(defaultTab = 'requests') {
+  if (!currentUser) {
+    pendingAuthAction = () => openDashboard(defaultTab);
+    openAuthModal('login', 'Please sign in with your @nub.ac.bd account to view your transactions dashboard.');
+    return;
+  }
+
+  const modal = document.getElementById('dashboardModal');
+  const userSub = document.getElementById('dashUserSub');
+  if (!modal) return;
+
+  if (userSub) {
+    userSub.innerHTML = `Signed in as <strong>${currentUser.name}</strong> (ID: <span class="font-mono">${currentUser.studentId}</span>) &bull; ${currentUser.department || 'NUB'}`;
+  }
+
+  switchDashboardTab(defaultTab);
+  renderDashboard();
+
+  modal.classList.remove('hidden');
+  document.body.classList.add('overflow-hidden');
+}
+
+function closeDashboardModal() {
+  const modal = document.getElementById('dashboardModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+  }
+}
+
+function switchDashboardTab(tabName) {
+  const btnRequests = document.getElementById('dashTabRequestsBtn');
+  const btnListings = document.getElementById('dashTabListingsBtn');
+  const btnBorrowed = document.getElementById('dashTabBorrowedBtn');
+
+  const panelRequests = document.getElementById('dashRequestsPanel');
+  const panelListings = document.getElementById('dashListingsPanel');
+  const panelBorrowed = document.getElementById('dashBorrowedPanel');
+
+  [btnRequests, btnListings, btnBorrowed].forEach(b => {
+    b?.classList.remove('active', 'border-indigo-600', 'text-indigo-600');
+    b?.classList.add('border-transparent', 'text-slate-600');
+  });
+
+  [panelRequests, panelListings, panelBorrowed].forEach(p => p?.classList.add('hidden'));
+
+  if (tabName === 'requests') {
+    btnRequests?.classList.add('active', 'border-indigo-600', 'text-indigo-600');
+    btnRequests?.classList.remove('border-transparent', 'text-slate-600');
+    panelRequests?.classList.remove('hidden');
+  } else if (tabName === 'listings') {
+    btnListings?.classList.add('active', 'border-indigo-600', 'text-indigo-600');
+    btnListings?.classList.remove('border-transparent', 'text-slate-600');
+    panelListings?.classList.remove('hidden');
+  } else if (tabName === 'borrowed') {
+    btnBorrowed?.classList.add('active', 'border-indigo-600', 'text-indigo-600');
+    btnBorrowed?.classList.remove('border-transparent', 'text-slate-600');
+    panelBorrowed?.classList.remove('hidden');
+  }
+}
+
+function filterDashListings(status) {
+  currentDashListingFilter = status;
+  const btns = document.querySelectorAll('.dash-listing-filter');
+  btns.forEach(b => {
+    b.className = 'dash-listing-filter px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200';
+  });
+
+  const activeBtn = Array.from(btns).find(b => b.textContent.toLowerCase() === status.toLowerCase() || (status === 'Borrowed' && b.textContent.includes('Borrowed')));
+  if (activeBtn) {
+    activeBtn.className = 'dash-listing-filter px-2 py-0.5 rounded-lg bg-indigo-600 text-white font-medium';
+  }
+
+  renderDashboardListingsPanel();
+}
+
+function renderDashboard() {
+  if (!currentUser) return;
+
+  // 1. Incoming requests
+  const incoming = items.filter(it => it.seller.studentId === currentUser.studentId && it.status === 'Requested');
+  const requestsPanel = document.getElementById('dashRequestsPanel');
+  const requestsBadge = document.getElementById('dashRequestsCountBadge');
+
+  if (requestsBadge) requestsBadge.textContent = incoming.length;
+
+  if (requestsPanel) {
+    if (incoming.length === 0) {
+      requestsPanel.innerHTML = `
+        <div class="py-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-6">
+          <div class="w-12 h-12 mx-auto mb-2 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-inbox"></i>
+          </div>
+          <h4 class="text-sm font-bold text-slate-800">No Pending Requests</h4>
+          <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1">When classmates request to borrow or exchange your listings, they will appear here with instant approval controls.</p>
+        </div>
+      `;
+    } else {
+      requestsPanel.innerHTML = incoming.map(it => `
+        <div class="p-4 bg-white rounded-2xl border border-amber-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="flex items-start space-x-3.5">
+            <img src="${it.image}" alt="${it.title}" class="w-14 h-14 rounded-xl object-cover shrink-0 ring-1 ring-slate-200" />
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="status-pill status-requested"><i class="fa-solid fa-clock"></i> Request Pending</span>
+                <span class="text-xs font-bold text-slate-400 font-mono">${it.courseCode}</span>
+              </div>
+              <h4 class="text-sm font-bold text-slate-900 leading-snug">${it.title}</h4>
+              <div class="mt-1 text-xs text-slate-600 space-y-0.5">
+                <p>From: <strong>${it.activeRequest?.requesterName}</strong> (Student ID: <span class="font-mono">${it.activeRequest?.requesterId}</span>)</p>
+                ${it.activeRequest?.durationRequested ? `<p class="text-purple-700 font-semibold"><i class="fa-solid fa-calendar-days mr-1"></i>Requested duration: ${it.activeRequest.durationRequested}</p>` : ''}
+                ${it.activeRequest?.offeredItem ? `<p class="text-sky-700 font-semibold"><i class="fa-solid fa-arrows-rotate mr-1"></i>Offered in trade: ${it.activeRequest.offeredItem}</p>` : ''}
+                ${it.activeRequest?.note ? `<p class="italic text-slate-500 text-[11px] mt-1 bg-slate-50 p-1.5 rounded-lg border border-slate-100">"${it.activeRequest.note}"</p>` : ''}
+              </div>
+            </div>
+          </div>
+
+          <div class="flex items-center space-x-2 shrink-0 self-end md:self-center">
+            <button type="button" onclick="handleDeclineRequest('${it.id}')" class="px-3 py-2 bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-300 rounded-xl text-xs font-bold transition">
+              Decline
+            </button>
+            <button type="button" onclick="openApprovalModal('${it.id}')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-emerald-600/30 transition flex items-center gap-1.5">
+              <i class="fa-solid fa-check text-[11px]"></i>
+              <span>Approve & Set Due Date</span>
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+  }
+
+  // 2. My Listings Panel
+  renderDashboardListingsPanel();
+
+  // 3. Items I Borrowed Panel
+  renderDashboardBorrowedPanel();
+
+  updateNotificationBadges();
+}
+
+function renderDashboardListingsPanel() {
+  if (!currentUser) return;
+  const myListings = items.filter(it => it.seller.studentId === currentUser.studentId);
+  const container = document.getElementById('dashListingsContainer');
+  const countBadge = document.getElementById('dashListingsCountBadge');
+  const summaryText = document.getElementById('dashListingsSummaryText');
+
+  if (countBadge) countBadge.textContent = myListings.length;
+
+  let filtered = myListings;
+  if (currentDashListingFilter === 'Available') {
+    filtered = myListings.filter(it => it.status === 'Available');
+  } else if (currentDashListingFilter === 'Requested') {
+    filtered = myListings.filter(it => it.status === 'Requested');
+  } else if (currentDashListingFilter === 'Borrowed') {
+    filtered = myListings.filter(it => it.status === 'Borrowed' || it.status === 'In Exchange');
+  }
+
+  if (summaryText) {
+    summaryText.textContent = `Showing ${filtered.length} of ${myListings.length} items`;
+  }
+
+  if (!container) return;
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="py-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-6">
+        <p class="text-xs text-slate-500">No listings found for this filter. Post textbooks or equipment to share with NUB classmates!</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map(it => {
+    let statusBadge = `<span class="status-pill status-available"><i class="fa-solid fa-circle-check text-[10px]"></i> Available</span>`;
+    let actionArea = ``;
+
+    if (it.status === 'Requested') {
+      statusBadge = `<span class="status-pill status-requested"><i class="fa-solid fa-clock text-[10px]"></i> Action Needed</span>`;
+      actionArea = `
+        <button type="button" onclick="openApprovalModal('${it.id}')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-xs">
+          Review Request
+        </button>
+      `;
+    } else if (it.status === 'Borrowed' || it.status === 'In Exchange') {
+      const remaining = it.borrowDetails ? getDaysRemaining(it.borrowDetails.dueDate) : { label: 'Active', isUrgent: false };
+      statusBadge = `
+        <span class="status-pill status-borrowed"><i class="fa-solid fa-arrows-spin text-[10px]"></i> ${it.status}</span>
+        <span class="text-[11px] px-2 py-0.5 rounded-full font-bold ${remaining.isUrgent ? 'countdown-urgent' : 'countdown-normal'}">
+          ${remaining.label}
+        </span>
+      `;
+      actionArea = `
+        <button type="button" onclick="handleMarkAsReturned('${it.id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1">
+          <i class="fa-solid fa-check text-[10px]"></i>
+          <span>Mark as Returned</span>
+        </button>
+      `;
+    }
+
+    return `
+      <div class="p-3.5 bg-white rounded-2xl border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-center space-x-3 min-w-0">
+          <img src="${it.image}" alt="${it.title}" class="w-12 h-12 rounded-xl object-cover shrink-0 ring-1 ring-slate-200" />
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5 flex-wrap mb-0.5">
+              ${statusBadge}
+              <span class="text-[11px] font-mono text-slate-400">${it.courseCode}</span>
+            </div>
+            <h4 class="text-xs font-bold text-slate-900 truncate">${it.title}</h4>
+            <p class="text-[11px] text-slate-500">${it.priceLabel} &bull; ${it.category}</p>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-2 shrink-0 self-end sm:self-auto">
+          ${actionArea}
+          <button type="button" onclick="openDetailsModal('${it.id}')" class="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold border border-slate-200 transition">
+            View
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderDashboardBorrowedPanel() {
+  if (!currentUser) return;
+  const container = document.getElementById('dashBorrowedPanel');
+  const countBadge = document.getElementById('dashBorrowedCountBadge');
+
+  // Items where currentUser is the borrower or has an active request
+  const myBorrows = items.filter(it => 
+    (it.borrowDetails && it.borrowDetails.borrowerId === currentUser.studentId) ||
+    (it.activeRequest && it.activeRequest.requesterId === currentUser.studentId)
+  );
+
+  if (countBadge) countBadge.textContent = myBorrows.length;
+  if (!container) return;
+
+  if (myBorrows.length === 0) {
+    container.innerHTML = `
+      <div class="py-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-6">
+        <div class="w-12 h-12 mx-auto mb-2 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-lg">
+          <i class="fa-solid fa-clock-rotate-left"></i>
+        </div>
+        <h4 class="text-sm font-bold text-slate-800">No Borrowed Items</h4>
+        <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1">You haven't requested or borrowed any academic materials yet. Browse textbooks and lab kits on the marketplace!</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = myBorrows.map(it => {
+    let statusHtml = '';
+    let actionHtml = '';
+
+    if (it.status === 'Requested') {
+      statusHtml = `
+        <span class="status-pill status-requested"><i class="fa-solid fa-clock"></i> Awaiting Owner Approval</span>
+      `;
+      actionHtml = `
+        <span class="text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200">Pending Review</span>
+      `;
+    } else if (it.borrowDetails?.returnStatus === 'Returned') {
+      statusHtml = `
+        <span class="status-pill status-completed"><i class="fa-solid fa-circle-check text-emerald-500"></i> Returned / Completed</span>
+      `;
+      if (!it.borrowDetails.isReviewed) {
+        actionHtml = `
+          <button type="button" onclick="openReviewModal('${it.id}')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1 animate-pulse">
+            <i class="fa-solid fa-star text-[10px]"></i>
+            <span>Rate Lender</span>
+          </button>
+        `;
+      } else {
+        actionHtml = `
+          <span class="text-xs text-amber-600 font-bold bg-amber-50 px-2 py-1 rounded-lg border border-amber-200 flex items-center gap-1">
+            <i class="fa-solid fa-star text-[10px]"></i> Rated
+          </span>
+        `;
+      }
+    } else if (it.status === 'Borrowed' || it.status === 'In Exchange') {
+      const remaining = getDaysRemaining(it.borrowDetails.dueDate);
+      statusHtml = `
+        <span class="status-pill status-borrowed"><i class="fa-solid fa-handshake"></i> ${it.status}</span>
+        <span class="text-xs px-2.5 py-0.5 rounded-full font-bold ${remaining.isUrgent ? 'countdown-urgent' : 'countdown-normal'}">
+          ${remaining.label}
+        </span>
+      `;
+      actionHtml = `
+        <div class="text-right">
+          <p class="text-[11px] text-slate-500">Due: <strong>${formatDate(it.borrowDetails.dueDate)}</strong></p>
+          <span class="text-[10px] text-indigo-600">Return to: ${it.seller.name}</span>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="p-4 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div class="flex items-start space-x-3.5">
+          <img src="${it.image}" alt="${it.title}" class="w-14 h-14 rounded-xl object-cover ring-1 ring-slate-200 shrink-0" />
+          <div>
+            <div class="flex items-center gap-2 mb-1 flex-wrap">
+              ${statusHtml}
+            </div>
+            <h4 class="text-sm font-bold text-slate-900">${it.title}</h4>
+            <p class="text-xs text-slate-600 mt-0.5">
+              Lender: <strong>${it.seller.name}</strong> (${it.seller.major})
+              &bull; Meetup Spot: <span class="text-slate-500">${it.location}</span>
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-2 shrink-0 self-end md:self-center">
+          ${actionHtml}
+          <button type="button" onclick="openDetailsModal('${it.id}')" class="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold border border-slate-200 transition">
+            Details
+          </button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function updateNotificationBadges() {
+  if (!currentUser) {
+    const navBadge = document.getElementById('navRequestsBadge');
+    if (navBadge) navBadge.classList.add('hidden');
+    return;
+  }
+
+  const pendingRequests = items.filter(it => it.seller.studentId === currentUser.studentId && it.status === 'Requested');
+  const navBadge = document.getElementById('navRequestsBadge');
+  const menuBadge = document.getElementById('menuRequestBadge');
+
+  if (navBadge) {
+    if (pendingRequests.length > 0) {
+      navBadge.textContent = pendingRequests.length;
+      navBadge.classList.remove('hidden');
+    } else {
+      navBadge.classList.add('hidden');
+    }
+  }
+
+  if (menuBadge) {
+    if (pendingRequests.length > 0) {
+      menuBadge.textContent = `${pendingRequests.length} pending`;
+      menuBadge.classList.remove('hidden');
+    } else {
+      menuBadge.classList.add('hidden');
+    }
+  }
+}
+
+function getDaysRemaining(dueDateISO) {
+  if (!dueDateISO) return { days: 0, isUrgent: false, isOverdue: false, label: 'No Due Date' };
+  const now = new Date();
+  const due = new Date(dueDateISO);
+  const diffTime = due.getTime() - now.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) {
+    return { days: diffDays, isUrgent: true, isOverdue: true, label: `Overdue by ${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? '' : 's'}!` };
+  } else if (diffDays === 0) {
+    return { days: 0, isUrgent: true, isOverdue: false, label: 'Due Today!' };
+  } else if (diffDays <= 2) {
+    return { days: diffDays, isUrgent: true, isOverdue: false, label: `Due in ${diffDays} day${diffDays === 1 ? '' : 's'}` };
+  } else {
+    return { days: diffDays, isUrgent: false, isOverdue: false, label: `Due in ${diffDays} days` };
+  }
+}
+
+function formatDate(dateISO) {
+  if (!dateISO) return '';
+  const d = new Date(dateISO);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function bindStateMachineEvents() {
+  document.getElementById('navTransactionsBtn')?.addEventListener('click', () => openDashboard('requests'));
+  document.getElementById('closeDashboardModal')?.addEventListener('click', closeDashboardModal);
+  document.getElementById('dashPostShortcutBtn')?.addEventListener('click', () => {
+    closeDashboardModal();
+    openPostModal();
+  });
+
+  document.getElementById('dashTabRequestsBtn')?.addEventListener('click', () => switchDashboardTab('requests'));
+  document.getElementById('dashTabListingsBtn')?.addEventListener('click', () => switchDashboardTab('listings'));
+  document.getElementById('dashTabBorrowedBtn')?.addEventListener('click', () => switchDashboardTab('borrowed'));
+
+  document.getElementById('closeRequestModal')?.addEventListener('click', closeRequestModal);
+  document.getElementById('requestForm')?.addEventListener('submit', handleRequestFormSubmit);
+
+  document.getElementById('closeApprovalModal')?.addEventListener('click', closeApprovalModal);
+  document.getElementById('approvalForm')?.addEventListener('submit', handleApprovalFormSubmit);
+
+  document.getElementById('closeReviewModal')?.addEventListener('click', closeReviewModal);
+  document.getElementById('reviewForm')?.addEventListener('submit', handleReviewFormSubmit);
+
+  // Star selector clicks
+  document.querySelectorAll('.star-rating-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const val = parseInt(e.currentTarget.getAttribute('data-val') || 5);
+      setStarRating(val);
+    });
+  });
+
+  // Modal backdrop click
+  const dashboardModal = document.getElementById('dashboardModal');
+  const requestModal = document.getElementById('requestModal');
+  const approvalModal = document.getElementById('approvalModal');
+  const reviewModal = document.getElementById('reviewModal');
+
+  [dashboardModal, requestModal, approvalModal, reviewModal].forEach(m => {
+    if (m) {
+      m.addEventListener('click', (e) => {
+        if (e.target === m) {
+          m.classList.add('hidden');
+          document.body.classList.remove('overflow-hidden');
+        }
+      });
+    }
+  });
 }
 
 /**
@@ -700,10 +1467,19 @@ function loadData() {
     if (savedWishlist) {
       wishlist = new Set(JSON.parse(savedWishlist));
     }
+
+    const savedReviews = localStorage.getItem(STORAGE_REVIEWS_KEY);
+    if (savedReviews) {
+      reviews = JSON.parse(savedReviews);
+    } else {
+      reviews = [...INITIAL_REVIEWS];
+      saveReviewsToStorage();
+    }
   } catch (err) {
     console.error('Error reading localStorage', err);
     items = [...INITIAL_ITEMS];
     wishlist = new Set();
+    reviews = [...INITIAL_REVIEWS];
   }
 }
 
@@ -723,9 +1499,14 @@ function saveWishlistToStorage() {
   }
 }
 
-/**
- * Populate Course Code & Category Dropdowns
- */
+function saveReviewsToStorage() {
+  try {
+    localStorage.setItem(STORAGE_REVIEWS_KEY, JSON.stringify(reviews));
+  } catch (e) {
+    console.warn('Could not save reviews to localStorage', e);
+  }
+}
+
 function populateDropdowns() {
   const courseFilter = document.getElementById('filterCourse');
   const modalCourse = document.getElementById('postCourse');
@@ -733,7 +1514,6 @@ function populateDropdowns() {
   const modalCategory = document.getElementById('postCategory');
   const quickCourseChips = document.getElementById('quickCourseChips');
 
-  // Dynamic course list based on existing items + standard COURSE_CODES
   const allCourses = Array.from(new Set([...COURSE_CODES, ...items.map(i => i.courseCode)])).filter(Boolean);
 
   if (courseFilter) {
@@ -756,7 +1536,6 @@ function populateDropdowns() {
       selectableCats.map(cat => `<option value="${cat}">${cat}</option>`).join('');
   }
 
-  // Quick course chips for 1-click filter
   if (quickCourseChips) {
     const popularCourses = ['All Courses', 'CSE 111', 'MATH 201', 'CS 101', 'CHEM 121', 'EEE 101', 'BBA 202'];
     quickCourseChips.innerHTML = popularCourses.map(course => {
@@ -772,7 +1551,6 @@ function populateDropdowns() {
       `;
     }).join('');
 
-    // Attach click events to quick chips
     quickCourseChips.querySelectorAll('.quick-course-chip').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const selected = e.currentTarget.getAttribute('data-course');
@@ -797,9 +1575,6 @@ function updateQuickCourseChipsUI() {
   });
 }
 
-/**
- * Initialize UI Elements & Presets
- */
 function initUI() {
   const presetContainer = document.getElementById('presetImagePickers');
   if (presetContainer) {
@@ -844,11 +1619,7 @@ function updatePostImagePreview(url) {
   }
 }
 
-/**
- * Main Event Listeners
- */
 function bindEvents() {
-  // Main Search Input
   const searchInput = document.getElementById('searchInput');
   if (searchInput) {
     searchInput.addEventListener('input', (e) => {
@@ -857,7 +1628,6 @@ function bindEvents() {
     });
   }
 
-  // Course Code Filter Dropdown
   const filterCourse = document.getElementById('filterCourse');
   if (filterCourse) {
     filterCourse.addEventListener('change', (e) => {
@@ -867,7 +1637,6 @@ function bindEvents() {
     });
   }
 
-  // Category Filter Dropdown
   const filterCategory = document.getElementById('filterCategory');
   if (filterCategory) {
     filterCategory.addEventListener('change', (e) => {
@@ -877,7 +1646,6 @@ function bindEvents() {
     });
   }
 
-  // Category Pills in Toolbar
   const categoryPills = document.querySelectorAll('.category-pill');
   categoryPills.forEach(pill => {
     pill.addEventListener('click', (e) => {
@@ -889,7 +1657,6 @@ function bindEvents() {
     });
   });
 
-  // Transaction Tabs (All, Sell, Borrow, Exchange)
   const transactionTabs = document.querySelectorAll('.transaction-tab');
   transactionTabs.forEach(tab => {
     tab.addEventListener('click', (e) => {
@@ -906,7 +1673,6 @@ function bindEvents() {
     });
   });
 
-  // Condition Filter Dropdown
   const filterCondition = document.getElementById('filterCondition');
   if (filterCondition) {
     filterCondition.addEventListener('change', (e) => {
@@ -915,7 +1681,6 @@ function bindEvents() {
     });
   }
 
-  // Sort Dropdown
   const sortBy = document.getElementById('sortBy');
   if (sortBy) {
     sortBy.addEventListener('change', (e) => {
@@ -924,13 +1689,8 @@ function bindEvents() {
     });
   }
 
-  // Reset Filters Button
-  const btnReset = document.getElementById('btnResetFilters');
-  if (btnReset) {
-    btnReset.addEventListener('click', resetFilters);
-  }
+  document.getElementById('btnResetFilters')?.addEventListener('click', resetFilters);
 
-  // Wishlist Nav Button Toggle
   const wishlistNavBtn = document.getElementById('navWishlistBtn');
   if (wishlistNavBtn) {
     wishlistNavBtn.addEventListener('click', () => {
@@ -943,7 +1703,6 @@ function bindEvents() {
     });
   }
 
-  // Mobile Menu Toggle
   const mobileMenuBtn = document.getElementById('mobileMenuBtn');
   const mobileMenu = document.getElementById('mobileMenu');
   if (mobileMenuBtn && mobileMenu) {
@@ -952,7 +1711,7 @@ function bindEvents() {
     });
   }
 
-  // Modal: Open Post Item (Protected by Auth Guard)
+  // Open Post Item modal (Auth Guarded)
   const openPostModalBtns = document.querySelectorAll('.open-post-modal-btn');
   const postModal = document.getElementById('postItemModal');
   const closePostModalBtn = document.getElementById('closePostModal');
@@ -982,13 +1741,11 @@ function bindEvents() {
   if (closePostModalBtn) closePostModalBtn.addEventListener('click', closePostModal);
   if (cancelPostModalBtn) cancelPostModalBtn.addEventListener('click', closePostModal);
 
-  // Dynamic Transaction fields in Post Item Modal
   const postTransactionInputs = document.querySelectorAll('input[name="postTransaction"]');
   postTransactionInputs.forEach(radio => {
     radio.addEventListener('change', updatePostModalFields);
   });
 
-  // Image URL input live preview
   const postImageUrlInput = document.getElementById('postImageUrl');
   if (postImageUrlInput) {
     postImageUrlInput.addEventListener('input', (e) => {
@@ -996,34 +1753,29 @@ function bindEvents() {
     });
   }
 
-  // Submit Post Item Form
-  const postItemForm = document.getElementById('postItemForm');
-  if (postItemForm) {
-    postItemForm.addEventListener('submit', handleNewListingSubmit);
-  }
+  document.getElementById('postItemForm')?.addEventListener('submit', handleNewListingSubmit);
 
-  // Close Modals on backdrop click or Escape key
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closePostModal();
       closeDetailsModal();
       closeAuthModal();
+      closeDashboardModal();
+      closeRequestModal();
+      closeApprovalModal();
+      closeReviewModal();
     }
   });
 
-  const detailsModal = document.getElementById('itemDetailsModal');
-  const closeDetailsModalBtn = document.getElementById('closeDetailsModal');
-  if (closeDetailsModalBtn) closeDetailsModalBtn.addEventListener('click', closeDetailsModal);
+  document.getElementById('closeDetailsModal')?.addEventListener('click', closeDetailsModal);
 
-  // Close modals when clicking backdrop
-  const authModal = document.getElementById('authModal');
-  [postModal, detailsModal, authModal].forEach(modal => {
+  const detailsModal = document.getElementById('itemDetailsModal');
+  [postModal, detailsModal].forEach(modal => {
     if (modal) {
       modal.addEventListener('click', (e) => {
         if (e.target === modal) {
           closePostModal();
           closeDetailsModal();
-          closeAuthModal();
         }
       });
     }
@@ -1079,7 +1831,6 @@ function resetFilters() {
   if (filterCondition) filterCondition.value = 'All';
   if (sortBy) sortBy.value = 'featured';
 
-  // Reset transaction tabs UI
   const transactionTabs = document.querySelectorAll('.transaction-tab');
   transactionTabs.forEach(tab => {
     if (tab.getAttribute('data-transaction') === 'All') {
@@ -1098,17 +1849,12 @@ function resetFilters() {
   showToast('Filters cleared', 'info');
 }
 
-/**
- * Filter & Sort Logic
- */
 function getFilteredItems() {
   return items.filter(item => {
-    // Wishlist filter
     if (activeFilters.showWishlistOnly && !wishlist.has(item.id)) {
       return false;
     }
 
-    // Keyword Search (checks title, description, courseCode, category, seller location, seller name)
     if (activeFilters.searchQuery) {
       const q = activeFilters.searchQuery;
       const matchTitle = item.title.toLowerCase().includes(q);
@@ -1122,28 +1868,24 @@ function getFilteredItems() {
       }
     }
 
-    // Course Code Filter
     if (activeFilters.courseCode !== 'All Courses') {
       if (item.courseCode !== activeFilters.courseCode) {
         return false;
       }
     }
 
-    // Category Filter
     if (activeFilters.category !== 'All Categories') {
       if (item.category !== activeFilters.category) {
         return false;
       }
     }
 
-    // Transaction Tag Filter (Sell, Borrow, Exchange)
     if (activeFilters.transaction !== 'All') {
       if (item.transaction.toLowerCase() !== activeFilters.transaction.toLowerCase()) {
         return false;
       }
     }
 
-    // Condition Filter (Brand New, Like New, Good, Fair)
     if (activeFilters.condition !== 'All') {
       if (item.condition.toLowerCase() !== activeFilters.condition.toLowerCase()) {
         return false;
@@ -1159,13 +1901,12 @@ function getFilteredItems() {
     } else if (activeFilters.sortBy === 'newest') {
       return b.id.localeCompare(a.id);
     }
-    // Default: featured first
     return (b.featured ? 1 : 0) - (a.featured ? 1 : 0);
   });
 }
 
 /**
- * Render items into the marketplace grid
+ * Render items into the marketplace grid with status badges
  */
 function renderItems() {
   const container = document.getElementById('itemsGrid');
@@ -1175,32 +1916,18 @@ function renderItems() {
 
   const filtered = getFilteredItems();
 
-  // Update counts
   if (countDisplay) {
     countDisplay.textContent = `${filtered.length} item${filtered.length === 1 ? '' : 's'} available on NUB campus`;
   }
 
-  // Render active filter badges
   if (activeFiltersContainer) {
     const badges = [];
-    if (activeFilters.searchQuery) {
-      badges.push(`Keyword: "${activeFilters.searchQuery}"`);
-    }
-    if (activeFilters.courseCode !== 'All Courses') {
-      badges.push(`Course: ${activeFilters.courseCode}`);
-    }
-    if (activeFilters.category !== 'All Categories') {
-      badges.push(`Category: ${activeFilters.category}`);
-    }
-    if (activeFilters.transaction !== 'All') {
-      badges.push(`Type: ${activeFilters.transaction}`);
-    }
-    if (activeFilters.condition !== 'All') {
-      badges.push(`Condition: ${activeFilters.condition}`);
-    }
-    if (activeFilters.showWishlistOnly) {
-      badges.push(`Saved Wishlist`);
-    }
+    if (activeFilters.searchQuery) badges.push(`Keyword: "${activeFilters.searchQuery}"`);
+    if (activeFilters.courseCode !== 'All Courses') badges.push(`Course: ${activeFilters.courseCode}`);
+    if (activeFilters.category !== 'All Categories') badges.push(`Category: ${activeFilters.category}`);
+    if (activeFilters.transaction !== 'All') badges.push(`Type: ${activeFilters.transaction}`);
+    if (activeFilters.condition !== 'All') badges.push(`Condition: ${activeFilters.condition}`);
+    if (activeFilters.showWishlistOnly) badges.push(`Saved Wishlist`);
 
     if (badges.length > 0) {
       activeFiltersContainer.innerHTML = `
@@ -1221,7 +1948,6 @@ function renderItems() {
     }
   }
 
-  // Handle empty state
   if (filtered.length === 0) {
     container.innerHTML = `
       <div class="col-span-full py-16 text-center bg-white rounded-2xl border border-dashed border-slate-300 p-8">
@@ -1243,7 +1969,6 @@ function renderItems() {
       </div>
     `;
 
-    // Re-bind modal open buttons created dynamically
     container.querySelectorAll('.open-post-modal-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         if (!currentUser) {
@@ -1257,10 +1982,8 @@ function renderItems() {
     return;
   }
 
-  // Render cards
   container.innerHTML = filtered.map(item => generateCardHtml(item)).join('');
 
-  // Bind interactive card events (Wishlist heart, Quick View / Details modal)
   container.querySelectorAll('.wishlist-toggle-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -1275,15 +1998,28 @@ function renderItems() {
       openDetailsModal(itemId);
     });
   });
+
+  container.querySelectorAll('.card-action-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const itemId = btn.getAttribute('data-id');
+      const action = btn.getAttribute('data-action');
+      if (action === 'request') {
+        openRequestModal(itemId);
+      } else {
+        openDetailsModal(itemId);
+      }
+    });
+  });
 }
 
 /**
- * Generate HTML string for single item card
+ * Generate HTML string for single item card with State Machine status
  */
 function generateCardHtml(item) {
   const isWishlisted = wishlist.has(item.id);
 
-  // Condition Badge styling & icon
+  // Condition Badge
   let conditionClass = 'condition-good';
   let conditionIcon = 'fa-check-circle';
   if (item.condition === 'Brand New') {
@@ -1297,7 +2033,7 @@ function generateCardHtml(item) {
     conditionIcon = 'fa-tag';
   }
 
-  // Transaction Tag styling & icon
+  // Transaction Tag
   let transactionClass = 'transaction-sell';
   let transactionIcon = 'fa-dollar-sign';
   let transactionBadgeLabel = 'FOR SALE';
@@ -1329,6 +2065,80 @@ function generateCardHtml(item) {
     `;
   }
 
+  // State Machine Status Badge
+  let statusBadgeHtml = ``;
+  let actionButtonHtml = ``;
+
+  if (item.status === 'Requested') {
+    statusBadgeHtml = `
+      <span class="status-pill status-requested shadow-xs">
+        <i class="fa-solid fa-clock text-[9px]"></i> Requested
+      </span>
+    `;
+    actionButtonHtml = `
+      <button type="button" 
+              data-id="${item.id}" 
+              data-action="view"
+              class="card-action-btn px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 text-xs font-bold rounded-xl transition-all shadow-xs shrink-0 flex items-center gap-1">
+        <span>Requested</span>
+      </button>
+    `;
+  } else if (item.status === 'Borrowed' || item.status === 'In Exchange') {
+    const remaining = item.borrowDetails ? getDaysRemaining(item.borrowDetails.dueDate) : { label: 'Borrowed', isUrgent: false };
+    statusBadgeHtml = `
+      <span class="status-pill status-borrowed shadow-xs">
+        <i class="fa-solid fa-arrows-spin text-[9px]"></i> ${item.status}
+      </span>
+    `;
+    actionButtonHtml = `
+      <button type="button" 
+              data-id="${item.id}" 
+              data-action="view"
+              class="card-action-btn px-2.5 py-1.5 bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 text-[11px] font-bold rounded-xl transition-all shadow-xs shrink-0 flex items-center gap-1">
+        <span>${remaining.label}</span>
+      </button>
+    `;
+  } else {
+    // Available
+    statusBadgeHtml = `
+      <span class="status-pill status-available shadow-xs">
+        <i class="fa-solid fa-circle-check text-[9px]"></i> Available
+      </span>
+    `;
+
+    if (item.transaction === 'Borrow') {
+      actionButtonHtml = `
+        <button type="button" 
+                data-id="${item.id}" 
+                data-action="request"
+                class="card-action-btn px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all shadow-xs shrink-0 flex items-center gap-1">
+          <i class="fa-solid fa-clock text-[10px]"></i>
+          <span>Borrow</span>
+        </button>
+      `;
+    } else if (item.transaction === 'Exchange') {
+      actionButtonHtml = `
+        <button type="button" 
+                data-id="${item.id}" 
+                data-action="request"
+                class="card-action-btn px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl transition-all shadow-xs shrink-0 flex items-center gap-1">
+          <i class="fa-solid fa-arrows-rotate text-[10px]"></i>
+          <span>Exchange</span>
+        </button>
+      `;
+    } else {
+      actionButtonHtml = `
+        <button type="button" 
+                data-id="${item.id}" 
+                data-action="view"
+                class="card-action-btn px-3 py-1.5 bg-white hover:bg-indigo-600 hover:text-white border border-slate-200 hover:border-indigo-600 text-slate-700 text-xs font-semibold rounded-xl transition-all shadow-xs shrink-0 flex items-center gap-1">
+          <span>View</span>
+          <i class="fa-solid fa-arrow-right text-[10px]"></i>
+        </button>
+      `;
+    }
+  }
+
   return `
     <article class="item-card bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-col justify-between group hover:border-indigo-300">
       <div>
@@ -1342,12 +2152,13 @@ function generateCardHtml(item) {
           
           <div class="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-black/30 pointer-events-none"></div>
 
-          <!-- Top-Left: Transaction Tag -->
+          <!-- Top-Left: Transaction Tag & Status Badge -->
           <div class="absolute top-3 left-3 flex flex-col gap-1.5 items-start">
             <span class="${transactionClass} px-2.5 py-1 rounded-lg text-[11px] font-bold tracking-wider uppercase flex items-center gap-1.5 shadow-sm">
               <i class="fa-solid ${transactionIcon}"></i>
               ${transactionBadgeLabel}
             </span>
+            ${statusBadgeHtml}
           </div>
 
           <!-- Top-Right: Wishlist Heart -->
@@ -1406,34 +2217,32 @@ function generateCardHtml(item) {
         <div class="flex items-center space-x-2.5 min-w-0">
           <img src="${item.seller.avatar}" 
                alt="${item.seller.name}" 
-               class="w-7 h-7 rounded-full object-cover ring-2 ring-white" 
+               class="w-8 h-8 rounded-full object-cover ring-2 ring-white shrink-0" 
                onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'" />
           <div class="min-w-0">
             <div class="flex items-center gap-1">
-              <p class="text-xs font-semibold text-slate-800 truncate">${item.seller.name}</p>
+              <p class="text-xs font-bold text-slate-800 truncate">${item.seller.name}</p>
               <i class="fa-solid fa-circle-check text-blue-600 text-[10px]" title="NUB Verified Student"></i>
             </div>
-            <p class="text-[10px] text-slate-400 truncate flex items-center gap-1">
-              <i class="fa-solid fa-location-dot text-slate-300 text-[9px]"></i>
-              ${item.location}
-            </p>
+            <div class="flex items-center gap-1.5 text-[10px] text-slate-500">
+              <span class="text-amber-500 font-bold flex items-center">
+                <i class="fa-solid fa-star text-[9px] mr-0.5"></i>${item.seller.rating || 5.0}
+                <span class="text-slate-400 font-normal ml-0.5">(${item.seller.reviewsCount || 1})</span>
+              </span>
+              <span>&bull;</span>
+              <span class="truncate">${item.location.split(',')[0]}</span>
+            </div>
           </div>
         </div>
 
-        <button type="button" 
-                data-id="${item.id}" 
-                class="view-details-btn px-3 py-1.5 bg-white hover:bg-indigo-600 hover:text-white border border-slate-200 hover:border-indigo-600 text-slate-700 text-xs font-semibold rounded-xl transition-all shadow-xs shrink-0 flex items-center gap-1">
-          <span>View</span>
-          <i class="fa-solid fa-arrow-right text-[10px]"></i>
-        </button>
+        <div>
+          ${actionButtonHtml}
+        </div>
       </div>
     </article>
   `;
 }
 
-/**
- * Toggle Saved / Wishlist item
- */
 function toggleWishlist(itemId, btnElement) {
   if (wishlist.has(itemId)) {
     wishlist.delete(itemId);
@@ -1473,7 +2282,7 @@ function updateWishlistCount() {
 }
 
 /**
- * Item Details Modal
+ * Item Details Modal with dynamic state machine controls & reviews
  */
 function openDetailsModal(itemId) {
   const item = items.find(i => i.id === itemId);
@@ -1483,13 +2292,11 @@ function openDetailsModal(itemId) {
   const content = document.getElementById('itemDetailsContent');
   if (!modal || !content) return;
 
-  // Condition styling for modal
   let conditionClass = 'condition-good';
   if (item.condition === 'Brand New') conditionClass = 'condition-brand-new';
   if (item.condition === 'Like New') conditionClass = 'condition-like-new';
   if (item.condition === 'Fair') conditionClass = 'condition-fair';
 
-  // Transaction banner
   let transactionClass = 'transaction-sell';
   let transactionLabel = 'FOR SALE';
   if (item.transaction === 'Borrow') {
@@ -1500,15 +2307,64 @@ function openDetailsModal(itemId) {
     transactionLabel = 'OPEN TO EXCHANGE';
   }
 
+  // Seller reviews list
+  const sellerReviews = reviews.filter(r => r.sellerId === item.seller.studentId).slice(0, 3);
+
+  // Status Action Buttons inside modal
+  let primaryActionBtn = ``;
+  const isOwner = currentUser && item.seller.studentId === currentUser.studentId;
+
+  if (isOwner) {
+    primaryActionBtn = `
+      <div class="p-3 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center justify-between text-xs">
+        <span class="text-indigo-900 font-semibold"><i class="fa-solid fa-user-shield text-indigo-600 mr-1.5"></i>You own this listing</span>
+        <button type="button" onclick="closeDetailsModal(); openDashboard('listings');" class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700">Manage in Dashboard</button>
+      </div>
+    `;
+  } else if (item.status === 'Requested') {
+    primaryActionBtn = `
+      <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-center justify-between">
+        <span class="font-semibold"><i class="fa-solid fa-clock text-amber-600 mr-1.5"></i>Request is currently pending owner review</span>
+      </div>
+    `;
+  } else if (item.status === 'Borrowed' || item.status === 'In Exchange') {
+    const remaining = item.borrowDetails ? getDaysRemaining(item.borrowDetails.dueDate) : { label: 'Borrowed' };
+    primaryActionBtn = `
+      <div class="p-3 bg-purple-50 border border-purple-200 rounded-xl text-xs text-purple-800 flex items-center justify-between">
+        <span><i class="fa-solid fa-arrows-spin text-purple-600 mr-1.5"></i>Currently borrowed by a classmate (${remaining.label})</span>
+      </div>
+    `;
+  } else {
+    // Available
+    if (item.transaction === 'Borrow') {
+      primaryActionBtn = `
+        <button type="button" onclick="closeDetailsModal(); openRequestModal('${item.id}');" class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-md shadow-purple-600/30 transition flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-clock text-xs"></i>
+          <span>Request to Borrow (${item.priceLabel})</span>
+        </button>
+      `;
+    } else if (item.transaction === 'Exchange') {
+      primaryActionBtn = `
+        <button type="button" onclick="closeDetailsModal(); openRequestModal('${item.id}');" class="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold shadow-md shadow-sky-600/30 transition flex items-center justify-center gap-1.5">
+          <i class="fa-solid fa-arrows-rotate text-xs"></i>
+          <span>Propose an Exchange</span>
+        </button>
+      `;
+    }
+  }
+
   content.innerHTML = `
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <!-- Left Column: Large Image & Quick Specs -->
+      <!-- Left Column: Media & Specs -->
       <div>
         <div class="relative rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 h-72 sm:h-80">
           <img src="${item.image}" alt="${item.title}" class="w-full h-full object-cover" />
-          <div class="absolute top-3 left-3">
+          <div class="absolute top-3 left-3 flex flex-col gap-1 items-start">
             <span class="${transactionClass} px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider shadow">
               ${transactionLabel}
+            </span>
+            <span class="status-pill ${item.status === 'Requested' ? 'status-requested' : (item.status === 'Borrowed' ? 'status-borrowed' : 'status-available')}">
+              ${item.status || 'Available'}
             </span>
           </div>
           <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between">
@@ -1526,24 +2382,23 @@ function openDetailsModal(itemId) {
           <i class="fa-solid fa-shield-halved text-blue-600 text-base mt-0.5"></i>
           <div>
             <p class="font-bold">NUB Campus Safe Exchange Policy</p>
-            <p class="text-blue-800 text-[11px] mt-0.5">Meet at recommended campus locations (Ashkona Central Library, Student Cafeteria). Inspect academic books & lab kits in-person before closing transactions.</p>
+            <p class="text-blue-800 text-[11px] mt-0.5">Meet at designated campus spots (Ashkona Central Library, Student Cafeteria). Inspect item condition before closing transactions.</p>
           </div>
         </div>
       </div>
 
-      <!-- Right Column: Details & Seller Connect -->
+      <!-- Right Column: Details, Seller & Reviews -->
       <div class="flex flex-col justify-between">
         <div>
-          <!-- Category & Post time -->
           <div class="flex items-center justify-between text-xs text-slate-400 font-medium mb-1">
             <span>${item.category}</span>
-            <span>Posted ${item.postedAt} • ${item.views || 45} views</span>
+            <span>Posted ${item.postedAt} &bull; ${item.views || 45} views</span>
           </div>
 
           <h2 class="text-xl font-bold text-slate-900 leading-snug mb-3">${item.title}</h2>
 
           <!-- Price & Terms Highlight -->
-          <div class="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl mb-4">
+          <div class="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl mb-3">
             <div class="flex items-baseline justify-between mb-1">
               <span class="text-2xl font-extrabold text-indigo-700">${item.priceLabel}</span>
               ${item.originalPrice ? `<span class="text-xs text-slate-400">Campus MSRP: ${item.originalPrice}</span>` : ''}
@@ -1563,13 +2418,13 @@ function openDetailsModal(itemId) {
           </div>
 
           <!-- Description -->
-          <div class="mb-4">
-            <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Description</h4>
-            <p class="text-sm text-slate-700 leading-relaxed">${item.description}</p>
+          <div class="mb-3">
+            <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Description</h4>
+            <p class="text-xs text-slate-700 leading-relaxed">${item.description}</p>
           </div>
 
           <!-- Pickup Location -->
-          <div class="flex items-center text-xs text-slate-600 bg-white p-2.5 rounded-lg border border-slate-200 mb-4">
+          <div class="flex items-center text-xs text-slate-600 bg-white p-2.5 rounded-lg border border-slate-200 mb-3">
             <i class="fa-solid fa-location-dot text-indigo-600 text-sm mr-2.5"></i>
             <div>
               <span class="font-bold text-slate-800">NUB Meetup Spot:</span>
@@ -1577,8 +2432,8 @@ function openDetailsModal(itemId) {
             </div>
           </div>
 
-          <!-- Seller Profile Card -->
-          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between mb-4">
+          <!-- Seller Profile Card with Star Rating -->
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between mb-3">
             <div class="flex items-center space-x-3">
               <img src="${item.seller.avatar}" class="w-10 h-10 rounded-full object-cover ring-2 ring-indigo-200" alt="${item.seller.name}" />
               <div>
@@ -1591,16 +2446,42 @@ function openDetailsModal(itemId) {
                 <p class="text-[11px] text-slate-500">${item.seller.major}</p>
               </div>
             </div>
-            <div class="text-right text-[11px] text-slate-400">
-              <div class="text-amber-500 font-bold"><i class="fa-solid fa-star text-xs mr-0.5"></i>${item.seller.rating || 5.0}</div>
-              <span>${item.seller.responseTime || '< 15 mins'}</span>
+            <div class="text-right text-[11px]">
+              <div class="text-amber-500 font-bold flex items-center justify-end">
+                <i class="fa-solid fa-star text-xs mr-1"></i>${item.seller.rating || 5.0}
+                <span class="text-slate-400 font-normal ml-1">(${item.seller.reviewsCount || 1} reviews)</span>
+              </div>
+              <span class="text-slate-400">${item.seller.responseTime || '< 15 mins'}</span>
             </div>
           </div>
+
+          <!-- Recent Reviews Snippet -->
+          ${sellerReviews.length > 0 ? `
+            <div class="mb-3">
+              <h4 class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                <span>Recent Peer Reviews</span>
+                <span class="text-amber-500 font-semibold">${item.seller.rating || 5.0} ★</span>
+              </h4>
+              <div class="space-y-1.5">
+                ${sellerReviews.map(r => `
+                  <div class="text-[11px] p-2 bg-slate-50 rounded-lg border border-slate-100">
+                    <div class="flex items-center justify-between text-slate-600 font-medium">
+                      <span>${r.reviewerName}</span>
+                      <span class="text-amber-500 font-bold">${'★'.repeat(r.rating)}</span>
+                    </div>
+                    <p class="text-slate-500 italic mt-0.5">"${r.comment}"</p>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
         </div>
 
-        <!-- Chat / Contact simulation box -->
-        <div class="pt-3 border-t border-slate-200">
-          <div class="flex gap-2 mb-2">
+        <div class="pt-2 border-t border-slate-200 space-y-2">
+          ${primaryActionBtn}
+
+          <!-- Direct Chat Box -->
+          <div class="flex gap-2">
             <input type="text" 
                    id="studentChatInput" 
                    placeholder="Hi ${item.seller.name.split(' ')[0]}, can we meet at ${item.location}?" 
@@ -1608,7 +2489,7 @@ function openDetailsModal(itemId) {
                    class="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500" />
             <button type="button" 
                     id="sendCampusMessageBtn" 
-                    class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold transition shrink-0 flex items-center gap-1">
+                    class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold transition shrink-0 flex items-center gap-1">
               <i class="fa-solid fa-paper-plane text-[10px]"></i>
               <span>Send</span>
             </button>
@@ -1619,32 +2500,23 @@ function openDetailsModal(itemId) {
     </div>
   `;
 
-  // Attach message send trigger (Guarded by auth)
-  const sendBtn = content.querySelector('#sendCampusMessageBtn');
-  if (sendBtn) {
-    sendBtn.addEventListener('click', () => {
-      if (!currentUser) {
-        closeDetailsModal();
-        openAuthModal('login', `Please sign in with your @nub.ac.bd account to message ${item.seller.name}.`);
-        return;
-      }
+  document.getElementById('sendCampusMessageBtn')?.addEventListener('click', () => {
+    if (!currentUser) {
+      closeDetailsModal();
+      openAuthModal('login', `Please sign in with your @nub.ac.bd account to message ${item.seller.name}.`);
+      return;
+    }
 
-      const input = content.querySelector('#studentChatInput');
-      const val = input ? input.value.trim() : '';
-      if (!val) {
-        showToast('Please type a message first', 'warning');
-        return;
-      }
+    const input = document.getElementById('studentChatInput');
+    const val = input ? input.value.trim() : '';
+    if (!val) {
+      showToast('Please type a message first', 'warning');
+      return;
+    }
 
-      sendBtn.innerHTML = `<i class="fa-solid fa-check mr-1"></i>Sent!`;
-      sendBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
-      sendBtn.classList.add('bg-emerald-600');
-      showToast(`Message sent from ${currentUser.email} to ${item.seller.name}!`, 'success');
-      setTimeout(() => {
-        closeDetailsModal();
-      }, 1400);
-    });
-  }
+    showToast(`Message sent from ${currentUser.email} to ${item.seller.name}!`, 'success');
+    setTimeout(closeDetailsModal, 1200);
+  });
 
   modal.classList.remove('hidden');
   document.body.classList.add('overflow-hidden');
@@ -1659,13 +2531,27 @@ function closeDetailsModal() {
 }
 
 /**
- * Post Item Modal Controls & Form Logic
+ * Post Item Form
  */
 function closePostModal() {
   const modal = document.getElementById('postItemModal');
   if (modal) {
     modal.classList.add('hidden');
     document.body.classList.remove('overflow-hidden');
+  }
+}
+
+function openPostModal() {
+  if (!currentUser) {
+    pendingAuthAction = openPostModal;
+    openAuthModal('login', 'Please sign in with your official @nub.ac.bd account to post an item.');
+    return;
+  }
+  const postModal = document.getElementById('postItemModal');
+  if (postModal) {
+    updateAuthUI();
+    postModal.classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
   }
 }
 
@@ -1711,7 +2597,6 @@ function handleNewListingSubmit(e) {
     return;
   }
 
-  // Construct price / borrow / exchange data
   let price = 0;
   let priceLabel = 'Free';
   let borrowTerms = null;
@@ -1739,6 +2624,7 @@ function handleNewListingSubmit(e) {
     courseCode: courseCode.toUpperCase(),
     condition,
     transaction,
+    status: 'Available',
     price,
     priceLabel,
     originalPrice: null,
@@ -1748,7 +2634,8 @@ function handleNewListingSubmit(e) {
     description,
     location,
     seller: {
-      name: `${currentUser.name} (${currentUser.studentId})`,
+      name: currentUser.name,
+      studentId: currentUser.studentId,
       avatar: currentUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
       major: `${currentUser.department || 'NUB'} '26`,
       badge: 'NUB Verified Student',
@@ -1758,18 +2645,17 @@ function handleNewListingSubmit(e) {
     },
     postedAt: 'Just now',
     featured: true,
-    views: 1
+    views: 1,
+    activeRequest: null,
+    borrowDetails: null
   };
 
-  // Prepend new listing so it appears first
   items.unshift(newItem);
   saveItemsToStorage();
 
-  // Reset form and close
   e.target.reset();
   closePostModal();
 
-  // Reset filter to see all items if filtered
   activeFilters.searchQuery = '';
   activeFilters.courseCode = 'All Courses';
   activeFilters.category = 'All Categories';
@@ -1781,10 +2667,10 @@ function handleNewListingSubmit(e) {
   updateCategoryPillsUI();
   updateQuickCourseChipsUI();
   renderItems();
+  updateNotificationBadges();
 
   showToast('🎉 Your listing is live on CampusKart NUB!', 'success');
 
-  // Smooth scroll to items grid
   const grid = document.getElementById('itemsGrid');
   if (grid) {
     grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
