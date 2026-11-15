@@ -1,15 +1,46 @@
 /**
  * CampusKart - Main Application Logic
  * Powers search, filtering, item rendering, posting new items, and interactions.
+ * Features strict university email authentication (@nub.ac.bd) for Northern University Bangladesh.
  */
 
 // Storage keys
 const STORAGE_ITEMS_KEY = 'campuskart_listings_v1';
 const STORAGE_WISHLIST_KEY = 'campuskart_wishlist_v1';
+const STORAGE_AUTH_KEY = 'campuskart_auth_session_v1';
+const STORAGE_USERS_KEY = 'campuskart_registered_users_v1';
+
+// Pre-seeded verified NUB student accounts
+const DEFAULT_NUB_USERS = [
+  {
+    id: "nub-user-01",
+    name: "Tanvir Ahmed",
+    email: "student@nub.ac.bd",
+    studentId: "202110045",
+    department: "Computer Science & Engineering (CSE)",
+    password: "campus123",
+    avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+    createdAt: "2026-01-10"
+  },
+  {
+    id: "nub-user-02",
+    name: "Ayesha Siddiqua",
+    email: "ayesha.bba@nub.ac.bd",
+    studentId: "202220118",
+    department: "Business Administration (BBA)",
+    password: "campus123",
+    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80",
+    createdAt: "2026-02-14"
+  }
+];
 
 // State
 let items = [];
 let wishlist = new Set();
+let registeredUsers = [];
+let currentUser = null;
+let pendingAuthAction = null;
+
 let activeFilters = {
   searchQuery: '',
   courseCode: 'All Courses',
@@ -17,7 +48,8 @@ let activeFilters = {
   transaction: 'All',
   condition: 'All',
   sortBy: 'featured',
-  showWishlistOnly: false
+  showWishlistOnly: false,
+  sellerFilter: null
 };
 
 // Preset images for easy item posting
@@ -32,17 +64,628 @@ const PRESET_IMAGES = [
 
 // Initialize application on DOM loaded
 document.addEventListener('DOMContentLoaded', () => {
+  loadAuthData();
   loadData();
   initUI();
   populateDropdowns();
   bindEvents();
+  bindAuthEvents();
   renderItems();
   updateWishlistCount();
+  updateAuthUI();
 });
 
 /**
- * Load items and wishlist from localStorage or fallback to default dataset
+ * =========================================================================
+ * AUTHENTICATION SYSTEM & NUB VERIFICATION
+ * =========================================================================
  */
+
+/**
+ * Strict validator for Northern University Bangladesh email domain
+ * Pattern: name@nub.ac.bd (strictly ends with @nub.ac.bd)
+ */
+function isValidNubEmail(email) {
+  if (!email || typeof email !== 'string') return false;
+  const trimmed = email.trim().toLowerCase();
+  const nubRegex = /^[a-zA-Z0-9._%+-]+@nub\.ac\.bd$/;
+  return nubRegex.test(trimmed);
+}
+
+/**
+ * Load users and session from localStorage
+ */
+function loadAuthData() {
+  try {
+    const savedUsers = localStorage.getItem(STORAGE_USERS_KEY);
+    if (savedUsers) {
+      registeredUsers = JSON.parse(savedUsers);
+    } else {
+      registeredUsers = [...DEFAULT_NUB_USERS];
+      saveUsersToStorage();
+    }
+
+    const savedSession = localStorage.getItem(STORAGE_AUTH_KEY);
+    if (savedSession) {
+      currentUser = JSON.parse(savedSession);
+    } else {
+      currentUser = null;
+    }
+  } catch (err) {
+    console.error('Error loading auth data', err);
+    registeredUsers = [...DEFAULT_NUB_USERS];
+    currentUser = null;
+  }
+}
+
+function saveUsersToStorage() {
+  try {
+    localStorage.setItem(STORAGE_USERS_KEY, JSON.stringify(registeredUsers));
+  } catch (e) {
+    console.warn('Could not save users to localStorage', e);
+  }
+}
+
+function saveSessionToStorage(user) {
+  try {
+    if (user) {
+      localStorage.setItem(STORAGE_AUTH_KEY, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(STORAGE_AUTH_KEY);
+    }
+  } catch (e) {
+    console.warn('Could not save session to localStorage', e);
+  }
+}
+
+/**
+ * Update UI for Logged In / Logged Out state
+ */
+function updateAuthUI() {
+  const navContainer = document.getElementById('navAuthContainer');
+  const mobileContainer = document.getElementById('mobileAuthContainer');
+
+  // Desktop Navbar Auth Container
+  if (navContainer) {
+    if (currentUser) {
+      const initials = currentUser.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+      navContainer.innerHTML = `
+        <div class="relative">
+          <button type="button" 
+                  id="userDropdownBtn" 
+                  class="flex items-center space-x-2 py-1 px-2 rounded-xl hover:bg-slate-100 transition border border-transparent hover:border-slate-200 group">
+            <div class="relative">
+              <img src="${currentUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}" 
+                   alt="${currentUser.name}" 
+                   class="w-8 h-8 rounded-full object-cover ring-2 ring-indigo-500 shadow-xs" 
+                   onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'" />
+              <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white"></span>
+            </div>
+            <div class="text-left hidden xl:block">
+              <div class="flex items-center gap-1">
+                <span class="text-xs font-bold text-slate-800 leading-none group-hover:text-indigo-600 transition-colors">${currentUser.name.split(' ')[0]}</span>
+                <i class="fa-solid fa-circle-check text-blue-600 text-[10px]" title="Verified @nub.ac.bd student"></i>
+              </div>
+              <span class="text-[10px] text-slate-500 font-mono">ID: ${currentUser.studentId}</span>
+            </div>
+            <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 group-hover:text-indigo-600 transition-colors"></i>
+          </button>
+
+          <!-- Dropdown Profile Menu -->
+          <div id="userDropdownMenu" class="hidden absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-slate-200/90 py-2 z-50 profile-dropdown-menu">
+            <div class="px-4 py-3 border-b border-slate-100 bg-slate-50/70 rounded-t-2xl">
+              <div class="flex items-center gap-1.5">
+                <p class="text-xs font-bold text-slate-900">${currentUser.name}</p>
+                <span class="bg-blue-100 text-blue-800 text-[9px] font-bold px-1.5 py-0.2 rounded">NUB</span>
+              </div>
+              <p class="text-[11px] text-slate-500 truncate">${currentUser.email}</p>
+              <div class="mt-1 flex items-center justify-between text-[10px] text-slate-600 font-medium">
+                <span>ID: <strong class="font-mono">${currentUser.studentId}</strong></span>
+                <span class="text-emerald-600 font-bold"><i class="fa-solid fa-shield text-[9px]"></i> Active Student</span>
+              </div>
+              <p class="text-[10px] text-indigo-700 font-semibold mt-1 truncate">${currentUser.department || 'NUB Student'}</p>
+            </div>
+
+            <div class="py-1">
+              <button type="button" 
+                      id="menuMyListingsBtn" 
+                      class="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-2.5">
+                <i class="fa-solid fa-box-archive text-slate-400 text-xs"></i>
+                <span>My Active Listings</span>
+              </button>
+              <button type="button" 
+                      id="menuSavedItemsBtn" 
+                      class="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-2.5">
+                <i class="fa-solid fa-heart text-slate-400 text-xs"></i>
+                <span>My Saved Items</span>
+              </button>
+            </div>
+
+            <div class="border-t border-slate-100 pt-1">
+              <button type="button" 
+                      id="menuLogoutBtn" 
+                      class="w-full text-left px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2.5 transition">
+                <i class="fa-solid fa-arrow-right-from-bracket text-xs"></i>
+                <span>Sign Out</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Bind dropdown toggle
+      const btn = document.getElementById('userDropdownBtn');
+      const menu = document.getElementById('userDropdownMenu');
+      if (btn && menu) {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          menu.classList.toggle('hidden');
+        });
+      }
+
+      // Bind menu actions
+      const myItemsBtn = document.getElementById('menuMyListingsBtn');
+      if (myItemsBtn) {
+        myItemsBtn.addEventListener('click', () => {
+          menu.classList.add('hidden');
+          filterByMyListings();
+        });
+      }
+
+      const savedBtn = document.getElementById('menuSavedItemsBtn');
+      if (savedBtn) {
+        savedBtn.addEventListener('click', () => {
+          menu.classList.add('hidden');
+          activeFilters.showWishlistOnly = true;
+          updateWishlistNavIndicator();
+          renderItems();
+          showToast(`Showing ${wishlist.size} saved items`, 'info');
+        });
+      }
+
+      const logoutBtn = document.getElementById('menuLogoutBtn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+          menu.classList.add('hidden');
+          handleLogout();
+        });
+      }
+
+    } else {
+      // Guest state: Show Sign In & Register buttons
+      navContainer.innerHTML = `
+        <div class="flex items-center space-x-1.5">
+          <button type="button" 
+                  id="navLoginBtn" 
+                  class="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 hover:text-indigo-600 hover:bg-slate-100 transition flex items-center gap-1.5 border border-slate-200">
+            <i class="fa-solid fa-arrow-right-to-bracket text-xs text-indigo-500"></i>
+            <span>Sign In</span>
+          </button>
+          <button type="button" 
+                  id="navRegisterBtn" 
+                  class="px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-600/30 transition flex items-center gap-1.5 active:scale-95">
+            <i class="fa-solid fa-user-plus text-xs"></i>
+            <span class="hidden sm:inline">Register</span>
+          </button>
+        </div>
+      `;
+
+      document.getElementById('navLoginBtn')?.addEventListener('click', () => openAuthModal('login'));
+      document.getElementById('navRegisterBtn')?.addEventListener('click', () => openAuthModal('register'));
+    }
+  }
+
+  // Mobile Drawer Auth Container
+  if (mobileContainer) {
+    if (currentUser) {
+      mobileContainer.innerHTML = `
+        <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
+          <div class="flex items-center space-x-3 mb-2.5">
+            <img src="${currentUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}" class="w-10 h-10 rounded-full object-cover ring-2 ring-indigo-500" alt="${currentUser.name}" />
+            <div>
+              <div class="flex items-center gap-1">
+                <p class="text-xs font-bold text-slate-900">${currentUser.name}</p>
+                <i class="fa-solid fa-shield-check text-blue-600 text-[10px]"></i>
+              </div>
+              <p class="text-[10px] text-slate-500 font-mono">ID: ${currentUser.studentId}</p>
+              <p class="text-[10px] text-indigo-600 font-medium truncate">${currentUser.department || 'NUB Student'}</p>
+            </div>
+          </div>
+          <button type="button" 
+                  onclick="handleLogout()" 
+                  class="w-full py-1.5 px-3 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+            <i class="fa-solid fa-arrow-right-from-bracket text-[10px]"></i>
+            <span>Sign Out</span>
+          </button>
+        </div>
+      `;
+    } else {
+      mobileContainer.innerHTML = `
+        <div class="p-3 bg-indigo-50/70 border border-indigo-100 rounded-2xl text-center">
+          <p class="text-xs font-bold text-indigo-950 mb-0.5">Northern University Bangladesh</p>
+          <p class="text-[11px] text-indigo-700 mb-2.5">Access verified marketplace with your @nub.ac.bd ID</p>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" onclick="openAuthModal('login')" class="py-1.5 bg-white border border-indigo-200 text-indigo-700 rounded-xl text-xs font-bold shadow-xs">
+              Sign In
+            </button>
+            <button type="button" onclick="openAuthModal('register')" class="py-1.5 bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-sm">
+              Register
+            </button>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  // Pre-fill / bind current user into "Post an Item" modal
+  const postSellerName = document.getElementById('postSellerName');
+  const postSellerMajor = document.getElementById('postSellerMajor');
+  if (postSellerName && postSellerMajor) {
+    if (currentUser) {
+      postSellerName.value = `${currentUser.name} (${currentUser.studentId})`;
+      postSellerMajor.value = `${currentUser.department || 'Undergrad'} (NUB)`;
+    } else {
+      postSellerName.value = "Guest Student";
+      postSellerMajor.value = "NUB Student";
+    }
+  }
+}
+
+/**
+ * Filter items by current user's listings
+ */
+function filterByMyListings() {
+  if (!currentUser) return;
+  activeFilters.searchQuery = currentUser.studentId;
+  const searchInput = document.getElementById('searchInput');
+  if (searchInput) searchInput.value = currentUser.studentId;
+  renderItems();
+  showToast(`Showing listings by Student ID: ${currentUser.studentId}`, 'info');
+  document.getElementById('marketplace')?.scrollIntoView({ behavior: 'smooth' });
+}
+
+/**
+ * Open Authentication Modal
+ * @param {'login'|'register'} mode 
+ * @param {string|null} noticeMessage 
+ */
+function openAuthModal(mode = 'login', noticeMessage = null) {
+  const modal = document.getElementById('authModal');
+  const noticeBox = document.getElementById('authNotice');
+  const noticeText = document.getElementById('authNoticeText');
+  const alertBox = document.getElementById('authAlert');
+
+  if (!modal) return;
+
+  // Clear previous alerts
+  if (alertBox) alertBox.classList.add('hidden');
+
+  // Set contextual action notice
+  if (noticeBox && noticeText) {
+    if (noticeMessage) {
+      noticeText.textContent = noticeMessage;
+      noticeBox.classList.remove('hidden');
+    } else {
+      noticeBox.classList.add('hidden');
+    }
+  }
+
+  switchAuthTab(mode);
+  modal.classList.remove('hidden');
+  document.body.classList.add('overflow-hidden');
+}
+
+function closeAuthModal() {
+  const modal = document.getElementById('authModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+  }
+}
+
+function switchAuthTab(mode) {
+  const tabLogin = document.getElementById('tabLoginBtn');
+  const tabRegister = document.getElementById('tabRegisterBtn');
+  const formLogin = document.getElementById('loginForm');
+  const formRegister = document.getElementById('registerForm');
+  const alertBox = document.getElementById('authAlert');
+
+  if (alertBox) alertBox.classList.add('hidden');
+
+  if (mode === 'login') {
+    tabLogin?.classList.add('active', 'text-indigo-600');
+    tabLogin?.classList.remove('text-slate-500');
+    tabRegister?.classList.remove('active', 'text-indigo-600');
+    tabRegister?.classList.add('text-slate-500');
+
+    formLogin?.classList.remove('hidden');
+    formRegister?.classList.add('hidden');
+  } else {
+    tabRegister?.classList.add('active', 'text-indigo-600');
+    tabRegister?.classList.remove('text-slate-500');
+    tabLogin?.classList.remove('active', 'text-indigo-600');
+    tabLogin?.classList.add('text-slate-500');
+
+    formRegister?.classList.remove('hidden');
+    formLogin?.classList.add('hidden');
+  }
+}
+
+function showAuthAlert(message, type = 'error') {
+  const alertBox = document.getElementById('authAlert');
+  const alertText = document.getElementById('authAlertText');
+  const alertIcon = document.getElementById('authAlertIcon');
+  if (!alertBox || !alertText) return;
+
+  alertText.textContent = message;
+  alertBox.classList.remove('hidden', 'bg-rose-50', 'text-rose-800', 'border', 'border-rose-200', 'bg-emerald-50', 'text-emerald-800', 'border-emerald-200');
+
+  if (type === 'success') {
+    alertBox.classList.add('bg-emerald-50', 'text-emerald-800', 'border', 'border-emerald-200');
+    if (alertIcon) alertIcon.className = 'fa-solid fa-circle-check text-emerald-600 text-sm shrink-0 mt-0.5';
+  } else {
+    alertBox.classList.add('bg-rose-50', 'text-rose-800', 'border', 'border-rose-200');
+    if (alertIcon) alertIcon.className = 'fa-solid fa-triangle-exclamation text-rose-600 text-sm shrink-0 mt-0.5';
+  }
+}
+
+/**
+ * Authentication Events & Handlers
+ */
+function bindAuthEvents() {
+  // Close Auth Modal
+  document.getElementById('closeAuthModal')?.addEventListener('click', closeAuthModal);
+
+  // Switch tabs
+  document.getElementById('tabLoginBtn')?.addEventListener('click', () => switchAuthTab('login'));
+  document.getElementById('tabRegisterBtn')?.addEventListener('click', () => switchAuthTab('register'));
+
+  // Live validator for Registration Email (@nub.ac.bd strictly required)
+  const regEmailInput = document.getElementById('regEmail');
+  const emailMsg = document.getElementById('emailValidationMsg');
+  const emailIcon = document.getElementById('emailValidationIcon');
+
+  if (regEmailInput) {
+    regEmailInput.addEventListener('input', (e) => {
+      const val = e.target.value.trim().toLowerCase();
+      if (!val) {
+        regEmailInput.classList.remove('input-valid', 'input-invalid');
+        if (emailMsg) {
+          emailMsg.innerHTML = `<i class="fa-solid fa-circle-info text-[10px]"></i> Registration strictly requires your official <strong>@nub.ac.bd</strong> address`;
+          emailMsg.className = 'text-[11px] mt-1 text-slate-500 flex items-center gap-1';
+        }
+        if (emailIcon) emailIcon.innerHTML = '';
+        return;
+      }
+
+      if (isValidNubEmail(val)) {
+        regEmailInput.classList.add('input-valid');
+        regEmailInput.classList.remove('input-invalid');
+        if (emailMsg) {
+          emailMsg.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 text-[11px]"></i> Valid Northern University Bangladesh student email`;
+          emailMsg.className = 'text-[11px] mt-1 text-emerald-600 font-semibold flex items-center gap-1';
+        }
+        if (emailIcon) {
+          emailIcon.innerHTML = `<i class="fa-solid fa-check text-emerald-500 text-sm"></i>`;
+        }
+      } else {
+        regEmailInput.classList.add('input-invalid');
+        regEmailInput.classList.remove('input-valid');
+        if (emailMsg) {
+          emailMsg.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-600 text-[11px]"></i> Must strictly end with <strong>@nub.ac.bd</strong> (e.g. yourname@nub.ac.bd)`;
+          emailMsg.className = 'text-[11px] mt-1 text-rose-600 font-medium flex items-center gap-1';
+        }
+        if (emailIcon) {
+          emailIcon.innerHTML = `<i class="fa-solid fa-xmark text-rose-500 text-sm"></i>`;
+        }
+      }
+    });
+  }
+
+  // Auto-fill Demo credentials
+  document.getElementById('fillDemoBtn')?.addEventListener('click', fillDemoCredentials);
+
+  // Toggle Password Visibilities
+  document.getElementById('toggleLoginPassBtn')?.addEventListener('click', function() {
+    togglePasswordVisibility('loginPassword', this);
+  });
+  document.getElementById('toggleRegPassBtn')?.addEventListener('click', function() {
+    togglePasswordVisibility('regPassword', this);
+  });
+  document.getElementById('toggleRegConfirmPassBtn')?.addEventListener('click', function() {
+    togglePasswordVisibility('regConfirmPassword', this);
+  });
+
+  // Handle Login Submit
+  const loginForm = document.getElementById('loginForm');
+  if (loginForm) {
+    loginForm.addEventListener('submit', handleLoginSubmit);
+  }
+
+  // Handle Register Submit
+  const registerForm = document.getElementById('registerForm');
+  if (registerForm) {
+    registerForm.addEventListener('submit', handleRegisterSubmit);
+  }
+
+  // Click outside to close user profile dropdown
+  document.addEventListener('click', (e) => {
+    const menu = document.getElementById('userDropdownMenu');
+    const btn = document.getElementById('userDropdownBtn');
+    if (menu && !menu.classList.contains('hidden')) {
+      if (btn && !btn.contains(e.target) && !menu.contains(e.target)) {
+        menu.classList.add('hidden');
+      }
+    }
+  });
+}
+
+function fillDemoCredentials() {
+  const emailInput = document.getElementById('loginEmail');
+  const passInput = document.getElementById('loginPassword');
+  if (emailInput && passInput) {
+    emailInput.value = 'student@nub.ac.bd';
+    passInput.value = 'campus123';
+    showAuthAlert('Demo credentials filled! Click "Sign In" to proceed.', 'success');
+  }
+}
+
+function togglePasswordVisibility(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const icon = btn.querySelector('i');
+  if (input.type === 'password') {
+    input.type = 'text';
+    if (icon) icon.className = 'fa-solid fa-eye-slash text-xs';
+  } else {
+    input.type = 'password';
+    if (icon) icon.className = 'fa-solid fa-eye text-xs';
+  }
+}
+
+function handleLoginSubmit(e) {
+  e.preventDefault();
+  const emailOrId = document.getElementById('loginEmail')?.value.trim();
+  const password = document.getElementById('loginPassword')?.value;
+  const remember = document.getElementById('loginRememberMe')?.checked;
+
+  if (!emailOrId || !password) {
+    showAuthAlert('Please enter your NUB email/Student ID and password.', 'error');
+    return;
+  }
+
+  // Match against registered users
+  const user = registeredUsers.find(u => 
+    (u.email.toLowerCase() === emailOrId.toLowerCase() || u.studentId.toLowerCase() === emailOrId.toLowerCase()) && 
+    u.password === password
+  );
+
+  if (!user) {
+    showAuthAlert('Invalid credentials. Check your @nub.ac.bd email/Student ID and password, or register an account.', 'error');
+    return;
+  }
+
+  // Successful login
+  currentUser = { ...user };
+  if (remember) {
+    saveSessionToStorage(currentUser);
+  }
+
+  updateAuthUI();
+  closeAuthModal();
+  showToast(`Welcome back, ${user.name}! Verified as ${user.studentId} 🎓`, 'success');
+
+  // Execute pending action if any (e.g. user was trying to post an item)
+  if (pendingAuthAction) {
+    const action = pendingAuthAction;
+    pendingAuthAction = null;
+    action();
+  }
+}
+
+function handleRegisterSubmit(e) {
+  e.preventDefault();
+
+  const name = document.getElementById('regName')?.value.trim();
+  const email = document.getElementById('regEmail')?.value.trim().toLowerCase();
+  const studentId = document.getElementById('regStudentId')?.value.trim();
+  const department = document.getElementById('regDepartment')?.value;
+  const password = document.getElementById('regPassword')?.value;
+  const confirmPassword = document.getElementById('regConfirmPassword')?.value;
+  const terms = document.getElementById('regTerms')?.checked;
+
+  // 1. Strict Domain Restriction Check
+  if (!isValidNubEmail(email)) {
+    showAuthAlert('Registration restricted strictly to official university emails ending with @nub.ac.bd.', 'error');
+    document.getElementById('regEmail')?.focus();
+    return;
+  }
+
+  // 2. Field validations
+  if (!name || !studentId || !password) {
+    showAuthAlert('Please complete all required fields.', 'error');
+    return;
+  }
+
+  if (studentId.length < 5) {
+    showAuthAlert('Please enter a valid official Northern University Bangladesh Student ID.', 'error');
+    return;
+  }
+
+  if (password.length < 6) {
+    showAuthAlert('Password must be at least 6 characters.', 'error');
+    return;
+  }
+
+  if (password !== confirmPassword) {
+    showAuthAlert('Passwords do not match. Please re-enter carefully.', 'error');
+    return;
+  }
+
+  if (!terms) {
+    showAuthAlert('Please confirm that you are an actively enrolled NUB student.', 'error');
+    return;
+  }
+
+  // 3. Duplicate checks
+  const existingEmail = registeredUsers.find(u => u.email.toLowerCase() === email);
+  if (existingEmail) {
+    showAuthAlert('This @nub.ac.bd email is already registered. Please sign in instead.', 'error');
+    return;
+  }
+
+  const existingId = registeredUsers.find(u => u.studentId.toLowerCase() === studentId.toLowerCase());
+  if (existingId) {
+    showAuthAlert('An account with this Student ID is already registered.', 'error');
+    return;
+  }
+
+  // 4. Create new verified student account
+  const newUser = {
+    id: `nub-user-${Date.now().toString().slice(-5)}`,
+    name,
+    email,
+    studentId,
+    department,
+    password,
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+    createdAt: new Date().toISOString()
+  };
+
+  registeredUsers.push(newUser);
+  saveUsersToStorage();
+
+  // Log in immediately
+  currentUser = { ...newUser };
+  saveSessionToStorage(currentUser);
+
+  updateAuthUI();
+  e.target.reset();
+  closeAuthModal();
+
+  showToast(`🎉 Registration successful! Welcome to CampusKart, ${name} (@nub.ac.bd verified)`, 'success');
+
+  // Execute pending action if any
+  if (pendingAuthAction) {
+    const action = pendingAuthAction;
+    pendingAuthAction = null;
+    action();
+  }
+}
+
+function handleLogout() {
+  currentUser = null;
+  saveSessionToStorage(null);
+  updateAuthUI();
+  showToast('You have been signed out safely.', 'info');
+}
+
+/**
+ * =========================================================================
+ * DATA INITIALIZATION & FILTERING
+ * =========================================================================
+ */
+
 function loadData() {
   try {
     const savedItems = localStorage.getItem(STORAGE_ITEMS_KEY);
@@ -115,7 +758,7 @@ function populateDropdowns() {
 
   // Quick course chips for 1-click filter
   if (quickCourseChips) {
-    const popularCourses = ['All Courses', 'MATH 201', 'CS 101', 'CS 201', 'CHEM 121', 'BIO 110', 'ECON 101'];
+    const popularCourses = ['All Courses', 'CSE 111', 'MATH 201', 'CS 101', 'CHEM 121', 'EEE 101', 'BBA 202'];
     quickCourseChips.innerHTML = popularCourses.map(course => {
       const isActive = activeFilters.courseCode === course;
       return `
@@ -158,7 +801,6 @@ function updateQuickCourseChipsUI() {
  * Initialize UI Elements & Presets
  */
 function initUI() {
-  // Populate image quick-pick selector in modal
   const presetContainer = document.getElementById('presetImagePickers');
   if (presetContainer) {
     presetContainer.innerHTML = PRESET_IMAGES.map((preset, idx) => `
@@ -203,7 +845,7 @@ function updatePostImagePreview(url) {
 }
 
 /**
- * Event Listeners
+ * Main Event Listeners
  */
 function bindEvents() {
   // Main Search Input
@@ -310,7 +952,7 @@ function bindEvents() {
     });
   }
 
-  // Modal: Open Post Item
+  // Modal: Open Post Item (Protected by Auth Guard)
   const openPostModalBtns = document.querySelectorAll('.open-post-modal-btn');
   const postModal = document.getElementById('postItemModal');
   const closePostModalBtn = document.getElementById('closePostModal');
@@ -318,7 +960,19 @@ function bindEvents() {
 
   openPostModalBtns.forEach(btn => {
     btn.addEventListener('click', () => {
+      if (!currentUser) {
+        pendingAuthAction = () => {
+          if (postModal) {
+            postModal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+          }
+        };
+        openAuthModal('login', 'Please sign in with your official @nub.ac.bd account to post an item.');
+        return;
+      }
+
       if (postModal) {
+        updateAuthUI();
         postModal.classList.remove('hidden');
         document.body.classList.add('overflow-hidden');
       }
@@ -353,6 +1007,7 @@ function bindEvents() {
     if (e.key === 'Escape') {
       closePostModal();
       closeDetailsModal();
+      closeAuthModal();
     }
   });
 
@@ -361,12 +1016,14 @@ function bindEvents() {
   if (closeDetailsModalBtn) closeDetailsModalBtn.addEventListener('click', closeDetailsModal);
 
   // Close modals when clicking backdrop
-  [postModal, detailsModal].forEach(modal => {
+  const authModal = document.getElementById('authModal');
+  [postModal, detailsModal, authModal].forEach(modal => {
     if (modal) {
       modal.addEventListener('click', (e) => {
         if (e.target === modal) {
           closePostModal();
           closeDetailsModal();
+          closeAuthModal();
         }
       });
     }
@@ -451,7 +1108,7 @@ function getFilteredItems() {
       return false;
     }
 
-    // Keyword Search (checks title, description, courseCode, category, seller location)
+    // Keyword Search (checks title, description, courseCode, category, seller location, seller name)
     if (activeFilters.searchQuery) {
       const q = activeFilters.searchQuery;
       const matchTitle = item.title.toLowerCase().includes(q);
@@ -520,7 +1177,7 @@ function renderItems() {
 
   // Update counts
   if (countDisplay) {
-    countDisplay.textContent = `${filtered.length} item${filtered.length === 1 ? '' : 's'} available`;
+    countDisplay.textContent = `${filtered.length} item${filtered.length === 1 ? '' : 's'} available on NUB campus`;
   }
 
   // Render active filter badges
@@ -580,7 +1237,7 @@ function renderItems() {
             Reset Filters
           </button>
           <button class="open-post-modal-btn px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-medium transition">
-            Post This Item Instead
+            Post an Item
           </button>
         </div>
       </div>
@@ -589,6 +1246,10 @@ function renderItems() {
     // Re-bind modal open buttons created dynamically
     container.querySelectorAll('.open-post-modal-btn').forEach(btn => {
       btn.addEventListener('click', () => {
+        if (!currentUser) {
+          openAuthModal('login', 'Please sign in with your official @nub.ac.bd account to post an item.');
+          return;
+        }
         const postModal = document.getElementById('postItemModal');
         if (postModal) postModal.classList.remove('hidden');
       });
@@ -750,7 +1411,7 @@ function generateCardHtml(item) {
           <div class="min-w-0">
             <div class="flex items-center gap-1">
               <p class="text-xs font-semibold text-slate-800 truncate">${item.seller.name}</p>
-              <i class="fa-solid fa-circle-check text-emerald-500 text-[10px]" title="Verified Student"></i>
+              <i class="fa-solid fa-circle-check text-blue-600 text-[10px]" title="NUB Verified Student"></i>
             </div>
             <p class="text-[10px] text-slate-400 truncate flex items-center gap-1">
               <i class="fa-solid fa-location-dot text-slate-300 text-[9px]"></i>
@@ -785,11 +1446,9 @@ function toggleWishlist(itemId, btnElement) {
   saveWishlistToStorage();
   updateWishlistCount();
 
-  // If we are currently filtering by wishlist, re-render immediately
   if (activeFilters.showWishlistOnly) {
     renderItems();
   } else {
-    // Just toggle the heart button appearance without full grid flicker
     const icon = btnElement.querySelector('i');
     if (wishlist.has(itemId)) {
       btnElement.classList.add('text-rose-500');
@@ -833,15 +1492,12 @@ function openDetailsModal(itemId) {
   // Transaction banner
   let transactionClass = 'transaction-sell';
   let transactionLabel = 'FOR SALE';
-  let transactionAction = `Buy for ${item.priceLabel}`;
   if (item.transaction === 'Borrow') {
     transactionClass = 'transaction-borrow';
     transactionLabel = 'AVAILABLE FOR BORROW';
-    transactionAction = `Request to Borrow (${item.priceLabel})`;
   } else if (item.transaction === 'Exchange') {
     transactionClass = 'transaction-exchange';
     transactionLabel = 'OPEN TO EXCHANGE';
-    transactionAction = 'Propose a Trade';
   }
 
   content.innerHTML = `
@@ -866,11 +1522,11 @@ function openDetailsModal(itemId) {
         </div>
 
         <!-- Campus Safety Guarantee Banner -->
-        <div class="mt-4 p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-xl flex items-start space-x-3 text-xs text-emerald-900">
-          <i class="fa-solid fa-shield-halved text-emerald-600 text-base mt-0.5"></i>
+        <div class="mt-4 p-3.5 bg-blue-50/70 border border-blue-200 rounded-xl flex items-start space-x-3 text-xs text-blue-900">
+          <i class="fa-solid fa-shield-halved text-blue-600 text-base mt-0.5"></i>
           <div>
-            <p class="font-bold">Campus Safe Exchange Policy</p>
-            <p class="text-emerald-800 text-[11px] mt-0.5">Meet at recommended campus zones (Student Union, Main Library Desk, Dining Commons). Check item condition in-person before transferring payment.</p>
+            <p class="font-bold">NUB Campus Safe Exchange Policy</p>
+            <p class="text-blue-800 text-[11px] mt-0.5">Meet at recommended campus locations (Ashkona Central Library, Student Cafeteria). Inspect academic books & lab kits in-person before closing transactions.</p>
           </div>
         </div>
       </div>
@@ -916,7 +1572,7 @@ function openDetailsModal(itemId) {
           <div class="flex items-center text-xs text-slate-600 bg-white p-2.5 rounded-lg border border-slate-200 mb-4">
             <i class="fa-solid fa-location-dot text-indigo-600 text-sm mr-2.5"></i>
             <div>
-              <span class="font-bold text-slate-800">Campus Pickup Spot:</span>
+              <span class="font-bold text-slate-800">NUB Meetup Spot:</span>
               <p class="text-slate-500">${item.location}</p>
             </div>
           </div>
@@ -928,8 +1584,8 @@ function openDetailsModal(itemId) {
               <div>
                 <div class="flex items-center gap-1.5">
                   <h4 class="text-xs font-bold text-slate-900">${item.seller.name}</h4>
-                  <span class="bg-emerald-100 text-emerald-800 text-[10px] px-1.5 py-0.2 rounded font-semibold flex items-center gap-0.5">
-                    <i class="fa-solid fa-check text-[8px]"></i>${item.seller.badge || 'Verified'}
+                  <span class="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.2 rounded font-semibold flex items-center gap-0.5">
+                    <i class="fa-solid fa-check text-[8px]"></i>NUB Verified
                   </span>
                 </div>
                 <p class="text-[11px] text-slate-500">${item.seller.major}</p>
@@ -947,8 +1603,8 @@ function openDetailsModal(itemId) {
           <div class="flex gap-2 mb-2">
             <input type="text" 
                    id="studentChatInput" 
-                   placeholder="Hi ${item.seller.name.split(' ')[0]}, is this still available?" 
-                   value="Hi ${item.seller.name.split(' ')[0]}, can we meet at ${item.location}?" 
+                   placeholder="Hi ${item.seller.name.split(' ')[0]}, can we meet at ${item.location}?" 
+                   value="Hi ${item.seller.name.split(' ')[0]}, is this item still available?" 
                    class="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500" />
             <button type="button" 
                     id="sendCampusMessageBtn" 
@@ -957,26 +1613,33 @@ function openDetailsModal(itemId) {
               <span>Send</span>
             </button>
           </div>
-          <p class="text-[10px] text-slate-400 text-center">Messages are routed to the student's campus email.</p>
+          <p class="text-[10px] text-slate-400 text-center">Messages are routed to the student's official @nub.ac.bd address.</p>
         </div>
       </div>
     </div>
   `;
 
-  // Attach message send trigger
+  // Attach message send trigger (Guarded by auth)
   const sendBtn = content.querySelector('#sendCampusMessageBtn');
   if (sendBtn) {
     sendBtn.addEventListener('click', () => {
+      if (!currentUser) {
+        closeDetailsModal();
+        openAuthModal('login', `Please sign in with your @nub.ac.bd account to message ${item.seller.name}.`);
+        return;
+      }
+
       const input = content.querySelector('#studentChatInput');
       const val = input ? input.value.trim() : '';
       if (!val) {
         showToast('Please type a message first', 'warning');
         return;
       }
+
       sendBtn.innerHTML = `<i class="fa-solid fa-check mr-1"></i>Sent!`;
       sendBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
       sendBtn.classList.add('bg-emerald-600');
-      showToast(`Message sent to ${item.seller.name}! They will receive it on their campus email.`, 'success');
+      showToast(`Message sent from ${currentUser.email} to ${item.seller.name}!`, 'success');
       setTimeout(() => {
         closeDetailsModal();
       }, 1400);
@@ -1028,16 +1691,20 @@ function updatePostModalFields() {
 function handleNewListingSubmit(e) {
   e.preventDefault();
 
+  if (!currentUser) {
+    closePostModal();
+    openAuthModal('login', 'Please sign in with your @nub.ac.bd account to publish a listing.');
+    return;
+  }
+
   const title = document.getElementById('postTitle').value.trim();
   const category = document.getElementById('postCategory').value;
   const courseCode = document.getElementById('postCourse').value.trim() || 'General';
   const condition = document.querySelector('input[name="postCondition"]:checked')?.value || 'Good';
   const transaction = document.querySelector('input[name="postTransaction"]:checked')?.value || 'Sell';
-  const location = document.getElementById('postLocation').value.trim() || 'Main Campus Library';
+  const location = document.getElementById('postLocation').value.trim() || 'NUB Central Library (Ashkona)';
   const description = document.getElementById('postDescription').value.trim();
   const imageUrl = document.getElementById('postImageUrl').value.trim() || PRESET_IMAGES[0].url;
-  const sellerName = document.getElementById('postSellerName').value.trim() || 'Campus Student';
-  const sellerMajor = document.getElementById('postSellerMajor').value.trim() || 'Undergrad Student \'26';
 
   if (!title || !category || !description) {
     showToast('Please fill out the required title, category, and description fields.', 'warning');
@@ -1081,10 +1748,10 @@ function handleNewListingSubmit(e) {
     description,
     location,
     seller: {
-      name: sellerName,
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-      major: sellerMajor,
-      badge: 'Verified Student',
+      name: `${currentUser.name} (${currentUser.studentId})`,
+      avatar: currentUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+      major: `${currentUser.department || 'NUB'} '26`,
+      badge: 'NUB Verified Student',
       rating: 5.0,
       reviewsCount: 1,
       responseTime: '< 5 mins'
@@ -1115,7 +1782,7 @@ function handleNewListingSubmit(e) {
   updateQuickCourseChipsUI();
   renderItems();
 
-  showToast('🎉 Your listing is live on CampusKart!', 'success');
+  showToast('🎉 Your listing is live on CampusKart NUB!', 'success');
 
   // Smooth scroll to items grid
   const grid = document.getElementById('itemsGrid');

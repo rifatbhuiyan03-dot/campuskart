@@ -345,10 +345,13 @@ const INITIAL_ITEMS = [
 // Master list of available course codes for filter dropdown
 const COURSE_CODES = [
   "All Courses",
+  "CSE 111",
   "MATH 101",
   "MATH 201",
   "CS 101",
   "CS 201",
+  "EEE 101",
+  "BBA 202",
   "CHEM 121",
   "PHYS 102",
   "BIO 110",

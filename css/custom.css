@@ -170,3 +170,52 @@ body {
   backdrop-filter: blur(12px);
   border: 1px solid rgba(226, 232, 240, 0.8);
 }
+
+/* Authentication System & NUB Verification Styles */
+.nub-badge {
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+  color: #ffffff;
+  border: 1px solid #3b82f6;
+  box-shadow: 0 2px 4px rgba(30, 58, 138, 0.25);
+}
+
+.auth-tab {
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.auth-tab.active {
+  color: #4f46e5;
+  border-bottom: 2px solid #4f46e5;
+  background-color: rgba(238, 242, 255, 0.5);
+  font-weight: 700;
+}
+
+/* Profile dropdown menu */
+.profile-dropdown-menu {
+  animation: dropdownSlide 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: top right;
+}
+
+@keyframes dropdownSlide {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateY(-6px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Live validation glow indicators */
+.input-valid {
+  border-color: #10b981 !important;
+  background-color: #f0fdf4 !important;
+}
+
+.input-invalid {
+  border-color: #f43f5e !important;
+  background-color: #fff1f2 !important;
+}
+
