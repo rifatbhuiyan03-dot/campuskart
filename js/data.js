@@ -1,0 +1,384 @@
+/**
+ * CampusKart - Sample Dataset
+ * Campus Marketplace Items featuring Course Codes, Conditions, and Transaction Tags
+ */
+
+const INITIAL_ITEMS = [
+  {
+    id: "ck-101",
+    title: "Stewart Calculus: Early Transcendentals (8th Ed)",
+    category: "Textbooks",
+    courseCode: "MATH 201",
+    condition: "Like New",
+    transaction: "Sell",
+    price: 38,
+    priceLabel: "$38",
+    originalPrice: "$180 Retail",
+    exchangeFor: null,
+    borrowTerms: null,
+    image: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80",
+    description: "Hardcover in mint condition. No highlighting or margin notes. Includes unopened WebAssign online access scratch code for Fall/Spring semesters.",
+    location: "Science & Engineering Library, 2nd Fl",
+    seller: {
+      name: "Maya Lin",
+      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80",
+      major: "Applied Mathematics '26",
+      badge: "Verified Student",
+      rating: 4.9,
+      reviewsCount: 14,
+      responseTime: "< 15 mins"
+    },
+    postedAt: "2 hours ago",
+    featured: true,
+    views: 89
+  },
+  {
+    id: "ck-102",
+    title: "TI-84 Plus CE Color Graphing Calculator",
+    category: "Tech & Electronics",
+    courseCode: "MATH 101",
+    condition: "Brand New",
+    transaction: "Borrow",
+    price: 6,
+    priceLabel: "$6 / week",
+    originalPrice: "$139 Retail",
+    exchangeFor: null,
+    borrowTerms: "Deposit $30 required, refundable upon return in original state.",
+    image: "https://images.unsplash.com/photo-1587145820266-a5951ee6f620?auto=format&fit=crop&w=800&q=80",
+    description: "Includes original slide cover, USB-A charging cable, and freshly installed rechargeable battery. Exam-mode ready for midterms and finals.",
+    location: "Computing Commons / North Quad",
+    seller: {
+      name: "David Chen",
+      avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80",
+      major: "Computer Science '27",
+      badge: "Verified Student",
+      rating: 5.0,
+      reviewsCount: 22,
+      responseTime: "< 5 mins"
+    },
+    postedAt: "5 hours ago",
+    featured: true,
+    views: 142
+  },
+  {
+    id: "ck-103",
+    title: "Organic Chemistry Molecular Model Kit (240 Pcs)",
+    category: "Lab & Engineering",
+    courseCode: "CHEM 121",
+    condition: "Good",
+    transaction: "Exchange",
+    price: 0,
+    priceLabel: "Trade Only",
+    originalPrice: "$45 Value",
+    exchangeFor: "CHEM 222 Lab Manual or Casio fx-991EX Scientific Calc",
+    borrowTerms: null,
+    image: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=800&q=80",
+    description: "Full Prentice Hall molecular model set for visualizing stereochemistry, chair conformations, and functional groups. All atoms & links accounted for in latch box.",
+    location: "Chemistry Annex Lobby",
+    seller: {
+      name: "Priya Patel",
+      avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80",
+      major: "Biochemistry / Pre-Med '25",
+      badge: "Verified Student",
+      rating: 4.8,
+      reviewsCount: 9,
+      responseTime: "~ 1 hour"
+    },
+    postedAt: "Yesterday",
+    featured: false,
+    views: 64
+  },
+  {
+    id: "ck-104",
+    title: "Introduction to Algorithms (CLRS 3rd Edition)",
+    category: "Textbooks",
+    courseCode: "CS 201",
+    condition: "Like New",
+    transaction: "Sell",
+    price: 45,
+    priceLabel: "$45",
+    originalPrice: "$95 Retail",
+    exchangeFor: null,
+    borrowTerms: null,
+    image: "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=800&q=80",
+    description: "The bible of algorithms. Pristine spine, no tears or markings. Perfect for Data Structures and Algorithm Analysis exams and technical interview prep.",
+    location: "Engineering Quad & Atrium",
+    seller: {
+      name: "Jordan Hayes",
+      avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80",
+      major: "Data Science & CS '26",
+      badge: "Verified Student",
+      rating: 4.9,
+      reviewsCount: 18,
+      responseTime: "< 20 mins"
+    },
+    postedAt: "1 day ago",
+    featured: true,
+    views: 210
+  },
+  {
+    id: "ck-105",
+    title: "Compact Dorm Mini Fridge & Freezer (1.7 cu ft)",
+    category: "Dorm & Living",
+    courseCode: "General",
+    condition: "Good",
+    transaction: "Sell",
+    price: 52,
+    priceLabel: "$52",
+    originalPrice: "$160 Retail",
+    exchangeFor: null,
+    borrowTerms: null,
+    image: "https://images.unsplash.com/photo-1584992236310-6edddc08acff?auto=format&fit=crop&w=800&q=80",
+    description: "Quiet energy-star certified dorm mini fridge. Cleaned, defrosted, and tested cold. Perfect for keeping drinks, snacks, and meal preps. Fits under bed risers.",
+    location: "Maple Residence Hall Rm 314",
+    seller: {
+      name: "Sarah Jenkins",
+      avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80",
+      major: "Marketing & Business '25",
+      badge: "Verified Student",
+      rating: 4.7,
+      reviewsCount: 11,
+      responseTime: "< 30 mins"
+    },
+    postedAt: "2 days ago",
+    featured: false,
+    views: 185
+  },
+  {
+    id: "ck-106",
+    title: "Sony WH-1000XM4 Noise Canceling Headphones",
+    category: "Tech & Electronics",
+    courseCode: "General",
+    condition: "Like New",
+    transaction: "Exchange",
+    price: 0,
+    priceLabel: "Trade Only",
+    originalPrice: "$348 Value",
+    exchangeFor: "iPad 9th/10th Gen or Keychron Mechanical Keyboard + Cash",
+    borrowTerms: null,
+    image: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80",
+    description: "Midnight black, battery health 98%. Incredible 30hr battery life and industry-leading noise cancellation. Comes with protective hardshell case, aux cord, and plane adapter.",
+    location: "Student Union Coffee Shop",
+    seller: {
+      name: "Marcus Thorne",
+      avatar: "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=200&q=80",
+      major: "Mechanical Engineering '27",
+      badge: "Verified Student",
+      rating: 5.0,
+      reviewsCount: 7,
+      responseTime: "< 10 mins"
+    },
+    postedAt: "3 days ago",
+    featured: true,
+    views: 312
+  },
+  {
+    id: "ck-107",
+    title: "Physics for Scientists and Engineers (10th Ed)",
+    category: "Textbooks",
+    courseCode: "PHYS 102",
+    condition: "Fair",
+    transaction: "Sell",
+    price: 22,
+    priceLabel: "$22",
+    originalPrice: "$210 Retail",
+    exchangeFor: null,
+    borrowTerms: null,
+    image: "https://images.unsplash.com/photo-1532012164546-f432f2e3777f?auto=format&fit=crop&w=800&q=80",
+    description: "Some yellow highlighting on chapters 4-12, but spine and all pages intact. Great budget choice if you just need the problem sets and reference diagrams.",
+    location: "Physics Hall South Wing",
+    seller: {
+      name: "Liam Cooper",
+      avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&w=200&q=80",
+      major: "Aerospace Engineering '28",
+      badge: "Verified Student",
+      rating: 4.6,
+      reviewsCount: 6,
+      responseTime: "~ 2 hours"
+    },
+    postedAt: "3 days ago",
+    featured: false,
+    views: 98
+  },
+  {
+    id: "ck-108",
+    title: "Professional Architecture Drafting T-Square & Ruler Set",
+    category: "Lab & Engineering",
+    courseCode: "ARCH 110",
+    condition: "Like New",
+    transaction: "Borrow",
+    price: 0,
+    priceLabel: "Free Borrow",
+    originalPrice: "$60 Value",
+    exchangeFor: null,
+    borrowTerms: "Free to borrow for studio project week! Please return clean and unchipped.",
+    image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80",
+    description: "Heavy acrylic 36-inch T-square, triangular architectural scale, and 45/90 triangle set. Perfect for studio foundation finals.",
+    location: "Design & Architecture Studio Building B",
+    seller: {
+      name: "Chloe Dupuis",
+      avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80",
+      major: "Architecture '26",
+      badge: "Verified Student",
+      rating: 4.9,
+      reviewsCount: 15,
+      responseTime: "< 15 mins"
+    },
+    postedAt: "4 days ago",
+    featured: false,
+    views: 77
+  },
+  {
+    id: "ck-109",
+    title: "iClicker 2 Student Remote (Latest Campus Firmware)",
+    category: "Tech & Electronics",
+    courseCode: "BIO 110",
+    condition: "Good",
+    transaction: "Sell",
+    price: 18,
+    priceLabel: "$18",
+    originalPrice: "$65 Bookstore",
+    exchangeFor: null,
+    borrowTerms: null,
+    image: "https://images.unsplash.com/photo-1580894732444-8ecded7900cd?auto=format&fit=crop&w=800&q=80",
+    description: "Registered and reset for immediate connection in lecture halls. LCD screen is clear with brand-new AAA batteries included.",
+    location: "BioSciences Building Cafe",
+    seller: {
+      name: "Noah Kim",
+      avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=200&q=80",
+      major: "Biology '27",
+      badge: "Verified Student",
+      rating: 4.8,
+      reviewsCount: 8,
+      responseTime: "< 45 mins"
+    },
+    postedAt: "4 days ago",
+    featured: false,
+    views: 114
+  },
+  {
+    id: "ck-110",
+    title: "Ergonomic Mesh Dorm Desk Chair (Adjustable Lumbar)",
+    category: "Dorm & Living",
+    courseCode: "General",
+    condition: "Fair",
+    transaction: "Exchange",
+    price: 0,
+    priceLabel: "Trade Only",
+    originalPrice: "$120 Retail",
+    exchangeFor: "Desk Study Lamp + Surge Protector OR Bedside Organizer",
+    borrowTerms: null,
+    image: "https://images.unsplash.com/photo-1580481077195-c3a821a58875?auto=format&fit=crop&w=800&q=80",
+    description: "Breathable back mesh with roller casters. Light cosmetic scratch on the left armrest, but hydraulics and tilt lock work perfectly.",
+    location: "South Tower Dormitory Lobby",
+    seller: {
+      name: "Elena Rostova",
+      avatar: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=80",
+      major: "Economics & Stats '26",
+      badge: "Verified Student",
+      rating: 4.9,
+      reviewsCount: 16,
+      responseTime: "< 25 mins"
+    },
+    postedAt: "5 days ago",
+    featured: false,
+    views: 160
+  },
+  {
+    id: "ck-111",
+    title: "ECON 101 Master Study Kit (Annotated Diagrams & Summaries)",
+    category: "Notes & Study Kits",
+    courseCode: "ECON 101",
+    condition: "Brand New",
+    transaction: "Sell",
+    price: 14,
+    priceLabel: "$14",
+    originalPrice: "Priceless A+ Prep",
+    exchangeFor: null,
+    borrowTerms: null,
+    image: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=800&q=80",
+    description: "Laser-printed spiral binder containing comprehensive lecture summaries, elasticity formulas, and 8 years of worked practice midterms with answer keys.",
+    location: "School of Management Atrium",
+    seller: {
+      name: "Jackson Lee",
+      avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=200&q=80",
+      major: "Finance & Analytics '25",
+      badge: "Verified Student",
+      rating: 5.0,
+      reviewsCount: 31,
+      responseTime: "< 10 mins"
+    },
+    postedAt: "5 days ago",
+    featured: true,
+    views: 245
+  },
+  {
+    id: "ck-112",
+    title: "Arduino Uno Ultimate Starter Kit (Robotics & Sensors)",
+    category: "Lab & Engineering",
+    courseCode: "ENGR 210",
+    condition: "Brand New",
+    transaction: "Borrow",
+    price: 5,
+    priceLabel: "$5 / week",
+    originalPrice: "$65 Value",
+    exchangeFor: null,
+    borrowTerms: "Return all 30 sensor modules in plastic organizer tray. Ideal for term lab assignments.",
+    image: "https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80",
+    description: "Complete electronics kit featuring microcontrollers, breadboard, LCD 1602 display, servo motor, ultrasonic sensor, resistors, and jumper wire bundle.",
+    location: "Student Innovation Makerspace Rm 14",
+    seller: {
+      name: "Aisha Morales",
+      avatar: "https://images.unsplash.com/photo-1534751516642-a171ed28a0e5?auto=format&fit=crop&w=200&q=80",
+      major: "Electrical Engineering '26",
+      badge: "Verified Student",
+      rating: 4.9,
+      reviewsCount: 20,
+      responseTime: "< 15 mins"
+    },
+    postedAt: "6 days ago",
+    featured: false,
+    views: 173
+  }
+];
+
+// Master list of available course codes for filter dropdown
+const COURSE_CODES = [
+  "All Courses",
+  "MATH 101",
+  "MATH 201",
+  "CS 101",
+  "CS 201",
+  "CHEM 121",
+  "PHYS 102",
+  "BIO 110",
+  "ECON 101",
+  "ARCH 110",
+  "ENGR 210",
+  "General"
+];
+
+// Master list of categories
+const CATEGORIES = [
+  "All Categories",
+  "Textbooks",
+  "Tech & Electronics",
+  "Lab & Engineering",
+  "Dorm & Living",
+  "Notes & Study Kits"
+];
+
+// Conditions specification
+const CONDITIONS = [
+  { name: "Brand New", color: "emerald", description: "Unopened or unused in original packaging" },
+  { name: "Like New", color: "blue", description: "Minimal cosmetic use, flawless functionality" },
+  { name: "Good", color: "amber", description: "Normal wear from usage, 100% operational" },
+  { name: "Fair", color: "orange", description: "Noticeable wear or markings, functional" }
+];
+
+// Transaction types
+const TRANSACTIONS = [
+  { type: "Sell", label: "Buy Directly", badgeClass: "badge-sell" },
+  { type: "Borrow", label: "Borrow / Rent", badgeClass: "badge-borrow" },
+  { type: "Exchange", label: "Barter / Trade", badgeClass: "badge-exchange" }
+];

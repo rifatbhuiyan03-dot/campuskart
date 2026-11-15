@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CampusKart - Campus Marketplace for Students</title>
+  
+  <!-- Google Fonts: Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  
+  <!-- Font Awesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              200: '#c7d2fe',
+              300: '#a5b4fc',
+              400: '#818cf8',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              800: '#3730a3',
+              900: '#312e81',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/custom.css" />
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+  <!-- ================= TOP ANNOUNCEMENT TICKER ================= -->
+  <div class="bg-indigo-900 text-indigo-100 text-xs py-2 px-4 border-b border-indigo-800/60">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      <div class="flex items-center space-x-2">
+        <span class="bg-indigo-700/80 text-white text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full">
+          Campus Safe
+        </span>
+        <span class="truncate">Verified .edu student marketplace &bull; Meet in official library & student union trade zones</span>
+      </div>
+      <div class="hidden sm:flex items-center space-x-4 text-[11px] text-indigo-200">
+        <span class="flex items-center gap-1"><i class="fa-solid fa-graduation-cap"></i> North Campus Hub</span>
+        <span>&bull;</span>
+        <span class="flex items-center gap-1"><i class="fa-solid fa-clock"></i> Fall Term 2026</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= NAVBAR ================= -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        
+        <!-- Logo & Campus Badge -->
+        <div class="flex items-center space-x-3">
+          <a href="#" class="flex items-center space-x-2.5 group">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/25 group-hover:scale-105 transition-transform">
+              <i class="fa-solid fa-basket-shopping text-lg"></i>
+            </div>
+            <div>
+              <div class="flex items-center gap-1">
+                <span class="text-xl font-extrabold tracking-tight text-slate-900">Campus<span class="text-indigo-600">Kart</span></span>
+                <span class="bg-indigo-50 text-indigo-700 text-[10px] font-bold px-1.5 py-0.5 rounded border border-indigo-200">PRO</span>
+              </div>
+              <p class="text-[10px] text-slate-400 font-medium leading-none">Student-to-Student Hub</p>
+            </div>
+          </a>
+
+          <!-- Campus Selector Pill (Desktop) -->
+          <div class="hidden md:flex items-center text-xs bg-slate-100 hover:bg-slate-200/80 px-2.5 py-1 rounded-lg text-slate-600 transition cursor-pointer">
+            <i class="fa-solid fa-building-columns text-indigo-500 mr-1.5 text-[11px]"></i>
+            <span class="font-medium">State University</span>
+            <i class="fa-solid fa-chevron-down ml-1.5 text-[9px] text-slate-400"></i>
+          </div>
+        </div>
+
+        <!-- Center Nav Links -->
+        <nav class="hidden lg:flex items-center space-x-1">
+          <a href="#marketplace" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-indigo-600 bg-indigo-50/70">
+            Marketplace
+          </a>
+          <button type="button" onclick="filterByCategoryNav('Textbooks')" class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 transition">
+            Textbooks
+          </button>
+          <button type="button" onclick="filterByCategoryNav('Tech & Electronics')" class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 transition">
+            Tech & Electronics
+          </button>
+          <button type="button" onclick="filterByCategoryNav('Lab & Engineering')" class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 transition">
+            Lab Gear
+          </button>
+          <button type="button" onclick="filterByCategoryNav('Dorm & Living')" class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 transition">
+            Dorm Essentials
+          </button>
+        </nav>
+
+        <!-- Right Side User Controls -->
+        <div class="flex items-center space-x-2 sm:space-x-3">
+          
+          <!-- Wishlist / Saved Toggle Button -->
+          <button type="button" 
+                  id="navWishlistBtn" 
+                  title="View Saved Items"
+                  class="relative p-2 rounded-xl text-slate-600 hover:text-indigo-600 hover:bg-slate-100 border border-slate-200/80 transition flex items-center justify-center">
+            <i class="fa-regular fa-heart text-base"></i>
+            <span id="navWishlistCount" class="hidden absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
+              0
+            </span>
+          </button>
+
+          <!-- Post Item CTA Button -->
+          <button type="button" 
+                  class="open-post-modal-btn bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-sm shadow-indigo-600/30 flex items-center space-x-1.5 active:scale-95">
+            <i class="fa-solid fa-plus text-xs"></i>
+            <span class="hidden sm:inline">Post an Item</span>
+            <span class="sm:hidden">Post</span>
+          </button>
+
+          <!-- Verified Student Avatar / Menu -->
+          <div class="hidden sm:flex items-center space-x-2 pl-2 border-l border-slate-200">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80" 
+                 alt="Alex Miller" 
+                 class="w-8 h-8 rounded-full object-cover ring-2 ring-indigo-100" />
+            <div class="text-left hidden xl:block">
+              <p class="text-xs font-bold text-slate-800 leading-none">Alex M.</p>
+              <p class="text-[10px] text-emerald-600 font-semibold mt-0.5"><i class="fa-solid fa-shield text-[9px]"></i> .edu Verified</p>
+            </div>
+          </div>
+
+          <!-- Mobile Hamburger Toggle -->
+          <button type="button" 
+                  id="mobileMenuBtn" 
+                  class="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 border border-slate-200">
+            <i class="fa-solid fa-bars text-lg"></i>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Mobile Drawer Menu -->
+    <div id="mobileMenu" class="hidden lg:hidden border-t border-slate-200 bg-white px-4 pt-2 pb-4 space-y-2">
+      <div class="flex items-center space-x-3 p-2 bg-slate-50 rounded-xl mb-3">
+        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80" class="w-9 h-9 rounded-full object-cover" alt="Alex M." />
+        <div>
+          <p class="text-xs font-bold text-slate-900">Alex Miller (CS '26)</p>
+          <p class="text-[10px] text-emerald-600 font-medium"><i class="fa-solid fa-circle-check"></i> Campus Verified Student</p>
+        </div>
+      </div>
+      <button type="button" onclick="filterByCategoryNav('All Categories')" class="w-full text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-indigo-50 rounded-lg">All Categories</button>
+      <button type="button" onclick="filterByCategoryNav('Textbooks')" class="w-full text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-indigo-50 rounded-lg">Textbooks</button>
+      <button type="button" onclick="filterByCategoryNav('Tech & Electronics')" class="w-full text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-indigo-50 rounded-lg">Tech & Electronics</button>
+      <button type="button" onclick="filterByCategoryNav('Lab & Engineering')" class="w-full text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-indigo-50 rounded-lg">Lab Gear & Tools</button>
+      <button type="button" onclick="filterByCategoryNav('Dorm & Living')" class="w-full text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-indigo-50 rounded-lg">Dorm & Living</button>
+      <button type="button" onclick="filterByCategoryNav('Notes & Study Kits')" class="w-full text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-indigo-50 rounded-lg">Notes & Study Kits</button>
+    </div>
+  </header>
+
+  <!-- ================= HERO & SEARCH FILTER CONSOLE ================= -->
+  <section class="hero-gradient border-b border-slate-200/80 pt-8 pb-10 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto">
+      
+      <!-- Headline & Tagline -->
+      <div class="text-center max-w-3xl mx-auto mb-8">
+        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-semibold mb-3">
+          <i class="fa-solid fa-graduation-cap"></i> Student-to-Student Campus Marketplace
+        </div>
+        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
+          Buy, Sell, Borrow & Exchange <br class="hidden sm:inline" />
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-emerald-600">Across Your Campus</span>
+        </h1>
+        <p class="mt-3 text-sm sm:text-base text-slate-600">
+          Save hundreds on textbooks, graphing calculators, lab gear, and dorm equipment with verified classmates.
+        </p>
+      </div>
+
+      <!-- MAIN SEARCH & FILTER CONSOLE CARD -->
+      <div class="max-w-5xl mx-auto bg-white rounded-2xl p-4 sm:p-5 shadow-xl shadow-slate-200/60 border border-slate-200/90">
+        
+        <!-- Search Input Bar & Course/Category Dropdowns -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 mb-4">
+          
+          <!-- Keyword Search -->
+          <div class="relative md:col-span-5">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <i class="fa-solid fa-magnifying-glass"></i>
+            </div>
+            <input type="text" 
+                   id="searchInput" 
+                   placeholder="Search Calculus, TI-84, Mini Fridge, lab kit..." 
+                   class="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition placeholder:text-slate-400" />
+          </div>
+
+          <!-- Course Code Filter Dropdown -->
+          <div class="relative md:col-span-3">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-indigo-500">
+              <i class="fa-solid fa-book-bookmark text-xs"></i>
+            </div>
+            <select id="filterCourse" 
+                    aria-label="Filter by course code"
+                    class="w-full pl-8 pr-8 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium text-slate-700 cursor-pointer appearance-none transition">
+              <!-- Dynamically populated -->
+            </select>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+              <i class="fa-solid fa-chevron-down text-xs"></i>
+            </div>
+          </div>
+
+          <!-- Category Filter Dropdown -->
+          <div class="relative md:col-span-4">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-indigo-500">
+              <i class="fa-solid fa-shapes text-xs"></i>
+            </div>
+            <select id="filterCategory" 
+                    aria-label="Filter by category"
+                    class="w-full pl-8 pr-8 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium text-slate-700 cursor-pointer appearance-none transition">
+              <!-- Dynamically populated -->
+            </select>
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+              <i class="fa-solid fa-chevron-down text-xs"></i>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- TRANSACTION TAG TABS & CONDITION BADGE SELECTORS -->
+        <div class="pt-3 border-t border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          
+          <!-- Transaction Tag Filter Tabs -->
+          <div class="flex items-center flex-wrap gap-1.5">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider mr-1">Transaction:</span>
+            <div class="inline-flex p-1 bg-slate-100/90 rounded-xl border border-slate-200/60">
+              <button type="button" 
+                      data-transaction="All" 
+                      class="transaction-tab px-3 py-1 text-xs font-semibold rounded-lg bg-indigo-600 text-white shadow-sm transition">
+                All
+              </button>
+              <button type="button" 
+                      data-transaction="Sell" 
+                      class="transaction-tab px-3 py-1 text-xs font-semibold rounded-lg bg-white text-slate-700 hover:bg-slate-100 transition flex items-center gap-1">
+                <i class="fa-solid fa-dollar-sign text-emerald-500 text-[10px]"></i> Sell
+              </button>
+              <button type="button" 
+                      data-transaction="Borrow" 
+                      class="transaction-tab px-3 py-1 text-xs font-semibold rounded-lg bg-white text-slate-700 hover:bg-slate-100 transition flex items-center gap-1">
+                <i class="fa-solid fa-clock text-purple-500 text-[10px]"></i> Borrow
+              </button>
+              <button type="button" 
+                      data-transaction="Exchange" 
+                      class="transaction-tab px-3 py-1 text-xs font-semibold rounded-lg bg-white text-slate-700 hover:bg-slate-100 transition flex items-center gap-1">
+                <i class="fa-solid fa-arrows-rotate text-sky-500 text-[10px]"></i> Exchange
+              </button>
+            </div>
+          </div>
+
+          <!-- Condition Filter Badges & Sort -->
+          <div class="flex items-center flex-wrap gap-2.5">
+            
+            <!-- Condition Selector -->
+            <div class="flex items-center space-x-1.5">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Condition:</span>
+              <select id="filterCondition" 
+                      aria-label="Filter by item condition"
+                      class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 font-medium text-slate-700 focus:outline-none focus:border-indigo-500">
+                <option value="All">All Conditions</option>
+                <option value="Brand New">✨ Brand New</option>
+                <option value="Like New">🌟 Like New</option>
+                <option value="Good">👍 Good</option>
+                <option value="Fair">🏷️ Fair</option>
+              </select>
+            </div>
+
+            <!-- Sort dropdown -->
+            <div class="flex items-center space-x-1.5">
+              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Sort:</span>
+              <select id="sortBy" 
+                      aria-label="Sort listings"
+                      class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 font-medium text-slate-700 focus:outline-none focus:border-indigo-500">
+                <option value="featured">Featured First</option>
+                <option value="newest">Recently Posted</option>
+                <option value="price-asc">Price: Low to High</option>
+                <option value="price-desc">Price: High to Low</option>
+              </select>
+            </div>
+
+            <!-- Reset Button -->
+            <button type="button" 
+                    id="btnResetFilters" 
+                    title="Reset all filters"
+                    class="text-xs text-slate-500 hover:text-rose-600 px-2 py-1 rounded-lg border border-slate-200 hover:border-rose-200 bg-white transition flex items-center gap-1">
+              <i class="fa-solid fa-arrow-rotate-left text-[10px]"></i>
+              <span>Reset</span>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Quick Course Chips Row -->
+        <div class="mt-3.5 pt-3 border-t border-slate-100 flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0">Popular Courses:</span>
+          <div id="quickCourseChips" class="flex items-center gap-1.5 shrink-0">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= CATEGORY PILL STRIP ================= -->
+  <section class="bg-white border-b border-slate-200/80 sticky top-16 z-30 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5">
+      <div class="flex items-center justify-between">
+        
+        <!-- Category Buttons Scrollable -->
+        <div class="flex items-center space-x-2 overflow-x-auto py-1 no-scrollbar text-xs font-medium">
+          <button type="button" data-category="All Categories" class="category-pill filter-pill active px-3.5 py-1.5 rounded-xl border border-indigo-600 bg-indigo-600 text-white shrink-0 shadow-sm">
+            <i class="fa-solid fa-border-all mr-1.5 text-xs"></i>All Items
+          </button>
+          <button type="button" data-category="Textbooks" class="category-pill filter-pill px-3.5 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:border-indigo-300 shrink-0">
+            <i class="fa-solid fa-book mr-1.5 text-indigo-500"></i>Textbooks
+          </button>
+          <button type="button" data-category="Tech & Electronics" class="category-pill filter-pill px-3.5 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:border-indigo-300 shrink-0">
+            <i class="fa-solid fa-laptop mr-1.5 text-blue-500"></i>Tech & Electronics
+          </button>
+          <button type="button" data-category="Lab & Engineering" class="category-pill filter-pill px-3.5 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:border-indigo-300 shrink-0">
+            <i class="fa-solid fa-flask mr-1.5 text-emerald-500"></i>Lab & Engineering
+          </button>
+          <button type="button" data-category="Dorm & Living" class="category-pill filter-pill px-3.5 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:border-indigo-300 shrink-0">
+            <i class="fa-solid fa-couch mr-1.5 text-amber-500"></i>Dorm & Living
+          </button>
+          <button type="button" data-category="Notes & Study Kits" class="category-pill filter-pill px-3.5 py-1.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:border-indigo-300 shrink-0">
+            <i class="fa-solid fa-highlighter mr-1.5 text-rose-500"></i>Notes & Study Kits
+          </button>
+        </div>
+
+        <!-- Post Shortcut -->
+        <button type="button" 
+                class="open-post-modal-btn hidden md:flex items-center text-xs font-semibold text-indigo-600 hover:text-indigo-800 shrink-0 ml-4">
+          <i class="fa-solid fa-plus-circle mr-1"></i>List Your Gear
+        </button>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MAIN MARKETPLACE LISTINGS ================= -->
+  <main id="marketplace" class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+    
+    <!-- Header with Results Counter & Active Badges -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-6 border-b border-slate-200 gap-2">
+      <div>
+        <div class="flex items-center gap-2">
+          <h2 class="text-xl sm:text-2xl font-extrabold text-slate-900">Live Campus Listings</h2>
+          <span class="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 text-[11px] font-bold px-2 py-0.5 rounded-full">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            Real-time
+          </span>
+        </div>
+        <p id="resultsCount" class="text-xs text-slate-500 mt-0.5">Loading campus items...</p>
+      </div>
+
+      <!-- Condition Legend Pill Bar -->
+      <div class="flex items-center flex-wrap gap-1 text-[11px] text-slate-600 bg-slate-100/70 p-1.5 rounded-xl border border-slate-200/70">
+        <span class="font-bold text-slate-500 text-[10px] uppercase px-1">Conditions:</span>
+        <span class="condition-brand-new px-1.5 py-0.5 rounded text-[10px] font-semibold">Brand New</span>
+        <span class="condition-like-new px-1.5 py-0.5 rounded text-[10px] font-semibold">Like New</span>
+        <span class="condition-good px-1.5 py-0.5 rounded text-[10px] font-semibold">Good</span>
+        <span class="condition-fair px-1.5 py-0.5 rounded text-[10px] font-semibold">Fair</span>
+      </div>
+    </div>
+
+    <!-- Active Filter Badges Container -->
+    <div id="activeFilterPills" class="mb-4"></div>
+
+    <!-- Grid Container for Items -->
+    <div id="itemsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <!-- Dynamically rendered by app.js -->
+    </div>
+
+  </main>
+
+  <!-- ================= POST AN ITEM MODAL ================= -->
+  <div id="postItemModal" class="hidden fixed inset-0 z-50 overflow-y-auto modal-backdrop flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 animate-pop my-8">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg">
+            <i class="fa-solid fa-bullhorn"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-slate-900">Post Item on CampusKart</h3>
+            <p class="text-xs text-slate-500">List textbooks, gear, or dorm items for fellow classmates</p>
+          </div>
+        </div>
+        <button type="button" id="closePostModal" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Modal Form -->
+      <form id="postItemForm" class="mt-5 space-y-4">
+        
+        <!-- Title -->
+        <div>
+          <label for="postTitle" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+            Item Title <span class="text-rose-500">*</span>
+          </label>
+          <input type="text" 
+                 id="postTitle" 
+                 required 
+                 placeholder="e.g. Stewart Multivariable Calculus 8th Ed" 
+                 class="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+
+        <!-- Row: Category & Course Code -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="postCategory" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+              Category <span class="text-rose-500">*</span>
+            </label>
+            <select id="postCategory" required class="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer">
+              <!-- Populated dynamically -->
+            </select>
+          </div>
+          <div>
+            <label for="postCourse" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+              Course Code <span class="text-slate-400 font-normal">(e.g. MATH 201, CS 101)</span>
+            </label>
+            <input type="text" 
+                   id="postCourse" 
+                   placeholder="e.g. MATH 201 or General" 
+                   class="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+        </div>
+
+        <!-- Condition Badges Radio Selection -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+            Item Condition <span class="text-rose-500">*</span>
+          </label>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            <label class="cursor-pointer border border-slate-200 rounded-xl p-2.5 flex flex-col items-center hover:border-emerald-500 transition has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/50 has-[:checked]:ring-1 has-[:checked]:ring-emerald-500">
+              <input type="radio" name="postCondition" value="Brand New" class="sr-only" />
+              <span class="text-xs font-bold text-emerald-700 flex items-center gap-1">
+                <i class="fa-solid fa-certificate"></i> Brand New
+              </span>
+              <span class="text-[10px] text-slate-500 text-center mt-0.5">Unopened/Mint</span>
+            </label>
+
+            <label class="cursor-pointer border border-slate-200 rounded-xl p-2.5 flex flex-col items-center hover:border-blue-500 transition has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50/50 has-[:checked]:ring-1 has-[:checked]:ring-blue-500">
+              <input type="radio" name="postCondition" value="Like New" class="sr-only" checked />
+              <span class="text-xs font-bold text-blue-700 flex items-center gap-1">
+                <i class="fa-solid fa-sparkles"></i> Like New
+              </span>
+              <span class="text-[10px] text-slate-500 text-center mt-0.5">Barely used</span>
+            </label>
+
+            <label class="cursor-pointer border border-slate-200 rounded-xl p-2.5 flex flex-col items-center hover:border-amber-500 transition has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50/50 has-[:checked]:ring-1 has-[:checked]:ring-amber-500">
+              <input type="radio" name="postCondition" value="Good" class="sr-only" />
+              <span class="text-xs font-bold text-amber-700 flex items-center gap-1">
+                <i class="fa-solid fa-check-circle"></i> Good
+              </span>
+              <span class="text-[10px] text-slate-500 text-center mt-0.5">Minor wear</span>
+            </label>
+
+            <label class="cursor-pointer border border-slate-200 rounded-xl p-2.5 flex flex-col items-center hover:border-orange-500 transition has-[:checked]:border-orange-500 has-[:checked]:bg-orange-50/50 has-[:checked]:ring-1 has-[:checked]:ring-orange-500">
+              <input type="radio" name="postCondition" value="Fair" class="sr-only" />
+              <span class="text-xs font-bold text-orange-700 flex items-center gap-1">
+                <i class="fa-solid fa-tag"></i> Fair
+              </span>
+              <span class="text-[10px] text-slate-500 text-center mt-0.5">Heavily used</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Transaction Type Radio Selection -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+            Transaction Type <span class="text-rose-500">*</span>
+          </label>
+          <div class="grid grid-cols-3 gap-2">
+            <label class="cursor-pointer border border-slate-200 rounded-xl p-3 flex flex-col items-center hover:border-emerald-500 transition has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/40 has-[:checked]:ring-1 has-[:checked]:ring-emerald-500">
+              <input type="radio" name="postTransaction" value="Sell" class="sr-only" checked />
+              <i class="fa-solid fa-dollar-sign text-emerald-600 text-base mb-1"></i>
+              <span class="text-xs font-bold text-slate-800">Sell</span>
+              <span class="text-[10px] text-slate-400">Direct purchase</span>
+            </label>
+
+            <label class="cursor-pointer border border-slate-200 rounded-xl p-3 flex flex-col items-center hover:border-purple-500 transition has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50/40 has-[:checked]:ring-1 has-[:checked]:ring-purple-500">
+              <input type="radio" name="postTransaction" value="Borrow" class="sr-only" />
+              <i class="fa-solid fa-clock text-purple-600 text-base mb-1"></i>
+              <span class="text-xs font-bold text-slate-800">Borrow</span>
+              <span class="text-[10px] text-slate-400">Rent / Lending</span>
+            </label>
+
+            <label class="cursor-pointer border border-slate-200 rounded-xl p-3 flex flex-col items-center hover:border-sky-500 transition has-[:checked]:border-sky-500 has-[:checked]:bg-sky-50/40 has-[:checked]:ring-1 has-[:checked]:ring-sky-500">
+              <input type="radio" name="postTransaction" value="Exchange" class="sr-only" />
+              <i class="fa-solid fa-arrows-rotate text-sky-600 text-base mb-1"></i>
+              <span class="text-xs font-bold text-slate-800">Exchange</span>
+              <span class="text-[10px] text-slate-400">Barter / Trade</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Conditional Transaction Fields -->
+        <div id="postPriceField">
+          <label for="postPriceInput" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+            Selling Price ($ USD) <span class="text-rose-500">*</span>
+          </label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 font-bold">$</span>
+            <input type="number" 
+                   id="postPriceInput" 
+                   min="0" 
+                   step="1" 
+                   placeholder="35" 
+                   value="25" 
+                   class="w-full text-sm pl-8 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+        </div>
+
+        <div id="postBorrowField" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="postBorrowRateInput" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+              Borrow Rate
+            </label>
+            <input type="text" 
+                   id="postBorrowRateInput" 
+                   placeholder="e.g. $5 / week or Free" 
+                   value="$5 / week" 
+                   class="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+          <div>
+            <label for="postBorrowTermsInput" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+              Deposit / Terms
+            </label>
+            <input type="text" 
+                   id="postBorrowTermsInput" 
+                   placeholder="e.g. $20 deposit returned upon exam completion" 
+                   class="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+        </div>
+
+        <div id="postExchangeField" class="hidden">
+          <label for="postExchangeForInput" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+            Looking to Trade For
+          </label>
+          <input type="text" 
+                 id="postExchangeForInput" 
+                 placeholder="e.g. CHEM 222 lab notebook or Scientific calculator" 
+                 class="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+
+        <!-- Campus Pickup Spot & Description -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="postLocation" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+              Preferred Campus Pickup Location
+            </label>
+            <input type="text" 
+                   id="postLocation" 
+                   placeholder="e.g. Library West 2nd Floor or North Dorms" 
+                   value="Main Campus Library Front Desk" 
+                   class="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+          <div>
+            <label for="postSellerName" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+              Your Name & Year
+            </label>
+            <input type="text" 
+                   id="postSellerName" 
+                   placeholder="e.g. Alex Miller" 
+                   value="Alex Miller" 
+                   class="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <input type="hidden" id="postSellerMajor" value="Computer Science '26" />
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label for="postDescription" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+            Description & Details <span class="text-rose-500">*</span>
+          </label>
+          <textarea id="postDescription" 
+                    required 
+                    rows="3" 
+                    placeholder="Include details on edition, markings, included cables, packaging, or condition..." 
+                    class="w-full text-sm px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">Pristine condition. Includes all original components and study materials.</textarea>
+        </div>
+
+        <!-- Image Selector: Presets or Custom URL -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            Select Photo (or paste image URL)
+          </label>
+          <div id="presetImagePickers" class="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-2">
+            <!-- Populated dynamically -->
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="url" 
+                   id="postImageUrl" 
+                   placeholder="Or paste any custom image URL..." 
+                   value="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80" 
+                   class="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-indigo-500" />
+            <img id="postImagePreview" src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80" class="w-9 h-9 rounded object-cover border border-slate-200 shadow-xs shrink-0" alt="Preview" />
+          </div>
+        </div>
+
+        <!-- Submit Button Row -->
+        <div class="pt-4 border-t border-slate-100 flex items-center justify-end space-x-3">
+          <button type="button" 
+                  id="cancelPostModal" 
+                  class="px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition">
+            Cancel
+          </button>
+          <button type="submit" 
+                  class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold shadow-md shadow-indigo-600/30 transition flex items-center gap-1.5">
+            <i class="fa-solid fa-paper-plane text-[10px]"></i>
+            <span>Publish Listing</span>
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= ITEM DETAILS / CONTACT MODAL ================= -->
+  <div id="itemDetailsModal" class="hidden fixed inset-0 z-50 overflow-y-auto modal-backdrop flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 animate-pop my-8 relative">
+      
+      <!-- Close button -->
+      <button type="button" 
+              id="closeDetailsModal" 
+              class="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition z-10">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+
+      <!-- Dynamic Item Details Content -->
+      <div id="itemDetailsContent">
+        <!-- Rendered by openDetailsModal() in app.js -->
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= FOOTER ================= -->
+  <footer class="mt-auto bg-slate-900 text-slate-400 text-xs border-t border-slate-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+        
+        <!-- Brand Info -->
+        <div class="md:col-span-1">
+          <div class="flex items-center space-x-2 text-white font-bold text-lg mb-2">
+            <i class="fa-solid fa-basket-shopping text-indigo-400"></i>
+            <span>Campus<span class="text-indigo-400">Kart</span></span>
+          </div>
+          <p class="text-slate-400 leading-relaxed mb-4">
+            The student-verified marketplace for buying, selling, borrowing, and trading course textbooks and campus gear safely.
+          </p>
+          <div class="flex items-center space-x-3 text-slate-300">
+            <a href="#" class="hover:text-indigo-400 transition"><i class="fa-brands fa-github text-base"></i></a>
+            <a href="#" class="hover:text-indigo-400 transition"><i class="fa-brands fa-discord text-base"></i></a>
+            <a href="#" class="hover:text-indigo-400 transition"><i class="fa-brands fa-instagram text-base"></i></a>
+          </div>
+        </div>
+
+        <!-- Quick Links -->
+        <div>
+          <h4 class="text-white font-bold text-sm mb-3">Popular Courses</h4>
+          <ul class="space-y-2">
+            <li><button type="button" onclick="filterByCourseQuick('MATH 201')" class="hover:text-white transition">MATH 201 Calculus III</button></li>
+            <li><button type="button" onclick="filterByCourseQuick('CS 101')" class="hover:text-white transition">CS 101 Computer Science I</button></li>
+            <li><button type="button" onclick="filterByCourseQuick('CHEM 121')" class="hover:text-white transition">CHEM 121 General Chemistry</button></li>
+            <li><button type="button" onclick="filterByCourseQuick('BIO 110')" class="hover:text-white transition">BIO 110 Principles of Biology</button></li>
+          </ul>
+        </div>
+
+        <!-- Transaction Types -->
+        <div>
+          <h4 class="text-white font-bold text-sm mb-3">Transaction Modes</h4>
+          <ul class="space-y-2">
+            <li><span class="text-emerald-400 font-semibold">&bull; Sell:</span> Direct discount purchases</li>
+            <li><span class="text-purple-400 font-semibold">&bull; Borrow:</span> Short-term exam & lab rentals</li>
+            <li><span class="text-sky-400 font-semibold">&bull; Exchange:</span> Peer book & gear swapping</li>
+          </ul>
+        </div>
+
+        <!-- Campus Safety Tips -->
+        <div>
+          <h4 class="text-white font-bold text-sm mb-3">Campus Safe Exchange</h4>
+          <ul class="space-y-1.5 text-slate-400">
+            <li class="flex items-start gap-1.5"><i class="fa-solid fa-check text-emerald-400 mt-1 text-[10px]"></i> Always trade in designated campus zones.</li>
+            <li class="flex items-start gap-1.5"><i class="fa-solid fa-check text-emerald-400 mt-1 text-[10px]"></i> Check condition badges and notes before payment.</li>
+            <li class="flex items-start gap-1.5"><i class="fa-solid fa-check text-emerald-400 mt-1 text-[10px]"></i> Free peer messaging with .edu verification.</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="pt-6 border-t border-slate-800 text-center flex flex-col sm:flex-row items-center justify-between text-slate-500">
+        <p>&copy; 2026 CampusKart Platform. Built with HTML5, Tailwind CSS & JavaScript.</p>
+        <p class="mt-2 sm:mt-0 text-[11px]">Designed for university students and campus life.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+
+  <!-- Helper shortcut scripts for footer & nav items -->
+  <script>
+    function filterByCategoryNav(cat) {
+      if (typeof activeFilters !== 'undefined') {
+        activeFilters.category = cat;
+        const sel = document.getElementById('filterCategory');
+        if (sel) sel.value = cat;
+        updateCategoryPillsUI();
+        renderItems();
+        document.getElementById('marketplace')?.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+
+    function filterByCourseQuick(course) {
+      if (typeof activeFilters !== 'undefined') {
+        activeFilters.courseCode = course;
+        const sel = document.getElementById('filterCourse');
+        if (sel) sel.value = course;
+        updateQuickCourseChipsUI();
+        renderItems();
+        document.getElementById('marketplace')?.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  </script>
+</body>
+</html>
