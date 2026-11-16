@@ -1,16 +1,53 @@
-# CampusKart - Campus Marketplace UI with State Machine & Peer Ratings
+# CampusKart - Northern University Bangladesh Marketplace
 
-CampusKart is a responsive, student-centered campus marketplace web application built with **HTML5**, **Tailwind CSS**, and **Vanilla JavaScript**. It connects university students directly to buy, sell, borrow, and trade textbooks, graphing calculators, lab gear, and dorm equipment with safety and peer verification.
+CampusKart is a responsive, student-centered campus marketplace web application built with **HTML5**, **Tailwind CSS**, and **Vanilla JavaScript**. Designed specifically for **Northern University Bangladesh (NUB)** students, it enables students to buy, sell, borrow, and trade course textbooks, scientific calculators, digital logic breadboard kits, and engineering drafting sets with peer safety and verification.
 
 Featuring:
-1. **Official NUB Authentication**: Strictly restricted to `@nub.ac.bd` university accounts.
-2. **Peer Borrow & Exchange State Machine**: Full lifecycle tracking (`Available` ➔ `Requested` ➔ `Borrowed / In Exchange` ➔ `Returned`).
-3. **Student Transactions Dashboard**: Dedicated hub for Incoming Requests, Active Listings, and Borrowed Items with real-time due date countdowns.
-4. **Peer & Seller Rating System**: Interactive 5-star review engine with dynamic average calculations.
+1. **Official NUB Authentication**: Strictly restricted to `@nub.ac.bd` university emails.
+2. **Realistic NUB Academic Marketplace**: Populated with 10 authentic university study items with course codes, condition badges, and high-resolution academic photos.
+3. **1-Click Student Demo Switcher**: Instant switching between **Rifat Hasan** (`202110045`) and **Ruma Akter** (`202220015`) to test the complete peer borrow and exchange lifecycle.
+4. **Peer Borrow & Exchange State Machine**: Full lifecycle tracking (`Available` ➔ `Requested` ➔ `Borrowed / In Exchange` ➔ `Returned`).
+5. **Student Transactions Dashboard**: Dedicated hub for Incoming Requests, Active Listings, and Borrowed Items with real-time due date countdowns.
+6. **Peer & Seller Rating System**: Interactive 5-star review engine with dynamic average calculations.
 
 ---
 
-## 🔄 Borrow & Exchange State Machine
+## 🎒 Realistic Study Items in the NUB Marketplace
+
+| # | Item Title | Category | Course Code | Condition | Type | Price / Terms | Owner |
+|---|---|---|---|---|---|---|---|
+| 1 | **Casio fx-991MS Scientific Calculator** (2-Line Display, 401 Functions) | Tech & Electronics | `MATH 101` | Like New | **Sell** | **৳650** (MSRP ৳1,400) | Rifat Hasan |
+| 2 | **Discrete Mathematics and Its Applications** (Rosen 7th Ed) | Textbooks | `CSE 103` | Good | **Borrow / Trade** | **৳30 / week** (Trade for Algorithms) | Ruma Akter |
+| 3 | **Digital Logic Design Breadboard with IC 7408, 7432, 7404 Kit** | Lab & Engineering | `CSE 123` | Like New | **Borrow** | **৳50 / week** (*Pre-seeded request pending!*) | Rifat Hasan |
+| 4 | **Microprocessor 8086 Manual & CSE 3rd Sem Lecture Notes** | Notes & Study Kits | `CSE 221` | Fair | **Exchange** | **Trade Only** (Looking for DBMS notes) | Ruma Akter |
+| 5 | **Drafting T-Scale & Engineering Drawing Set** (with tube) | Lab & Engineering | `ME 101` | Good | **Sell** | **৳300** | Rifat Hasan |
+| 6 | **Data Communications & Networking** (Forouzan 5th Ed) | Textbooks | `CSE 231` | Like New | **Sell** | **৳420** | Ruma Akter |
+| 7 | **Introductory Circuit Analysis (Boylestad) + Digital Multimeter DT-830D** | Tech & Electronics | `EEE 101` | Brand New | **Borrow** | **৳45 / week** | Rifat Hasan |
+| 8 | **Structured Programming with C (Balagurusamy 8th Ed) + Workbook** | Textbooks | `CSE 111` | Like New | **Sell** | **৳250** | Ruma Akter |
+| 9 | **Casio fx-991EX ClassWiz Calculator** (High-Res Natural Display) | Tech & Electronics | `MATH 201` | Brand New | **Exchange** | **Trade Only** (Trade for Arduino kit) | Rifat Hasan |
+| 10 | **Principles of Marketing** (Philip Kotler 17th Ed) | Textbooks | `BBA 201` | Good | **Borrow** | **৳30 / week** | Ruma Akter |
+
+---
+
+## 👥 Student Demo Switcher ('Rifat' & 'Ruma')
+
+CampusKart includes a persistent **Peer Demo Testing Bar** at the top of every page and a **Floating Quick-Switcher Pill** at the bottom-left:
+
+- **Rifat Hasan** (`rifat.cse@nub.ac.bd` &bull; ID: `202110045` &bull; CSE '25):
+  - Owner of: *Casio fx-991MS*, *DLD Breadboard kit*, *Drafting T-Scale*, *Boylestad Circuit kit*, and *Casio fx-991EX ClassWiz*.
+  - Has 1 pending incoming borrow request from Ruma awaiting approval.
+- **Ruma Akter** (`ruma.cse@nub.ac.bd` &bull; ID: `202220015` &bull; CSE '26):
+  - Owner of: *Discrete Mathematics (CSE 103)*, *Microprocessor 8086 Manual (CSE 221)*, *Forouzan Networking (CSE 231)*, *C Programming (CSE 111)*, and *Principles of Marketing (BBA 201)*.
+  - Active borrower requesting Rifat's DLD Breadboard kit for her midterm lab.
+
+### How to Switch:
+- Click **"Rifat Hasan"** or **"Ruma Akter"** directly in the top demo banner or bottom-left floating pill.
+- Click **"Toggle Student"** (`🔀`) to instantly toggle back and forth.
+- In the **Sign In modal**, click either **"Rifat (202110045)"** or **"Ruma (202220015)"** for 1-click authentication.
+
+---
+
+## 🔄 Borrow & Exchange State Machine Workflow
 
 ```
    [ Available ] 
@@ -33,65 +70,58 @@ Featuring:
                      [ Available Again ]
 ```
 
-### State Machine Workflow:
-1. **Requesting an Item**:
-   - A logged-in student clicks **"Borrow"** or **"Exchange"** on an available item card or within the details modal.
-   - The student specifies needed duration (e.g. 7 days, 14 days, Exam month) or specifies the item they are offering in trade.
-   - The item status immediately transitions to **`Requested`**, locking it from conflicting requests.
-2. **Owner Review & Due Date Scheduling**:
-   - The item owner receives an alert in their **Transactions Dashboard** under **"Incoming Requests"** (with live badge counter in the navbar).
-   - The owner can **"Approve"** or **"Decline"** with 1 click.
-   - On approval, the owner sets an expected return due-date via presets (`7 Days`, `14 Days`, `30 Days`) or a custom date picker.
-   - The item transitions to **`Borrowed`** or **`In Exchange`**.
-3. **Return & Completion**:
-   - When the borrowing period concludes, the owner clicks **"Mark as Returned"** in their dashboard.
-   - The item safely reverts back to **`Available`** status, ready for future campus peers.
-4. **Peer & Seller Rating**:
-   - The borrower is prompted with a **"Rate Lender"** button.
-   - Submitting a 1–5 star rating and feedback automatically updates the seller's average score across all their active listings.
+### Complete Walkthrough Test:
+1. **View Pre-Seeded Incoming Request (as Rifat)**:
+   - On page load, you are already signed in as **Rifat Hasan**.
+   - Notice the amber notification badge `1` on the **"Transactions"** button in the navbar.
+   - Click **"Transactions"** (or use the profile menu) to open the dashboard.
+   - Under **"Incoming Requests"**, see the request from **Ruma Akter** for your *Digital Logic Design Breadboard with IC Kit*.
+   - Click **"Approve & Set Due Date"**, select **"7 Days"** (or a custom date), and click **"Confirm Approval"**.
+   - The item status updates to **`Borrowed`** with an active countdown!
+
+2. **Switch to Ruma (as Borrower)**:
+   - Click the **"Ruma Akter"** button in the demo switcher bar or floating pill.
+   - Notice your active student profile updates to **Ruma Akter (202220015)**.
+   - Open **"Transactions"** and navigate to the **"Items I Borrowed"** tab.
+   - You will see the *DLD Breadboard kit* with a live return countdown (e.g. `Due in 7 days`).
+
+3. **Request a Book from Ruma (as Rifat)**:
+   - Switch back to **Rifat Hasan**.
+   - In the marketplace, find Ruma's listing: **"Discrete Mathematics and Its Applications (CSE 103)"**.
+   - Click **"Borrow"** on the card.
+   - Choose your duration (e.g. `14 Days`) and submit your request.
+   - The card status changes to **`Requested`**.
+   - Switch to **Ruma** and open her **Transactions Dashboard** ➔ Rifat's new request is waiting for her approval!
+
+4. **Mark as Returned & Rate Seller**:
+   - The item owner clicks **"Mark as Returned"** in the dashboard.
+   - The borrower receives a **"Rate Lender ★"** button.
+   - Leaving a 1–5 star rating dynamically updates the average rating badge on the lender's profile and item cards!
 
 ---
 
 ## 📊 User Transactions Dashboard ("My Transactions")
 
-Accessible via the navbar shortcut button or the student profile dropdown:
-
-1. **Incoming Requests Tab**:
-   - Lists all requests pending owner decision.
-   - Displays borrower identity: Name, Student ID, Department, Email, requested duration, and meetup notes.
-   - Immediate **"Approve & Set Due Date"** and **"Decline"** controls.
-2. **My Listings Tab**:
-   - Displays all items created by the logged-in student.
-   - Live filter tabs: `All`, `Available`, `Requested`, and `Borrowed / In Exchange`.
-   - **"Mark as Returned"** action button for active borrows.
-3. **Items I Borrowed Tab**:
-   - Displays all items requested or borrowed by the current user.
-   - **Real-Time Due Date Countdown**:
-     - Normal countdown (e.g., `Due in 7 days`).
-     - Urgent highlight when $\le 2$ days remaining (animated pulse).
-     - Overdue status indicator if the due date has passed.
-   - **"Rate Lender ★"** button appears once an item has been marked as returned.
+Accessible via the navbar shortcut button or student profile dropdown:
+- **Incoming Requests Tab**: Review borrower name, student ID, requested duration, and campus meetup notes with 1-click **"Approve"** and **"Decline"** buttons.
+- **My Listings Tab**: Real-time management of all items owned by the current student, filterable by `All`, `Available`, `Requested`, and `Borrowed`.
+- **Items I Borrowed Tab**: Live return due-date countdowns, urgency pulses ($\le 2$ days), and completion review prompts.
 
 ---
 
 ## ⭐ Seller & Peer Rating System
 
-- **5-Star Interactive Selector**: Click or hover to select 1 to 5 stars with live rating sentiment descriptions (e.g., *"5 Stars - Outstanding Peer!"*).
-- **Quick-Tag Pills**: 1-click presets: `+ Punctual & Friendly`, `+ Item in great condition`, `+ Smooth return`, `+ Helpful classmate`.
-- **Dynamic Score Updating**: Ratings are stored in `campuskart_reviews_v1`, and the seller's average rating (e.g. `★ 4.9`) and total review count automatically recalculate and display on item cards and in the details modal.
+- **Interactive 5-Star Engine**: Visual star selector with descriptive sentiments (*Outstanding*, *Great*, *Fair*).
+- **Quick-Tag Pills**: `+ Punctual & Friendly`, `+ Item in great condition`, `+ Smooth return`, `+ Helpful classmate`.
+- **Automatic Score Recalculation**: Stored in `localStorage` (`campuskart_reviews_v2`) and dynamically displayed on all cards and modals.
 
 ---
 
 ## 🔐 University Authentication (`@nub.ac.bd`)
 
-- **Strict Domain Validation**: Only emails ending with `@nub.ac.bd` are accepted for registration.
-- **Interactive Live Validator**: Input field displays instant visual indicators (green checkmark for valid `@nub.ac.bd`, red warning for external domains).
-- **Session Persistence**: Sessions persist in `localStorage` across page reloads.
-- **Pre-configured Demo Student**:
-  - Email: `student@nub.ac.bd`
-  - Student ID: `202110045` (Tanvir Ahmed - CSE)
-  - Password: `campus123`
-  - *Pre-seeded with 1 incoming borrow request on the Arduino Starter Kit so you can immediately test the approval and due date workflow!*
+- **Strict University Domain**: All registrations must end with `@nub.ac.bd`.
+- **Live Input Validation**: Instant visual feedback (green checkmark for `@nub.ac.bd`, red warning otherwise).
+- **Automatic State Management**: Navigation controls, post item author details, and transaction ownership update dynamically with active session.
 
 ---
 
@@ -101,25 +131,19 @@ Accessible via the navbar shortcut button or the student profile dropdown:
 Software Devlopment Project/
 ├── index.html          # Semantic HTML5 layout with Tailwind CSS & interactive modals
 ├── css/
-│   └── custom.css      # Status badges, countdown animations, star ratings & tab styles
+│   └── custom.css      # Custom badge styling, animations, floating switcher & star rating
 ├── js/
-│   ├── data.js         # Seed items with state machine statuses, student IDs & seed reviews
-│   └── app.js          # Authentication, state machine transitions, dashboard & rating engine
+│   ├── data.js         # 10 realistic NUB study items, course codes, Rifat/Ruma profiles & reviews
+│   └── app.js          # Main app logic, state machine, demo switcher, auth & dashboard
 └── README.md           # Documentation and guide
 ```
 
 ---
 
-## 🚀 How to Run & Test
+## 🚀 How to Launch the Application
 
-1. Open `index.html` in your browser:
-   ```powershell
-   Start-Process "index.html"
-   ```
-2. Click **"Sign In"** in the top navbar and click **"Auto-fill Demo"** (logs in as `Tanvir Ahmed`, ID: `202110045`).
-3. Notice the amber badge `1` on the **Transactions** button in the navbar:
-   - Click it to view the **Incoming Request** from *Ayesha Siddiqua* for the *Arduino Uno Starter Kit*.
-   - Click **"Approve & Set Due Date"**, choose **"7 Days"**, and confirm.
-   - Status changes to **`Borrowed`** with due date!
-   - Click **"Mark as Returned"** to complete the cycle and reopen the item for reviews!
-4. Try requesting a book (e.g., *Stewart Calculus* or *CLRS Algorithms*) to test borrower requests!
+Double-click `index.html` or run the following command in PowerShell:
+
+```powershell
+Start-Process "index.html"
+```

@@ -8,19 +8,19 @@
  * 4. Seller and Peer Rating System with dynamic star averages.
  */
 
-// Storage keys
-const STORAGE_ITEMS_KEY = 'campuskart_listings_v1';
-const STORAGE_WISHLIST_KEY = 'campuskart_wishlist_v1';
-const STORAGE_AUTH_KEY = 'campuskart_auth_session_v1';
-const STORAGE_USERS_KEY = 'campuskart_registered_users_v1';
-const STORAGE_REVIEWS_KEY = 'campuskart_reviews_v1';
+// Storage keys (v2 with authentic NUB student listings & peer workflow switch)
+const STORAGE_ITEMS_KEY = 'campuskart_listings_v2';
+const STORAGE_WISHLIST_KEY = 'campuskart_wishlist_v2';
+const STORAGE_AUTH_KEY = 'campuskart_auth_session_v2';
+const STORAGE_USERS_KEY = 'campuskart_registered_users_v2';
+const STORAGE_REVIEWS_KEY = 'campuskart_reviews_v2';
 
-// Pre-seeded verified NUB student accounts
+// Pre-seeded verified NUB student accounts for peer testing
 const DEFAULT_NUB_USERS = [
   {
-    id: "nub-user-01",
-    name: "Tanvir Ahmed",
-    email: "student@nub.ac.bd",
+    id: "nub-user-rifat",
+    name: "Rifat Hasan",
+    email: "rifat.cse@nub.ac.bd",
     studentId: "202110045",
     department: "Computer Science & Engineering (CSE)",
     password: "campus123",
@@ -28,11 +28,11 @@ const DEFAULT_NUB_USERS = [
     createdAt: "2026-01-10"
   },
   {
-    id: "nub-user-02",
-    name: "Ayesha Siddiqua",
-    email: "ayesha.bba@nub.ac.bd",
-    studentId: "202220118",
-    department: "Business Administration (BBA)",
+    id: "nub-user-ruma",
+    name: "Ruma Akter",
+    email: "ruma.cse@nub.ac.bd",
+    studentId: "202220015",
+    department: "Computer Science & Engineering (CSE)",
     password: "campus123",
     avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80",
     createdAt: "2026-02-14"
@@ -82,6 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateWishlistCount();
   updateAuthUI();
   updateNotificationBadges();
+  updateDemoSwitcherUI();
 });
 
 /**
@@ -102,6 +103,13 @@ function loadAuthData() {
     const savedUsers = localStorage.getItem(STORAGE_USERS_KEY);
     if (savedUsers) {
       registeredUsers = JSON.parse(savedUsers);
+      // Ensure Rifat and Ruma exist in registeredUsers
+      DEFAULT_NUB_USERS.forEach(defUser => {
+        if (!registeredUsers.some(u => u.studentId === defUser.studentId)) {
+          registeredUsers.push(defUser);
+        }
+      });
+      saveUsersToStorage();
     } else {
       registeredUsers = [...DEFAULT_NUB_USERS];
       saveUsersToStorage();
@@ -111,12 +119,14 @@ function loadAuthData() {
     if (savedSession) {
       currentUser = JSON.parse(savedSession);
     } else {
-      currentUser = null;
+      // Default to Rifat Hasan on first launch for seamless peer testing
+      currentUser = { ...DEFAULT_NUB_USERS[0] };
+      saveSessionToStorage(currentUser);
     }
   } catch (err) {
     console.error('Error loading auth data', err);
     registeredUsers = [...DEFAULT_NUB_USERS];
-    currentUser = null;
+    currentUser = { ...DEFAULT_NUB_USERS[0] };
   }
 }
 
@@ -320,6 +330,93 @@ function updateAuthUI() {
   }
 
   updateNotificationBadges();
+  updateDemoSwitcherUI();
+}
+
+/**
+ * =========================================================================
+ * DEMO SWITCHER SYSTEM (RIFAT & RUMA)
+ * =========================================================================
+ */
+
+function updateDemoSwitcherUI() {
+  const rifatBtn = document.getElementById('demoSwitchRifatBtn');
+  const rumaBtn = document.getElementById('demoSwitchRumaBtn');
+  const floatRifat = document.getElementById('floatingSwitchRifat');
+  const floatRuma = document.getElementById('floatingSwitchRuma');
+  const floatUserLabel = document.getElementById('floatingActiveUser');
+
+  const isRifat = currentUser && (currentUser.studentId === '202110045' || currentUser.email?.includes('rifat'));
+  const isRuma = currentUser && (currentUser.studentId === '202220015' || currentUser.email?.includes('ruma'));
+
+  if (rifatBtn) {
+    if (isRifat) {
+      rifatBtn.className = 'px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition demo-btn-active';
+    } else {
+      rifatBtn.className = 'px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition demo-btn-inactive';
+    }
+  }
+
+  if (rumaBtn) {
+    if (isRuma) {
+      rumaBtn.className = 'px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition demo-btn-active';
+    } else {
+      rumaBtn.className = 'px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition demo-btn-inactive';
+    }
+  }
+
+  if (floatRifat) {
+    floatRifat.className = isRifat 
+      ? 'px-2.5 py-1 text-xs font-bold rounded-lg transition demo-btn-active' 
+      : 'px-2.5 py-1 text-xs font-bold rounded-lg transition demo-btn-inactive';
+  }
+
+  if (floatRuma) {
+    floatRuma.className = isRuma 
+      ? 'px-2.5 py-1 text-xs font-bold rounded-lg transition demo-btn-active' 
+      : 'px-2.5 py-1 text-xs font-bold rounded-lg transition demo-btn-inactive';
+  }
+
+  if (floatUserLabel) {
+    if (currentUser) {
+      floatUserLabel.textContent = `${currentUser.name.split(' ')[0]} (${currentUser.studentId})`;
+    } else {
+      floatUserLabel.textContent = 'Guest (Sign in)';
+    }
+  }
+}
+
+function switchDemoUser(target) {
+  let targetUser = null;
+  if (target === 'rifat') {
+    targetUser = registeredUsers.find(u => u.studentId === '202110045') || DEFAULT_NUB_USERS[0];
+  } else if (target === 'ruma') {
+    targetUser = registeredUsers.find(u => u.studentId === '202220015') || DEFAULT_NUB_USERS[1];
+  }
+
+  if (!targetUser) return;
+
+  currentUser = { ...targetUser };
+  saveSessionToStorage(currentUser);
+
+  updateAuthUI();
+  renderItems();
+  updateNotificationBadges();
+
+  const dashModal = document.getElementById('dashboardModal');
+  if (dashModal && !dashModal.classList.contains('hidden')) {
+    renderDashboard();
+  }
+
+  showToast(`Switched active student to ${currentUser.name} (${currentUser.studentId}) 🎓`, 'success');
+}
+
+function toggleStudentDemo() {
+  if (currentUser && currentUser.studentId === '202110045') {
+    switchDemoUser('ruma');
+  } else {
+    switchDemoUser('rifat');
+  }
 }
 
 function openAuthModal(mode = 'login', noticeMessage = null) {
@@ -446,6 +543,15 @@ function bindAuthEvents() {
   }
 
   document.getElementById('fillDemoBtn')?.addEventListener('click', fillDemoCredentials);
+  document.getElementById('demoLoginRifatBtn')?.addEventListener('click', () => {
+    switchDemoUser('rifat');
+    closeAuthModal();
+  });
+  document.getElementById('demoLoginRumaBtn')?.addEventListener('click', () => {
+    switchDemoUser('ruma');
+    closeAuthModal();
+  });
+
   document.getElementById('toggleLoginPassBtn')?.addEventListener('click', function() {
     togglePasswordVisibility('loginPassword', this);
   });
@@ -474,9 +580,9 @@ function fillDemoCredentials() {
   const emailInput = document.getElementById('loginEmail');
   const passInput = document.getElementById('loginPassword');
   if (emailInput && passInput) {
-    emailInput.value = 'student@nub.ac.bd';
+    emailInput.value = 'rifat.cse@nub.ac.bd';
     passInput.value = 'campus123';
-    showAuthAlert('Demo credentials filled! Click "Sign In" to proceed.', 'success');
+    showAuthAlert('Rifat Hasan demo credentials filled! Click "Sign In" to proceed.', 'success');
   }
 }
 
@@ -1160,6 +1266,7 @@ function renderDashboard() {
   renderDashboardBorrowedPanel();
 
   updateNotificationBadges();
+  updateDemoSwitcherUI();
 }
 
 function renderDashboardListingsPanel() {
@@ -2035,7 +2142,7 @@ function generateCardHtml(item) {
 
   // Transaction Tag
   let transactionClass = 'transaction-sell';
-  let transactionIcon = 'fa-dollar-sign';
+  let transactionIcon = 'fa-tag';
   let transactionBadgeLabel = 'FOR SALE';
   let priceSnippet = `<span class="text-xl font-bold text-slate-900">${item.priceLabel}</span>`;
 
@@ -2605,12 +2712,12 @@ function handleNewListingSubmit(e) {
   if (transaction === 'Sell') {
     const rawPrice = parseFloat(document.getElementById('postPriceInput')?.value || 0);
     price = isNaN(rawPrice) ? 0 : rawPrice;
-    priceLabel = `$${price}`;
+    priceLabel = `৳${price}`;
   } else if (transaction === 'Borrow') {
-    const rawRate = document.getElementById('postBorrowRateInput')?.value.trim() || '$5 / week';
-    borrowTerms = document.getElementById('postBorrowTermsInput')?.value.trim() || 'Standard deposit required';
+    const rawRate = document.getElementById('postBorrowRateInput')?.value.trim() || '৳50 / week';
+    borrowTerms = document.getElementById('postBorrowTermsInput')?.value.trim() || 'Student ID card deposit';
     priceLabel = rawRate;
-    price = 5;
+    price = 50;
   } else if (transaction === 'Exchange') {
     exchangeFor = document.getElementById('postExchangeForInput')?.value.trim() || 'Open to course-related trades';
     priceLabel = 'Trade Only';

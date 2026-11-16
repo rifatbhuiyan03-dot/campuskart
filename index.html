@@ -63,6 +63,51 @@
     </div>
   </div>
 
+  <!-- ================= DEMO ROLE SWITCHER BANNER ================= -->
+  <aside aria-label="Demo Testing Bar" class="demo-switch-bar text-white py-2 px-4 border-b border-indigo-800/40 text-xs">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold text-[10px] uppercase tracking-wider border border-amber-500/30">
+          <i class="fa-solid fa-flask"></i> Peer Workflow Demo
+        </span>
+        <span class="text-slate-300 text-xs hidden sm:inline">
+          Switch student profiles with 1 click to test borrowing & request approvals:
+        </span>
+      </div>
+
+      <!-- Quick Switcher Buttons -->
+      <div class="flex items-center gap-2">
+        <button type="button" 
+                id="demoSwitchRifatBtn"
+                onclick="switchDemoUser('rifat')" 
+                title="Switch to Rifat (Owner: Casio fx-991MS, DLD Breadboard kit, T-Scale)"
+                class="px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition demo-btn-active">
+          <i class="fa-solid fa-user-graduate text-indigo-300"></i>
+          <span>Rifat Hasan (CSE '25)</span>
+          <span class="text-[10px] opacity-75 hidden md:inline">&bull; 202110045</span>
+        </button>
+
+        <button type="button" 
+                id="demoSwitchRumaBtn"
+                onclick="switchDemoUser('ruma')" 
+                title="Switch to Ruma (Owner: Discrete Math, Microprocessor notes, etc.)"
+                class="px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition demo-btn-inactive">
+          <i class="fa-solid fa-user-graduate text-pink-300"></i>
+          <span>Ruma Akter (CSE '26)</span>
+          <span class="text-[10px] opacity-75 hidden md:inline">&bull; 202220015</span>
+        </button>
+
+        <button type="button" 
+                onclick="toggleStudentDemo()" 
+                title="Toggle between Rifat & Ruma"
+                class="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-1 shadow-xs">
+          <i class="fa-solid fa-shuffle text-[11px]"></i>
+          <span class="hidden sm:inline">Toggle Student</span>
+        </button>
+      </div>
+    </div>
+  </aside>
+
   <!-- ================= NAVBAR ================= -->
   <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -527,16 +572,16 @@
         <!-- Conditional Transaction Fields -->
         <div id="postPriceField">
           <label for="postPriceInput" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-            Selling Price ($ USD / BDT) <span class="text-rose-500">*</span>
+            Selling Price (৳ BDT) <span class="text-rose-500">*</span>
           </label>
           <div class="relative">
-            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 font-bold">$</span>
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 font-bold">৳</span>
             <input type="number" 
                    id="postPriceInput" 
                    min="0" 
                    step="1" 
-                   placeholder="35" 
-                   value="25" 
+                   placeholder="650" 
+                   value="650" 
                    class="w-full text-sm pl-8 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
           </div>
         </div>
@@ -548,8 +593,8 @@
             </label>
             <input type="text" 
                    id="postBorrowRateInput" 
-                   placeholder="e.g. $5 / week or Free" 
-                   value="$5 / week" 
+                   placeholder="e.g. ৳50 / week or Free" 
+                   value="৳50 / week" 
                    class="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
           </div>
           <div>
@@ -558,7 +603,8 @@
             </label>
             <input type="text" 
                    id="postBorrowTermsInput" 
-                   placeholder="e.g. $20 deposit returned upon exam completion" 
+                   placeholder="e.g. Student ID card or ৳200 deposit" 
+                   value="Student ID card deposit" 
                    class="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
           </div>
         </div>
@@ -569,7 +615,7 @@
           </label>
           <input type="text" 
                  id="postExchangeForInput" 
-                 placeholder="e.g. CHEM 222 lab notebook or Scientific calculator" 
+                 placeholder="e.g. CSE 103 Discrete Math book or Scientific calculator" 
                  class="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
         </div>
 
@@ -592,9 +638,9 @@
             <input type="text" 
                    id="postSellerName" 
                    placeholder="Student Name" 
-                   value="Tanvir Ahmed (202110045)" 
+                   value="Rifat Hasan (202110045)" 
                    class="w-full text-sm px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            <input type="hidden" id="postSellerMajor" value="CSE '26 (NUB)" />
+            <input type="hidden" id="postSellerMajor" value="CSE '25 (NUB)" />
           </div>
         </div>
 
@@ -782,13 +828,30 @@
           <span>Sign In to CampusKart</span>
         </button>
 
-        <!-- Quick Demo Pill -->
+        <!-- Quick Demo Pill with 1-Click Fast Logins for Rifat & Ruma -->
         <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl text-center text-xs text-slate-500">
-          <p class="font-semibold text-slate-700 mb-1">Pre-registered NUB Student Account:</p>
-          <div class="inline-flex flex-wrap items-center justify-center gap-1.5 font-mono text-[11px] bg-white px-2.5 py-1 rounded-lg border border-slate-200 text-slate-800">
-            <span>Email: <strong>student@nub.ac.bd</strong></span>
-            <span>&bull;</span>
+          <p class="font-semibold text-slate-700 mb-1.5 flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-users text-indigo-600"></i>
+            <span>1-Click NUB Student Demo Logins:</span>
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-1">
+            <button type="button" 
+                    id="demoLoginRifatBtn" 
+                    class="py-1.5 px-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg font-semibold text-xs transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-user-check text-[11px]"></i>
+              <span>Rifat (202110045)</span>
+            </button>
+            <button type="button" 
+                    id="demoLoginRumaBtn" 
+                    class="py-1.5 px-2 bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200 rounded-lg font-semibold text-xs transition flex items-center justify-center gap-1.5">
+              <i class="fa-solid fa-user-check text-[11px]"></i>
+              <span>Ruma (202220015)</span>
+            </button>
+          </div>
+          <div class="mt-2 inline-flex items-center gap-2 text-[10px] text-slate-500 font-mono">
             <span>Pass: <strong>campus123</strong></span>
+            <span>&bull;</span>
+            <span>Domain: <strong>@nub.ac.bd</strong></span>
           </div>
         </div>
       </form>
@@ -808,7 +871,7 @@
             <input type="text" 
                    id="regName" 
                    required 
-                   placeholder="e.g. Tanvir Ahmed" 
+                   placeholder="e.g. Rifat Hasan" 
                    class="w-full text-sm pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" />
           </div>
         </div>
@@ -1284,6 +1347,39 @@
       </div>
     </div>
   </footer>
+
+  <!-- ================= FLOATING DEMO USER SWITCHER PILL ================= -->
+  <aside aria-label="Quick Demo User Switcher" class="fixed bottom-5 left-5 z-40 bg-slate-900/95 backdrop-blur-md text-white p-2 sm:px-3 sm:py-2 rounded-2xl border border-indigo-500/30 shadow-2xl flex items-center gap-2.5 floating-demo-switcher">
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white text-xs font-bold shrink-0">
+        <i class="fa-solid fa-users"></i>
+      </div>
+      <div class="hidden sm:block text-left pr-1">
+        <p class="text-[10px] text-slate-400 font-medium leading-none">Active Student</p>
+        <p id="floatingActiveUser" class="text-xs font-bold text-white truncate max-w-[140px]">Rifat (202110045)</p>
+      </div>
+    </div>
+    <div class="flex items-center gap-1.5 border-l border-slate-700/80 pl-2">
+      <button type="button" 
+              onclick="switchDemoUser('rifat')" 
+              id="floatingSwitchRifat" 
+              class="px-2.5 py-1 text-xs font-bold rounded-lg transition demo-btn-active">
+        Rifat
+      </button>
+      <button type="button" 
+              onclick="switchDemoUser('ruma')" 
+              id="floatingSwitchRuma" 
+              class="px-2.5 py-1 text-xs font-bold rounded-lg transition demo-btn-inactive">
+        Ruma
+      </button>
+      <button type="button" 
+              onclick="toggleStudentDemo()" 
+              title="Toggle between Rifat & Ruma"
+              class="w-7 h-7 rounded-lg bg-indigo-600/80 hover:bg-indigo-600 flex items-center justify-center text-white transition text-xs">
+        <i class="fa-solid fa-arrows-rotate"></i>
+      </button>
+    </div>
+  </aside>
 
   <!-- Scripts -->
   <script src="js/data.js"></script>
