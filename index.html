@@ -46,25 +46,8 @@
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
 
-  <!-- ================= TOP ANNOUNCEMENT TICKER ================= -->
-  <div class="bg-indigo-950 text-indigo-100 text-xs py-2 px-4 border-b border-indigo-900/60">
-    <div class="max-w-7xl mx-auto flex items-center justify-between">
-      <div class="flex items-center space-x-2">
-        <span class="bg-blue-600 text-white text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full flex items-center gap-1">
-          <i class="fa-solid fa-shield-halved"></i> NUB Verified
-        </span>
-        <span class="truncate">Northern University Bangladesh Marketplace &bull; Strict <strong>@nub.ac.bd</strong> verified access</span>
-      </div>
-      <div class="hidden sm:flex items-center space-x-4 text-[11px] text-indigo-200">
-        <span class="flex items-center gap-1"><i class="fa-solid fa-graduation-cap"></i> Ashkona Permanent Campus</span>
-        <span>&bull;</span>
-        <span class="flex items-center gap-1"><i class="fa-solid fa-clock"></i> Academic Term 2026</span>
-      </div>
-    </div>
-  </div>
-
   <!-- ================= DEMO ROLE SWITCHER BANNER ================= -->
-  <aside aria-label="Demo Testing Bar" class="demo-switch-bar text-white py-2 px-4 border-b border-indigo-800/40 text-xs">
+  <aside aria-label="Demo Testing Bar" class="demo-switch-bar text-white py-1.5 px-3 sm:px-4 border-b border-indigo-800/40 text-xs">
     <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center gap-2">
         <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold text-[10px] uppercase tracking-wider border border-amber-500/30">
@@ -108,63 +91,37 @@
     </div>
   </aside>
 
-  <!-- ================= NAVBAR ================= -->
-  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-xs">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex items-center justify-between h-16">
+  <!-- ================= MAIN NAVBAR / HEADER (DARAZ-STYLE) ================= -->
+  <header class="sticky top-0 z-40 bg-white/98 backdrop-blur-md border-b border-slate-200/90 shadow-xs">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2 md:py-2.5">
+      <div class="flex flex-wrap md:flex-nowrap items-center justify-between gap-y-2 md:gap-x-4">
         
-        <!-- Logo & Campus Badge -->
-        <div class="flex items-center space-x-3">
-          <a href="#" class="flex items-center space-x-2.5 group">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-700 via-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-500/25 group-hover:scale-105 transition-transform">
-              <i class="fa-solid fa-basket-shopping text-lg"></i>
+        <!-- Order 1: Logo & Campus Badge (No Ashkona badge) -->
+        <div class="order-1 flex items-center space-x-2 shrink-0">
+          <a href="#" class="flex items-center space-x-2 group">
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform">
+              <i class="fa-solid fa-basket-shopping text-base sm:text-lg"></i>
             </div>
             <div>
               <div class="flex items-center gap-1">
-                <span class="text-xl font-extrabold tracking-tight text-slate-900">Campus<span class="text-indigo-600">Kart</span></span>
-                <span class="bg-blue-50 text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded border border-blue-200">NUB</span>
+                <span class="text-lg sm:text-xl font-extrabold tracking-tight text-slate-900">Campus<span class="text-orange-500">Kart</span></span>
+                <span class="bg-blue-50 text-blue-700 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.2 rounded border border-blue-200">NUB</span>
               </div>
-              <p class="text-[10px] text-slate-400 font-medium leading-none">Northern University Bangladesh</p>
+              <p class="text-[9px] sm:text-[10px] text-slate-400 font-medium leading-none hidden sm:block">Northern University Bangladesh</p>
             </div>
           </a>
-
-          <!-- Campus Selector Pill (Desktop) -->
-          <div class="hidden md:flex items-center text-xs bg-slate-100 hover:bg-slate-200/80 px-2.5 py-1 rounded-lg text-slate-600 transition cursor-pointer" title="Northern University Bangladesh Ashkona Campus">
-            <i class="fa-solid fa-building-columns text-indigo-600 mr-1.5 text-[11px]"></i>
-            <span class="font-bold text-slate-700">NUB Campus</span>
-            <span class="text-[10px] text-indigo-600 font-semibold ml-1 bg-indigo-50 px-1 rounded">Ashkona</span>
-          </div>
         </div>
 
-        <!-- Center Nav Links -->
-        <nav class="hidden lg:flex items-center space-x-1">
-          <a href="#marketplace" class="px-3 py-1.5 rounded-lg text-sm font-semibold text-indigo-600 bg-indigo-50/70">
-            Marketplace
-          </a>
-          <button type="button" onclick="filterByCategoryNav('Textbooks')" class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 transition">
-            Textbooks
-          </button>
-          <button type="button" onclick="filterByCategoryNav('Tech & Electronics')" class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 transition">
-            Tech & Electronics
-          </button>
-          <button type="button" onclick="filterByCategoryNav('Lab & Engineering')" class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 transition">
-            Lab Gear
-          </button>
-          <button type="button" onclick="filterByCategoryNav('Dorm & Living')" class="px-3 py-1.5 rounded-lg text-sm font-medium text-slate-600 hover:text-indigo-600 hover:bg-slate-50 transition">
-            Dorm Essentials
-          </button>
-        </nav>
-
-        <!-- Right Side User Controls -->
-        <div class="flex items-center space-x-2 sm:space-x-3">
+        <!-- Order 2 on Mobile (Top-Right Actions), Order 3 on Desktop (Far Right) -->
+        <div class="order-2 md:order-3 flex items-center space-x-1.5 sm:space-x-2.5 shrink-0">
           
           <!-- Wishlist / Saved Toggle Button -->
           <button type="button" 
                   id="navWishlistBtn" 
                   title="View Saved Items"
-                  class="relative p-2 rounded-xl text-slate-600 hover:text-indigo-600 hover:bg-slate-100 border border-slate-200/80 transition flex items-center justify-center">
-            <i class="fa-regular fa-heart text-base"></i>
-            <span id="navWishlistCount" class="hidden absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
+                  class="relative p-2 rounded-xl text-slate-600 hover:text-orange-600 hover:bg-orange-50/50 border border-slate-200/80 transition flex items-center justify-center">
+            <i class="fa-regular fa-heart text-sm sm:text-base"></i>
+            <span id="navWishlistCount" class="hidden absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
               0
             </span>
           </button>
@@ -173,32 +130,51 @@
           <button type="button" 
                   id="navTransactionsBtn" 
                   title="My Transactions & Borrows"
-                  class="relative p-2 rounded-xl text-slate-600 hover:text-indigo-600 hover:bg-slate-100 border border-slate-200/80 transition flex items-center justify-center">
-            <i class="fa-solid fa-arrows-rotate text-base text-slate-700"></i>
-            <span id="navRequestsBadge" class="hidden absolute -top-1.5 -right-1.5 min-w-[17px] h-4 px-1 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
+                  class="relative p-2 rounded-xl text-slate-600 hover:text-orange-600 hover:bg-orange-50/50 border border-slate-200/80 transition flex items-center justify-center">
+            <i class="fa-solid fa-arrows-rotate text-sm sm:text-base text-slate-700"></i>
+            <span id="navRequestsBadge" class="hidden absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center shadow-sm">
               0
             </span>
           </button>
 
-          <!-- Post Item CTA Button -->
+          <!-- Dynamic Auth Container (Login / Sign Up OR User Profile Dropdown) -->
+          <div id="navAuthContainer" class="flex items-center space-x-1 sm:space-x-1.5 relative">
+            <!-- Populated dynamically by app.js: Login/Sign Up buttons OR Student Profile Dropdown -->
+          </div>
+
+          <!-- + Post an Item CTA Button (Right next to Auth!) -->
           <button type="button" 
-                  class="open-post-modal-btn bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-sm shadow-indigo-600/30 flex items-center space-x-1.5 active:scale-95">
+                  class="open-post-modal-btn bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all shadow-md shadow-orange-500/25 flex items-center space-x-1.5 active:scale-95 shrink-0">
             <i class="fa-solid fa-plus text-xs"></i>
             <span class="hidden sm:inline">Post an Item</span>
             <span class="sm:hidden">Post</span>
           </button>
 
-          <!-- Dynamic Auth Container (Desktop) -->
-          <div id="navAuthContainer" class="flex items-center space-x-2 pl-2 border-l border-slate-200 relative">
-            <!-- Populated dynamically by app.js: Sign In/Register buttons OR Student Profile Dropdown -->
-          </div>
-
           <!-- Mobile Hamburger Toggle -->
           <button type="button" 
                   id="mobileMenuBtn" 
                   class="lg:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 border border-slate-200">
-            <i class="fa-solid fa-bars text-lg"></i>
+            <i class="fa-solid fa-bars text-sm"></i>
           </button>
+        </div>
+
+        <!-- Order 3 on Mobile (Full-width Row 2 below Logo & Actions), Order 2 on Desktop (Wide Center) -->
+        <div class="order-3 md:order-2 w-full md:flex-1 md:max-w-2xl lg:max-w-3xl md:mx-2">
+          <form id="headerSearchForm" onsubmit="event.preventDefault(); handleHeaderSearch();" class="relative w-full">
+            <div class="relative flex items-center w-full daraz-search-wrapper rounded-xl border border-slate-300 bg-slate-50 focus-within:bg-white focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-500/20 transition-all shadow-xs overflow-hidden">
+              <input type="text" 
+                     id="searchInput" 
+                     placeholder="Search for textbooks, calculators, lab gear, course codes..." 
+                     class="w-full pl-3.5 sm:pl-4 pr-12 sm:pr-24 py-2 sm:py-2.5 text-xs sm:text-sm bg-transparent focus:outline-none placeholder:text-slate-400 text-slate-800" />
+              
+              <button type="submit" 
+                      title="Search CampusKart"
+                      class="absolute right-0 top-0 bottom-0 px-3.5 sm:px-5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-98">
+                <i class="fa-solid fa-magnifying-glass text-xs sm:text-sm"></i>
+                <span class="hidden sm:inline">Search</span>
+              </button>
+            </div>
+          </form>
         </div>
 
       </div>
@@ -210,159 +186,372 @@
       <div id="mobileAuthContainer" class="mb-3">
         <!-- Rendered dynamically -->
       </div>
-      <button type="button" onclick="filterByCategoryNav('All Categories')" class="w-full text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-indigo-50 rounded-lg">All Categories</button>
-      <button type="button" onclick="filterByCategoryNav('Textbooks')" class="w-full text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-indigo-50 rounded-lg">Textbooks</button>
-      <button type="button" onclick="filterByCategoryNav('Tech & Electronics')" class="w-full text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-indigo-50 rounded-lg">Tech & Electronics</button>
-      <button type="button" onclick="filterByCategoryNav('Lab & Engineering')" class="w-full text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-indigo-50 rounded-lg">Lab Gear & Tools</button>
-      <button type="button" onclick="filterByCategoryNav('Dorm & Living')" class="w-full text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-indigo-50 rounded-lg">Dorm & Living</button>
-      <button type="button" onclick="filterByCategoryNav('Notes & Study Kits')" class="w-full text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-indigo-50 rounded-lg">Notes & Study Kits</button>
+      <button type="button" onclick="filterByCategoryNav('All Categories')" class="w-full text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-orange-50 rounded-lg">All Categories</button>
+      <button type="button" onclick="filterByCategoryNav('Textbooks')" class="w-full text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-orange-50 rounded-lg">Textbooks</button>
+      <button type="button" onclick="filterByCategoryNav('Tech & Electronics')" class="w-full text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-orange-50 rounded-lg">Tech & Electronics</button>
+      <button type="button" onclick="filterByCategoryNav('Lab & Engineering')" class="w-full text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-orange-50 rounded-lg">Lab Gear & Tools</button>
+      <button type="button" onclick="filterByCategoryNav('Dorm & Living')" class="w-full text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-orange-50 rounded-lg">Dorm & Living</button>
+      <button type="button" onclick="filterByCategoryNav('Notes & Study Kits')" class="w-full text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-orange-50 rounded-lg">Notes & Study Kits</button>
     </div>
   </header>
 
-  <!-- ================= HERO & SEARCH FILTER CONSOLE ================= -->
-  <section class="hero-gradient border-b border-slate-200/80 pt-8 pb-10 px-4 sm:px-6 lg:px-8">
-    <div class="max-w-7xl mx-auto">
+  <!-- ================= ANIMATED FEATURED ITEMS SLIDER / BANNER (DARAZ-STYLE) ================= -->
+  <section id="heroCarouselSection" class="relative overflow-hidden bg-slate-900 border-b border-slate-800 py-3 sm:py-5 lg:py-6">
+    
+    <!-- Background ambient lighting gradients -->
+    <div class="absolute inset-0 pointer-events-none overflow-hidden opacity-25">
+      <div class="absolute -top-24 -left-24 w-96 h-96 bg-orange-500 rounded-full blur-3xl"></div>
+      <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-indigo-600 rounded-full blur-3xl"></div>
+    </div>
+
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 relative">
       
-      <!-- Headline & Tagline -->
-      <div class="text-center max-w-3xl mx-auto mb-8">
-        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-xs font-semibold mb-3">
-          <i class="fa-solid fa-graduation-cap"></i> Northern University Bangladesh &bull; Student-to-Student Marketplace
-        </div>
-        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight leading-tight">
-          Buy, Sell, Borrow & Exchange <br class="hidden sm:inline" />
-          <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-700 via-indigo-600 to-emerald-600">Across NUB Campus</span>
-        </h1>
-        <p class="mt-3 text-sm sm:text-base text-slate-600">
-          Save on engineering textbooks, scientific calculators, lab equipment, and campus gear with verified @nub.ac.bd classmates.
-        </p>
-      </div>
-
-      <!-- MAIN SEARCH & FILTER CONSOLE CARD -->
-      <div class="max-w-5xl mx-auto bg-white rounded-2xl p-4 sm:p-5 shadow-xl shadow-slate-200/60 border border-slate-200/90">
+      <!-- Carousel Frame / Wrapper with Hover Pause -->
+      <div id="heroCarouselContainer" class="relative overflow-hidden rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-800/80 bg-slate-950/70 backdrop-blur-md">
         
-        <!-- Search Input Bar & Course/Category Dropdowns -->
-        <div class="grid grid-cols-1 md:grid-cols-12 gap-3 mb-4">
+        <!-- Track for smooth sliding -->
+        <div id="heroCarouselTrack" class="flex transition-transform duration-500 ease-out">
           
-          <!-- Keyword Search -->
-          <div class="relative md:col-span-5">
-            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-              <i class="fa-solid fa-magnifying-glass"></i>
+          <!-- SLIDE 1: Casio fx-991MS Scientific Calculator -->
+          <div class="carousel-slide min-w-full w-full shrink-0 p-4 sm:p-7 md:p-9" data-index="0">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-6 items-center">
+              
+              <!-- Content Column -->
+              <div class="md:col-span-7 flex flex-col items-start justify-center text-left space-y-2.5 sm:space-y-3.5">
+                <div class="flex items-center flex-wrap gap-2">
+                  <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-wider bg-orange-500 text-white shadow-md shadow-orange-500/30">
+                    <i class="fa-solid fa-fire text-amber-200"></i> Student Deal &bull; 53% Off
+                  </span>
+                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                    <i class="fa-solid fa-bookmark text-[10px]"></i> MATH 101 / EEE 101
+                  </span>
+                </div>
+
+                <h2 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight">
+                  Casio fx-991MS Scientific Calculator
+                </h2>
+
+                <p class="text-xs sm:text-sm text-slate-300 line-clamp-2 leading-relaxed">
+                  Original 2-line display with 401 functions. Complete matrix calculation, complex numbers, and differential integration with hard slide cover & fresh battery.
+                </p>
+
+                <div class="flex flex-wrap items-baseline gap-2.5 pt-0.5">
+                  <div class="flex items-baseline gap-2">
+                    <span class="text-2xl sm:text-3xl font-black text-amber-400">৳650</span>
+                    <span class="text-xs sm:text-sm text-slate-400 line-through">৳1,400 Retail</span>
+                  </div>
+                  <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] sm:text-[11px] font-bold border border-emerald-500/30">
+                    Save ৳750 on Campus
+                  </span>
+                </div>
+
+                <div class="pt-1.5 flex flex-wrap items-center gap-3 w-full">
+                  <button type="button" 
+                          onclick="openDetailsModal('ck-101')" 
+                          class="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow-lg shadow-orange-500/30 transition-all flex items-center gap-2 active:scale-95">
+                    <span>View Item</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                  </button>
+                  <div class="flex items-center gap-2 text-slate-400 text-xs">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" class="w-6 h-6 rounded-full object-cover ring-1 ring-white" alt="Rifat" />
+                    <span>Lender: <strong class="text-slate-200">Rifat Hasan</strong> (⭐ 5.0)</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Visual / Image Column -->
+              <div class="md:col-span-5 flex justify-center">
+                <div class="relative w-full max-w-xs sm:max-w-sm rounded-2xl overflow-hidden shadow-2xl border border-slate-700/80 group">
+                  <img src="https://images.unsplash.com/photo-1587145820266-a5951ee6f620?auto=format&fit=crop&w=800&q=80" 
+                       alt="Casio fx-991MS Calculator" 
+                       class="w-full h-44 sm:h-56 md:h-64 object-cover transform transition-transform duration-700 group-hover:scale-105" />
+                  <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
+                  <span class="absolute top-3 right-3 bg-blue-600/90 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shadow">
+                    Condition: Like New
+                  </span>
+                  <div class="absolute bottom-3 left-3 right-3 text-left">
+                    <p class="text-[11px] text-slate-300"><i class="fa-solid fa-location-dot text-orange-400 mr-1"></i> NUB Central Library 2nd Fl</p>
+                  </div>
+                </div>
+              </div>
+
             </div>
-            <input type="text" 
-                   id="searchInput" 
-                   placeholder="Search Calculus, TI-84, Lab Kit, Mini Fridge, course code..." 
-                   class="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition placeholder:text-slate-400" />
           </div>
 
-          <!-- Course Code Filter Dropdown -->
-          <div class="relative md:col-span-3">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-indigo-500">
-              <i class="fa-solid fa-book-bookmark text-xs"></i>
-            </div>
-            <select id="filterCourse" 
-                    aria-label="Filter by course code"
-                    class="w-full pl-8 pr-8 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium text-slate-700 cursor-pointer appearance-none transition">
-              <!-- Dynamically populated -->
-            </select>
-            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
-              <i class="fa-solid fa-chevron-down text-xs"></i>
+          <!-- SLIDE 2: Discrete Mathematics Textbook -->
+          <div class="carousel-slide min-w-full w-full shrink-0 p-4 sm:p-7 md:p-9" data-index="1">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-6 items-center">
+              
+              <div class="md:col-span-7 flex flex-col items-start justify-center text-left space-y-2.5 sm:space-y-3.5">
+                <div class="flex items-center flex-wrap gap-2">
+                  <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-wider bg-purple-600 text-white shadow-md shadow-purple-600/30">
+                    <i class="fa-solid fa-clock text-purple-200"></i> Available to Borrow
+                  </span>
+                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                    <i class="fa-solid fa-book-open text-[10px]"></i> CSE 103 Core Textbook
+                  </span>
+                </div>
+
+                <h2 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight">
+                  Discrete Mathematics & Its Applications
+                </h2>
+
+                <p class="text-xs sm:text-sm text-slate-300 line-clamp-2 leading-relaxed">
+                  Kenneth H. Rosen 7th Edition. Covers logic, propositional calculus, graph theory & trees. Complete text with pencil annotations on solved problem sets.
+                </p>
+
+                <div class="flex flex-wrap items-baseline gap-2.5 pt-0.5">
+                  <div class="flex items-baseline gap-2">
+                    <span class="text-2xl sm:text-3xl font-black text-purple-300">৳30 <span class="text-xs font-normal text-slate-400">/ week</span></span>
+                  </div>
+                  <span class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 text-[10px] sm:text-[11px] font-bold border border-sky-500/30">
+                    Open for Exchange: Trade for Algorithms
+                  </span>
+                </div>
+
+                <div class="pt-1.5 flex flex-wrap items-center gap-3 w-full">
+                  <button type="button" 
+                          onclick="openDetailsModal('ck-102')" 
+                          class="px-5 py-2.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-lg shadow-purple-600/30 transition-all flex items-center gap-2 active:scale-95">
+                    <span>View Item</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                  </button>
+                  <div class="flex items-center gap-2 text-slate-400 text-xs">
+                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80" class="w-6 h-6 rounded-full object-cover ring-1 ring-white" alt="Ruma" />
+                    <span>Lender: <strong class="text-slate-200">Ruma Akter</strong> (⭐ 4.9)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="md:col-span-5 flex justify-center">
+                <div class="relative w-full max-w-xs sm:max-w-sm rounded-2xl overflow-hidden shadow-2xl border border-slate-700/80 group">
+                  <img src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80" 
+                       alt="Discrete Mathematics Book" 
+                       class="w-full h-44 sm:h-56 md:h-64 object-cover transform transition-transform duration-700 group-hover:scale-105" />
+                  <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
+                  <span class="absolute top-3 right-3 bg-purple-600/90 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shadow">
+                    Condition: Good
+                  </span>
+                  <div class="absolute bottom-3 left-3 right-3 text-left">
+                    <p class="text-[11px] text-slate-300"><i class="fa-solid fa-location-dot text-purple-400 mr-1"></i> NUB Ashkona Cafeteria</p>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
 
-          <!-- Category Filter Dropdown -->
-          <div class="relative md:col-span-4">
-            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-indigo-500">
-              <i class="fa-solid fa-shapes text-xs"></i>
+          <!-- SLIDE 3: Digital Logic Design Breadboard Kit -->
+          <div class="carousel-slide min-w-full w-full shrink-0 p-4 sm:p-7 md:p-9" data-index="2">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-6 items-center">
+              
+              <div class="md:col-span-7 flex flex-col items-start justify-center text-left space-y-2.5 sm:space-y-3.5">
+                <div class="flex items-center flex-wrap gap-2">
+                  <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-wider bg-emerald-600 text-white shadow-md shadow-emerald-600/30">
+                    <i class="fa-solid fa-microchip text-emerald-200"></i> Lab Ready &bull; IC 7408, 7432, 7404
+                  </span>
+                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                    <i class="fa-solid fa-flask text-[10px]"></i> CSE 123 DLD Lab
+                  </span>
+                </div>
+
+                <h2 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight">
+                  Digital Logic Design Breadboard & IC Kit
+                </h2>
+
+                <p class="text-xs sm:text-sm text-slate-300 line-clamp-2 leading-relaxed">
+                  830-point solderless breadboard with logic gates: IC 7408 (AND), IC 7432 (OR), IC 7404 (NOT), IC 7400 (NAND), LEDs, resistors & 65-pc jumper wire bundle.
+                </p>
+
+                <div class="flex flex-wrap items-baseline gap-2.5 pt-0.5">
+                  <div class="flex items-baseline gap-2">
+                    <span class="text-2xl sm:text-3xl font-black text-emerald-300">৳50 <span class="text-xs font-normal text-slate-400">/ week</span></span>
+                  </div>
+                  <span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] sm:text-[11px] font-bold border border-amber-500/30">
+                    Pre-tested in Hardware Lab 304
+                  </span>
+                </div>
+
+                <div class="pt-1.5 flex flex-wrap items-center gap-3 w-full">
+                  <button type="button" 
+                          onclick="openDetailsModal('ck-103')" 
+                          class="px-5 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-lg shadow-emerald-600/30 transition-all flex items-center gap-2 active:scale-95">
+                    <span>View Item</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                  </button>
+                  <div class="flex items-center gap-2 text-slate-400 text-xs">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" class="w-6 h-6 rounded-full object-cover ring-1 ring-white" alt="Rifat" />
+                    <span>Lender: <strong class="text-slate-200">Rifat Hasan</strong> (CSE '25)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="md:col-span-5 flex justify-center">
+                <div class="relative w-full max-w-xs sm:max-w-sm rounded-2xl overflow-hidden shadow-2xl border border-slate-700/80 group">
+                  <img src="https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80" 
+                       alt="Digital Logic Design Breadboard Kit" 
+                       class="w-full h-44 sm:h-56 md:h-64 object-cover transform transition-transform duration-700 group-hover:scale-105" />
+                  <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
+                  <span class="absolute top-3 right-3 bg-emerald-600/90 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shadow">
+                    Condition: Like New
+                  </span>
+                  <div class="absolute bottom-3 left-3 right-3 text-left">
+                    <p class="text-[11px] text-slate-300"><i class="fa-solid fa-location-dot text-emerald-400 mr-1"></i> NUB Hardware Lab 304 (Ashkona)</p>
+                  </div>
+                </div>
+              </div>
+
             </div>
-            <select id="filterCategory" 
-                    aria-label="Filter by category"
-                    class="w-full pl-8 pr-8 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-medium text-slate-700 cursor-pointer appearance-none transition">
-              <!-- Dynamically populated -->
-            </select>
-            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
-              <i class="fa-solid fa-chevron-down text-xs"></i>
+          </div>
+
+          <!-- SLIDE 4: Microprocessor 8086 Manual & CSE Notes -->
+          <div class="carousel-slide min-w-full w-full shrink-0 p-4 sm:p-7 md:p-9" data-index="3">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-6 items-center">
+              
+              <div class="md:col-span-7 flex flex-col items-start justify-center text-left space-y-2.5 sm:space-y-3.5">
+                <div class="flex items-center flex-wrap gap-2">
+                  <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-wider bg-sky-600 text-white shadow-md shadow-sky-600/30">
+                    <i class="fa-solid fa-arrows-rotate text-sky-200"></i> Featured Exchange
+                  </span>
+                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                    <i class="fa-solid fa-laptop-code text-[10px]"></i> CSE 221 Assembly
+                  </span>
+                </div>
+
+                <h2 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight">
+                  Microprocessor 8086 Manual & Lecture Notes
+                </h2>
+
+                <p class="text-xs sm:text-sm text-slate-300 line-clamp-2 leading-relaxed">
+                  Spiral-bound study bundle with emu8086 register architecture diagrams, addressing modes breakdown, interrupt vector tables, and 4 years of solved NUB exam questions.
+                </p>
+
+                <div class="flex flex-wrap items-baseline gap-2.5 pt-0.5">
+                  <div class="flex items-baseline gap-2">
+                    <span class="text-2xl sm:text-3xl font-black text-sky-300">Trade Only</span>
+                  </div>
+                  <span class="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-[10px] sm:text-[11px] font-bold border border-indigo-500/30">
+                    Trade for CSE 223 Database Notes
+                  </span>
+                </div>
+
+                <div class="pt-1.5 flex flex-wrap items-center gap-3 w-full">
+                  <button type="button" 
+                          onclick="openDetailsModal('ck-104')" 
+                          class="px-5 py-2.5 bg-gradient-to-r from-sky-600 to-blue-600 hover:from-sky-700 hover:to-blue-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-lg shadow-sky-600/30 transition-all flex items-center gap-2 active:scale-95">
+                    <span>View Item</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                  </button>
+                  <div class="flex items-center gap-2 text-slate-400 text-xs">
+                    <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=100&q=80" class="w-6 h-6 rounded-full object-cover ring-1 ring-white" alt="Ruma" />
+                    <span>Owner: <strong class="text-slate-200">Ruma Akter</strong> (CSE '26)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="md:col-span-5 flex justify-center">
+                <div class="relative w-full max-w-xs sm:max-w-sm rounded-2xl overflow-hidden shadow-2xl border border-slate-700/80 group">
+                  <img src="https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=800&q=80" 
+                       alt="Microprocessor 8086 Manual" 
+                       class="w-full h-44 sm:h-56 md:h-64 object-cover transform transition-transform duration-700 group-hover:scale-105" />
+                  <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
+                  <span class="absolute top-3 right-3 bg-amber-600/90 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shadow">
+                    Condition: Fair
+                  </span>
+                  <div class="absolute bottom-3 left-3 right-3 text-left">
+                    <p class="text-[11px] text-slate-300"><i class="fa-solid fa-location-dot text-sky-400 mr-1"></i> NUB Central Library Study Room 3</p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- SLIDE 5: Drafting T-Scale & Engineering Drawing Set -->
+          <div class="carousel-slide min-w-full w-full shrink-0 p-4 sm:p-7 md:p-9" data-index="4">
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-6 items-center">
+              
+              <div class="md:col-span-7 flex flex-col items-start justify-center text-left space-y-2.5 sm:space-y-3.5">
+                <div class="flex items-center flex-wrap gap-2">
+                  <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] sm:text-xs font-black uppercase tracking-wider bg-rose-600 text-white shadow-md shadow-rose-600/30">
+                    <i class="fa-solid fa-compass-drafting text-rose-200"></i> Engineering Deal &bull; 60% Off
+                  </span>
+                  <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                    <i class="fa-solid fa-ruler-combined text-[10px]"></i> ME 101 Graphics
+                  </span>
+                </div>
+
+                <h2 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-white tracking-tight leading-tight">
+                  Drafting T-Scale & Engineering Drawing Set
+                </h2>
+
+                <p class="text-xs sm:text-sm text-slate-300 line-clamp-2 leading-relaxed">
+                  36-inch transparent acrylic T-Scale with bevelled edge, set-squares (30-60 & 45 deg), French curves, sheet clips, and durable cylindrical carrying tube with shoulder strap.
+                </p>
+
+                <div class="flex flex-wrap items-baseline gap-2.5 pt-0.5">
+                  <div class="flex items-baseline gap-2">
+                    <span class="text-2xl sm:text-3xl font-black text-rose-300">৳300</span>
+                    <span class="text-xs sm:text-sm text-slate-400 line-through">৳750 Stationery</span>
+                  </div>
+                  <span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 text-[10px] sm:text-[11px] font-bold border border-rose-500/30">
+                    Complete Set with Tube
+                  </span>
+                </div>
+
+                <div class="pt-1.5 flex flex-wrap items-center gap-3 w-full">
+                  <button type="button" 
+                          onclick="openDetailsModal('ck-105')" 
+                          class="px-5 py-2.5 bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-700 hover:to-amber-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-lg shadow-rose-600/30 transition-all flex items-center gap-2 active:scale-95">
+                    <span>View Item</span>
+                    <i class="fa-solid fa-arrow-right text-xs"></i>
+                  </button>
+                  <div class="flex items-center gap-2 text-slate-400 text-xs">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" class="w-6 h-6 rounded-full object-cover ring-1 ring-white" alt="Rifat" />
+                    <span>Lender: <strong class="text-slate-200">Rifat Hasan</strong> (CSE '25)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="md:col-span-5 flex justify-center">
+                <div class="relative w-full max-w-xs sm:max-w-sm rounded-2xl overflow-hidden shadow-2xl border border-slate-700/80 group">
+                  <img src="https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80" 
+                       alt="Drafting T-Scale Set" 
+                       class="w-full h-44 sm:h-56 md:h-64 object-cover transform transition-transform duration-700 group-hover:scale-105" />
+                  <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
+                  <span class="absolute top-3 right-3 bg-rose-600/90 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider shadow">
+                    Condition: Good
+                  </span>
+                  <div class="absolute bottom-3 left-3 right-3 text-left">
+                    <p class="text-[11px] text-slate-300"><i class="fa-solid fa-location-dot text-rose-400 mr-1"></i> NUB Architecture Studio 4B</p>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
 
         </div>
 
-        <!-- TRANSACTION TAG TABS & CONDITION BADGE SELECTORS -->
-        <div class="pt-3 border-t border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-          
-          <!-- Transaction Tag Filter Tabs -->
-          <div class="flex items-center flex-wrap gap-1.5">
-            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider mr-1">Transaction:</span>
-            <div class="inline-flex p-1 bg-slate-100/90 rounded-xl border border-slate-200/60">
-              <button type="button" 
-                      data-transaction="All" 
-                      class="transaction-tab px-3 py-1 text-xs font-semibold rounded-lg bg-indigo-600 text-white shadow-sm transition">
-                All
-              </button>
-              <button type="button" 
-                      data-transaction="Sell" 
-                      class="transaction-tab px-3 py-1 text-xs font-semibold rounded-lg bg-white text-slate-700 hover:bg-slate-100 transition flex items-center gap-1">
-                <i class="fa-solid fa-dollar-sign text-emerald-500 text-[10px]"></i> Sell
-              </button>
-              <button type="button" 
-                      data-transaction="Borrow" 
-                      class="transaction-tab px-3 py-1 text-xs font-semibold rounded-lg bg-white text-slate-700 hover:bg-slate-100 transition flex items-center gap-1">
-                <i class="fa-solid fa-clock text-purple-500 text-[10px]"></i> Borrow
-              </button>
-              <button type="button" 
-                      data-transaction="Exchange" 
-                      class="transaction-tab px-3 py-1 text-xs font-semibold rounded-lg bg-white text-slate-700 hover:bg-slate-100 transition flex items-center gap-1">
-                <i class="fa-solid fa-arrows-rotate text-sky-500 text-[10px]"></i> Exchange
-              </button>
-            </div>
-          </div>
+        <!-- Left / Right Navigation Arrow Buttons -->
+        <button type="button" 
+                id="carouselPrevBtn" 
+                aria-label="Previous Slide" 
+                class="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-900/60 hover:bg-orange-500 text-white backdrop-blur-md border border-white/20 flex items-center justify-center transition-all shadow-lg active:scale-90 z-20">
+          <i class="fa-solid fa-chevron-left text-xs"></i>
+        </button>
 
-          <!-- Condition Filter Badges & Sort -->
-          <div class="flex items-center flex-wrap gap-2.5">
-            
-            <!-- Condition Selector -->
-            <div class="flex items-center space-x-1.5">
-              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Condition:</span>
-              <select id="filterCondition" 
-                      aria-label="Filter by item condition"
-                      class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 font-medium text-slate-700 focus:outline-none focus:border-indigo-500">
-                <option value="All">All Conditions</option>
-                <option value="Brand New">✨ Brand New</option>
-                <option value="Like New">🌟 Like New</option>
-                <option value="Good">👍 Good</option>
-                <option value="Fair">🏷️ Fair</option>
-              </select>
-            </div>
+        <button type="button" 
+                id="carouselNextBtn" 
+                aria-label="Next Slide" 
+                class="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-900/60 hover:bg-orange-500 text-white backdrop-blur-md border border-white/20 flex items-center justify-center transition-all shadow-lg active:scale-90 z-20">
+          <i class="fa-solid fa-chevron-right text-xs"></i>
+        </button>
 
-            <!-- Sort dropdown -->
-            <div class="flex items-center space-x-1.5">
-              <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Sort:</span>
-              <select id="sortBy" 
-                      aria-label="Sort listings"
-                      class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 font-medium text-slate-700 focus:outline-none focus:border-indigo-500">
-                <option value="featured">Featured First</option>
-                <option value="newest">Recently Posted</option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
-              </select>
-            </div>
-
-            <!-- Reset Button -->
-            <button type="button" 
-                    id="btnResetFilters" 
-                    title="Reset all filters"
-                    class="text-xs text-slate-500 hover:text-rose-600 px-2 py-1 rounded-lg border border-slate-200 hover:border-rose-200 bg-white transition flex items-center gap-1">
-              <i class="fa-solid fa-arrow-rotate-left text-[10px]"></i>
-              <span>Reset</span>
-            </button>
-          </div>
-
-        </div>
-
-        <!-- Quick Course Chips Row -->
-        <div class="mt-3.5 pt-3 border-t border-slate-100 flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
-          <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0">Popular NUB Courses:</span>
-          <div id="quickCourseChips" class="flex items-center gap-1.5 shrink-0">
-            <!-- Dynamically populated -->
+        <!-- Pagination Indicators -->
+        <div class="absolute bottom-3 left-0 right-0 flex items-center justify-center gap-2 z-20">
+          <div id="carouselDots" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900/70 backdrop-blur-md border border-white/10">
+            <!-- Populated dynamically by app.js -->
           </div>
         </div>
 
@@ -409,7 +598,125 @@
   </section>
 
   <!-- ================= MAIN MARKETPLACE LISTINGS ================= -->
-  <main id="marketplace" class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+  <main id="marketplace" class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
+    
+    <!-- Quick Filter & Course Discovery Toolbar (Daraz-Style Catalog Filters) -->
+    <div class="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/90 mb-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3 mb-3.5">
+        
+        <!-- Course Code Filter Dropdown -->
+        <div class="relative sm:col-span-1 lg:col-span-6">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-orange-500">
+            <i class="fa-solid fa-book-bookmark text-xs"></i>
+          </div>
+          <select id="filterCourse" 
+                  aria-label="Filter by course code"
+                  class="w-full pl-8 pr-8 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 font-medium text-slate-700 cursor-pointer appearance-none transition">
+            <!-- Dynamically populated -->
+          </select>
+          <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+            <i class="fa-solid fa-chevron-down text-xs"></i>
+          </div>
+        </div>
+
+        <!-- Category Filter Dropdown -->
+        <div class="relative sm:col-span-1 lg:col-span-6">
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-orange-500">
+            <i class="fa-solid fa-shapes text-xs"></i>
+          </div>
+          <select id="filterCategory" 
+                  aria-label="Filter by category"
+                  class="w-full pl-8 pr-8 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500 font-medium text-slate-700 cursor-pointer appearance-none transition">
+            <!-- Dynamically populated -->
+          </select>
+          <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-slate-400">
+            <i class="fa-solid fa-chevron-down text-xs"></i>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- TRANSACTION TAG TABS & CONDITION BADGE SELECTORS -->
+      <div class="pt-3 border-t border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+        
+        <!-- Transaction Tag Filter Tabs -->
+        <div class="flex items-center flex-wrap gap-1.5">
+          <span class="text-xs font-bold text-slate-500 uppercase tracking-wider mr-1">Transaction:</span>
+          <div class="inline-flex p-1 bg-slate-100/90 rounded-xl border border-slate-200/60">
+            <button type="button" 
+                    data-transaction="All" 
+                    class="transaction-tab px-3 py-1 text-xs font-semibold rounded-lg bg-orange-500 text-white shadow-sm transition">
+              All
+            </button>
+            <button type="button" 
+                    data-transaction="Sell" 
+                    class="transaction-tab px-3 py-1 text-xs font-semibold rounded-lg bg-white text-slate-700 hover:bg-slate-100 transition flex items-center gap-1">
+              <i class="fa-solid fa-tag text-emerald-500 text-[10px]"></i> Sell
+            </button>
+            <button type="button" 
+                    data-transaction="Borrow" 
+                    class="transaction-tab px-3 py-1 text-xs font-semibold rounded-lg bg-white text-slate-700 hover:bg-slate-100 transition flex items-center gap-1">
+              <i class="fa-solid fa-clock text-purple-500 text-[10px]"></i> Borrow
+            </button>
+            <button type="button" 
+                    data-transaction="Exchange" 
+                    class="transaction-tab px-3 py-1 text-xs font-semibold rounded-lg bg-white text-slate-700 hover:bg-slate-100 transition flex items-center gap-1">
+              <i class="fa-solid fa-arrows-rotate text-sky-500 text-[10px]"></i> Exchange
+            </button>
+          </div>
+        </div>
+
+        <!-- Condition Filter Badges & Sort -->
+        <div class="flex items-center flex-wrap gap-2.5">
+          
+          <!-- Condition Selector -->
+          <div class="flex items-center space-x-1.5">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Condition:</span>
+            <select id="filterCondition" 
+                    aria-label="Filter by item condition"
+                    class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 font-medium text-slate-700 focus:outline-none focus:border-orange-500">
+              <option value="All">All Conditions</option>
+              <option value="Brand New">✨ Brand New</option>
+              <option value="Like New">🌟 Like New</option>
+              <option value="Good">👍 Good</option>
+              <option value="Fair">🏷️ Fair</option>
+            </select>
+          </div>
+
+          <!-- Sort dropdown -->
+          <div class="flex items-center space-x-1.5">
+            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider">Sort:</span>
+            <select id="sortBy" 
+                    aria-label="Sort listings"
+                    class="text-xs bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 font-medium text-slate-700 focus:outline-none focus:border-orange-500">
+              <option value="featured">Featured First</option>
+              <option value="newest">Recently Posted</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+            </select>
+          </div>
+
+          <!-- Reset Button -->
+          <button type="button" 
+                  id="btnResetFilters" 
+                  title="Reset all filters"
+                  class="text-xs text-slate-500 hover:text-rose-600 px-2 py-1 rounded-lg border border-slate-200 hover:border-rose-200 bg-white transition flex items-center gap-1">
+            <i class="fa-solid fa-arrow-rotate-left text-[10px]"></i>
+            <span>Reset</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Quick Course Chips Row -->
+      <div class="mt-3.5 pt-3 border-t border-slate-100 flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+        <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider shrink-0">Popular NUB Courses:</span>
+        <div id="quickCourseChips" class="flex items-center gap-1.5 shrink-0">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+    </div>
     
     <!-- Header with Results Counter & Active Badges -->
     <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-6 border-b border-slate-200 gap-2">

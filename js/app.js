@@ -83,6 +83,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateAuthUI();
   updateNotificationBadges();
   updateDemoSwitcherUI();
+  initHeroCarousel();
 });
 
 /**
@@ -249,20 +250,20 @@ function updateAuthUI() {
       });
 
     } else {
-      // Guest state: Show Sign In & Register buttons
+      // Guest state: Show Login & Sign Up buttons (clean Daraz-style)
       navContainer.innerHTML = `
-        <div class="flex items-center space-x-1.5">
+        <div class="flex items-center space-x-1 sm:space-x-1.5">
           <button type="button" 
                   id="navLoginBtn" 
-                  class="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 hover:text-indigo-600 hover:bg-slate-100 transition flex items-center gap-1.5 border border-slate-200">
-            <i class="fa-solid fa-arrow-right-to-bracket text-xs text-indigo-500"></i>
-            <span>Sign In</span>
+                  class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 hover:text-orange-600 hover:bg-orange-50/50 transition flex items-center gap-1.5 border border-slate-200">
+            <i class="fa-solid fa-arrow-right-to-bracket text-xs text-orange-500"></i>
+            <span>Login</span>
           </button>
           <button type="button" 
                   id="navRegisterBtn" 
-                  class="px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm shadow-indigo-600/30 transition flex items-center gap-1.5 active:scale-95">
-            <i class="fa-solid fa-user-plus text-xs"></i>
-            <span class="hidden sm:inline">Register</span>
+                  class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 transition flex items-center gap-1.5 active:scale-95 shadow-xs">
+            <i class="fa-solid fa-user-plus text-xs text-orange-400"></i>
+            <span>Sign Up</span>
           </button>
         </div>
       `;
@@ -305,10 +306,10 @@ function updateAuthUI() {
           <p class="text-[11px] text-indigo-700 mb-2.5">Access verified marketplace with your @nub.ac.bd ID</p>
           <div class="grid grid-cols-2 gap-2">
             <button type="button" onclick="openAuthModal('login')" class="py-1.5 bg-white border border-indigo-200 text-indigo-700 rounded-xl text-xs font-bold shadow-xs">
-              Sign In
+              Login
             </button>
-            <button type="button" onclick="openAuthModal('register')" class="py-1.5 bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-sm">
-              Register
+            <button type="button" onclick="openAuthModal('register')" class="py-1.5 bg-orange-600 text-white rounded-xl text-xs font-bold shadow-sm">
+              Sign Up
             </button>
           </div>
         </div>
@@ -1726,12 +1727,150 @@ function updatePostImagePreview(url) {
   }
 }
 
+/**
+ * =========================================================================
+ * HERO FEATURED ITEMS CAROUSEL (DARAZ-STYLE AUTO-SLIDER)
+ * =========================================================================
+ */
+let currentHeroSlide = 0;
+let heroCarouselTimer = null;
+const HERO_SLIDE_INTERVAL = 3500; // 3.5 seconds
+
+function handleHeaderSearch() {
+  const input = document.getElementById('searchInput');
+  if (input) {
+    activeFilters.searchQuery = input.value.trim().toLowerCase();
+    renderItems();
+  }
+  document.getElementById('marketplace')?.scrollIntoView({ behavior: 'smooth' });
+}
+
+function initHeroCarousel() {
+  const container = document.getElementById('heroCarouselContainer');
+  const track = document.getElementById('heroCarouselTrack');
+  const prevBtn = document.getElementById('carouselPrevBtn');
+  const nextBtn = document.getElementById('carouselNextBtn');
+  const dotsContainer = document.getElementById('carouselDots');
+
+  if (!container || !track) return;
+
+  const slides = track.querySelectorAll('.carousel-slide');
+  const totalSlides = slides.length;
+  if (totalSlides === 0) return;
+
+  // Render dots
+  if (dotsContainer) {
+    dotsContainer.innerHTML = Array.from({ length: totalSlides }).map((_, i) => `
+      <button type="button" 
+              class="carousel-dot ${i === 0 ? 'active' : ''}" 
+              data-slide="${i}" 
+              aria-label="Go to slide ${i + 1}"></button>
+    `).join('');
+
+    dotsContainer.querySelectorAll('.carousel-dot').forEach(dot => {
+      dot.addEventListener('click', (e) => {
+        const idx = parseInt(e.currentTarget.getAttribute('data-slide') || '0', 10);
+        goToHeroSlide(idx);
+        startAutoPlay();
+      });
+    });
+  }
+
+  function updateSlidePosition() {
+    track.style.transform = `translateX(-${currentHeroSlide * 100}%)`;
+    if (dotsContainer) {
+      dotsContainer.querySelectorAll('.carousel-dot').forEach((dot, idx) => {
+        if (idx === currentHeroSlide) {
+          dot.classList.add('active');
+        } else {
+          dot.classList.remove('active');
+        }
+      });
+    }
+  }
+
+  function nextHeroSlide() {
+    currentHeroSlide = (currentHeroSlide + 1) % totalSlides;
+    updateSlidePosition();
+  }
+
+  function prevHeroSlide() {
+    currentHeroSlide = (currentHeroSlide - 1 + totalSlides) % totalSlides;
+    updateSlidePosition();
+  }
+
+  function goToHeroSlide(index) {
+    currentHeroSlide = index;
+    updateSlidePosition();
+  }
+
+  function startAutoPlay() {
+    stopAutoPlay();
+    heroCarouselTimer = setInterval(nextHeroSlide, HERO_SLIDE_INTERVAL);
+  }
+
+  function stopAutoPlay() {
+    if (heroCarouselTimer) {
+      clearInterval(heroCarouselTimer);
+      heroCarouselTimer = null;
+    }
+  }
+
+  // Button clicks
+  nextBtn?.addEventListener('click', () => {
+    nextHeroSlide();
+    startAutoPlay();
+  });
+
+  prevBtn?.addEventListener('click', () => {
+    prevHeroSlide();
+    startAutoPlay();
+  });
+
+  // Pause on hover
+  container.addEventListener('mouseenter', stopAutoPlay);
+  container.addEventListener('mouseleave', startAutoPlay);
+
+  // Mobile Touch Swipe support
+  let touchStartX = 0;
+  let touchEndX = 0;
+
+  container.addEventListener('touchstart', (e) => {
+    touchStartX = e.changedTouches[0].screenX;
+    stopAutoPlay();
+  }, { passive: true });
+
+  container.addEventListener('touchend', (e) => {
+    touchEndX = e.changedTouches[0].screenX;
+    const diff = touchStartX - touchEndX;
+    if (Math.abs(diff) > 40) {
+      if (diff > 0) {
+        nextHeroSlide();
+      } else {
+        prevHeroSlide();
+      }
+    }
+    startAutoPlay();
+  }, { passive: true });
+
+  // Start auto slide
+  startAutoPlay();
+}
+
 function bindEvents() {
   const searchInput = document.getElementById('searchInput');
   if (searchInput) {
     searchInput.addEventListener('input', (e) => {
       activeFilters.searchQuery = e.target.value.trim().toLowerCase();
       renderItems();
+    });
+  }
+
+  const headerSearchForm = document.getElementById('headerSearchForm');
+  if (headerSearchForm) {
+    headerSearchForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      handleHeaderSearch();
     });
   }
 

@@ -3,12 +3,44 @@
 CampusKart is a responsive, student-centered campus marketplace web application built with **HTML5**, **Tailwind CSS**, and **Vanilla JavaScript**. Designed specifically for **Northern University Bangladesh (NUB)** students, it enables students to buy, sell, borrow, and trade course textbooks, scientific calculators, digital logic breadboard kits, and engineering drafting sets with peer safety and verification.
 
 Featuring:
-1. **Official NUB Authentication**: Strictly restricted to `@nub.ac.bd` university emails.
-2. **Realistic NUB Academic Marketplace**: Populated with 10 authentic university study items with course codes, condition badges, and high-resolution academic photos.
-3. **1-Click Student Demo Switcher**: Instant switching between **Rifat Hasan** (`202110045`) and **Ruma Akter** (`202220015`) to test the complete peer borrow and exchange lifecycle.
-4. **Peer Borrow & Exchange State Machine**: Full lifecycle tracking (`Available` ➔ `Requested` ➔ `Borrowed / In Exchange` ➔ `Returned`).
-5. **Student Transactions Dashboard**: Dedicated hub for Incoming Requests, Active Listings, and Borrowed Items with real-time due date countdowns.
-6. **Peer & Seller Rating System**: Interactive 5-star review engine with dynamic average calculations.
+1. **Daraz-Style Prominent Search Bar & Clean Header**: Wide search bar with orange accent button, rounded corners, responsive mobile wrapping (logo on top with login/profile, search bar full-width below, zero horizontal scroll).
+2. **Auto-Sliding Featured Items Hero Carousel**: Eye-catching sliding banner inspired by Daraz showcasing featured NUB campus items with badges ("Student Deal", "Available to Borrow", "Featured Exchange", "Lab Ready"), 3.5s auto-transitions, pause on hover, touch swipe support, and "View Item" CTA buttons.
+3. **Official NUB Authentication**: Strictly restricted to `@nub.ac.bd` university emails with clean "Login" and "Sign Up" actions.
+4. **Realistic NUB Academic Marketplace**: Populated with 10 authentic university study items with course codes, condition badges, and high-resolution academic photos.
+5. **1-Click Student Demo Switcher**: Instant switching between **Rifat Hasan** (`202110045`) and **Ruma Akter** (`202220015`) to test the complete peer borrow and exchange lifecycle.
+6. **Peer Borrow & Exchange State Machine**: Full lifecycle tracking (`Available` ➔ `Requested` ➔ `Borrowed / In Exchange` ➔ `Returned`).
+7. **Student Transactions Dashboard**: Dedicated hub for Incoming Requests, Active Listings, and Borrowed Items with real-time due date countdowns.
+8. **Peer & Seller Rating System**: Interactive 5-star review engine with dynamic average calculations.
+
+---
+
+## 🛍️ Daraz-Inspired Modern Header & Hero Section
+
+CampusKart features a redesigned, modern header and animated hero section modeled after major e-commerce platforms like Daraz:
+
+1. **Clean Header (No Redundant Announcement Tickers)**:
+   - The dark-blue top banner and redundant campus tags have been completely removed for a modern, distraction-free aesthetic.
+   - The "NUB Campus Ashkona" badge has been removed from the main navbar for cleaner alignment.
+
+2. **Prominent Wide Search Bar & Quick Actions**:
+   - Wide, rounded search input with Daraz placeholder: `"Search for textbooks, calculators, lab gear, course codes..."`.
+   - Vibrant orange/amber search action button with magnifying glass (`#headerSearchForm`).
+   - Clean, modern **"Login"** and **"Sign Up"** buttons (or student profile dropdown with avatar when logged in).
+   - High-contrast **"+ Post an Item"** action button positioned directly adjacent to authentication.
+   - **Zero Horizontal Overflow on Mobile**: Flexbox wrapping ensures that on mobile screens, the logo sits on the top row alongside profile/actions, while the search bar expands full-width directly beneath it.
+
+3. **Auto-Sliding Featured Items Banner / Hero Carousel**:
+   - Sits prominently directly below the search bar.
+   - Features 5 key campus essentials:
+     - **Casio fx-991MS Calculator** &bull; `Student Deal • 53% Off` &bull; `MATH 101`
+     - **Discrete Mathematics Textbook** &bull; `Available to Borrow` &bull; `CSE 103`
+     - **Digital Logic Design Breadboard Kit** &bull; `Lab Ready` &bull; `CSE 123`
+     - **Microprocessor 8086 Manual & Notes** &bull; `Featured Exchange` &bull; `CSE 221`
+     - **Drafting T-Scale & Drawing Set** &bull; `Engineering Deal • 60% Off` &bull; `ME 101`
+   - **Smooth Auto-Sliding**: Transitions automatically every 3.5 seconds with interactive pagination dots and chevron navigation arrows.
+   - **Interactive Controls**: Auto-slide pauses when hovering over the banner and resumes on mouse leave.
+   - **Touch / Swipe Gestures**: Seamlessly swipe left or right on mobile devices.
+   - **Instant Action**: Each slide includes a direct **"View Item"** action button opening the item details modal with full owner, course, and condition information.
 
 ---
 
