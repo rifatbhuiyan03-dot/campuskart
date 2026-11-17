@@ -82,7 +82,6 @@ document.addEventListener('DOMContentLoaded', () => {
   updateWishlistCount();
   updateAuthUI();
   updateNotificationBadges();
-  updateDemoSwitcherUI();
   initHeroCarousel();
 });
 
@@ -104,7 +103,7 @@ function loadAuthData() {
     const savedUsers = localStorage.getItem(STORAGE_USERS_KEY);
     if (savedUsers) {
       registeredUsers = JSON.parse(savedUsers);
-      // Ensure Rifat and Ruma exist in registeredUsers
+      // Ensure Rifat and Ruma exist in registeredUsers pool
       DEFAULT_NUB_USERS.forEach(defUser => {
         if (!registeredUsers.some(u => u.studentId === defUser.studentId)) {
           registeredUsers.push(defUser);
@@ -120,14 +119,12 @@ function loadAuthData() {
     if (savedSession) {
       currentUser = JSON.parse(savedSession);
     } else {
-      // Default to Rifat Hasan on first launch for seamless peer testing
-      currentUser = { ...DEFAULT_NUB_USERS[0] };
-      saveSessionToStorage(currentUser);
+      currentUser = null;
     }
   } catch (err) {
     console.error('Error loading auth data', err);
     registeredUsers = [...DEFAULT_NUB_USERS];
-    currentUser = { ...DEFAULT_NUB_USERS[0] };
+    currentUser = null;
   }
 }
 
@@ -250,18 +247,18 @@ function updateAuthUI() {
       });
 
     } else {
-      // Guest state: Show Login & Sign Up buttons (clean Daraz-style)
+      // Guest state: Show Login & Sign Up buttons (clean Daraz-style, minimal on mobile)
       navContainer.innerHTML = `
         <div class="flex items-center space-x-1 sm:space-x-1.5">
           <button type="button" 
                   id="navLoginBtn" 
-                  class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 hover:text-orange-600 hover:bg-orange-50/50 transition flex items-center gap-1.5 border border-slate-200">
+                  class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 hover:text-orange-600 hover:bg-orange-50/50 transition flex items-center gap-1 border border-slate-200">
             <i class="fa-solid fa-arrow-right-to-bracket text-xs text-orange-500"></i>
             <span>Login</span>
           </button>
           <button type="button" 
                   id="navRegisterBtn" 
-                  class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 transition flex items-center gap-1.5 active:scale-95 shadow-xs">
+                  class="hidden sm:flex px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 transition items-center gap-1.5 active:scale-95 shadow-xs">
             <i class="fa-solid fa-user-plus text-xs text-orange-400"></i>
             <span>Sign Up</span>
           </button>
@@ -331,94 +328,16 @@ function updateAuthUI() {
   }
 
   updateNotificationBadges();
-  updateDemoSwitcherUI();
 }
 
 /**
  * =========================================================================
- * DEMO SWITCHER SYSTEM (RIFAT & RUMA)
+ * STUBBED DEMO FUNCTIONS (SAFEGUARD FOR REMOVED DEMO TOGGLES)
  * =========================================================================
  */
-
-function updateDemoSwitcherUI() {
-  const rifatBtn = document.getElementById('demoSwitchRifatBtn');
-  const rumaBtn = document.getElementById('demoSwitchRumaBtn');
-  const floatRifat = document.getElementById('floatingSwitchRifat');
-  const floatRuma = document.getElementById('floatingSwitchRuma');
-  const floatUserLabel = document.getElementById('floatingActiveUser');
-
-  const isRifat = currentUser && (currentUser.studentId === '202110045' || currentUser.email?.includes('rifat'));
-  const isRuma = currentUser && (currentUser.studentId === '202220015' || currentUser.email?.includes('ruma'));
-
-  if (rifatBtn) {
-    if (isRifat) {
-      rifatBtn.className = 'px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition demo-btn-active';
-    } else {
-      rifatBtn.className = 'px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition demo-btn-inactive';
-    }
-  }
-
-  if (rumaBtn) {
-    if (isRuma) {
-      rumaBtn.className = 'px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition demo-btn-active';
-    } else {
-      rumaBtn.className = 'px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition demo-btn-inactive';
-    }
-  }
-
-  if (floatRifat) {
-    floatRifat.className = isRifat 
-      ? 'px-2.5 py-1 text-xs font-bold rounded-lg transition demo-btn-active' 
-      : 'px-2.5 py-1 text-xs font-bold rounded-lg transition demo-btn-inactive';
-  }
-
-  if (floatRuma) {
-    floatRuma.className = isRuma 
-      ? 'px-2.5 py-1 text-xs font-bold rounded-lg transition demo-btn-active' 
-      : 'px-2.5 py-1 text-xs font-bold rounded-lg transition demo-btn-inactive';
-  }
-
-  if (floatUserLabel) {
-    if (currentUser) {
-      floatUserLabel.textContent = `${currentUser.name.split(' ')[0]} (${currentUser.studentId})`;
-    } else {
-      floatUserLabel.textContent = 'Guest (Sign in)';
-    }
-  }
-}
-
-function switchDemoUser(target) {
-  let targetUser = null;
-  if (target === 'rifat') {
-    targetUser = registeredUsers.find(u => u.studentId === '202110045') || DEFAULT_NUB_USERS[0];
-  } else if (target === 'ruma') {
-    targetUser = registeredUsers.find(u => u.studentId === '202220015') || DEFAULT_NUB_USERS[1];
-  }
-
-  if (!targetUser) return;
-
-  currentUser = { ...targetUser };
-  saveSessionToStorage(currentUser);
-
-  updateAuthUI();
-  renderItems();
-  updateNotificationBadges();
-
-  const dashModal = document.getElementById('dashboardModal');
-  if (dashModal && !dashModal.classList.contains('hidden')) {
-    renderDashboard();
-  }
-
-  showToast(`Switched active student to ${currentUser.name} (${currentUser.studentId}) 🎓`, 'success');
-}
-
-function toggleStudentDemo() {
-  if (currentUser && currentUser.studentId === '202110045') {
-    switchDemoUser('ruma');
-  } else {
-    switchDemoUser('rifat');
-  }
-}
+function updateDemoSwitcherUI() {}
+function switchDemoUser() {}
+function toggleStudentDemo() {}
 
 function openAuthModal(mode = 'login', noticeMessage = null) {
   const modal = document.getElementById('authModal');
@@ -543,16 +462,6 @@ function bindAuthEvents() {
     });
   }
 
-  document.getElementById('fillDemoBtn')?.addEventListener('click', fillDemoCredentials);
-  document.getElementById('demoLoginRifatBtn')?.addEventListener('click', () => {
-    switchDemoUser('rifat');
-    closeAuthModal();
-  });
-  document.getElementById('demoLoginRumaBtn')?.addEventListener('click', () => {
-    switchDemoUser('ruma');
-    closeAuthModal();
-  });
-
   document.getElementById('toggleLoginPassBtn')?.addEventListener('click', function() {
     togglePasswordVisibility('loginPassword', this);
   });
@@ -575,16 +484,6 @@ function bindAuthEvents() {
       }
     }
   });
-}
-
-function fillDemoCredentials() {
-  const emailInput = document.getElementById('loginEmail');
-  const passInput = document.getElementById('loginPassword');
-  if (emailInput && passInput) {
-    emailInput.value = 'rifat.cse@nub.ac.bd';
-    passInput.value = 'campus123';
-    showAuthAlert('Rifat Hasan demo credentials filled! Click "Sign In" to proceed.', 'success');
-  }
 }
 
 function togglePasswordVisibility(inputId, btn) {
@@ -1267,7 +1166,6 @@ function renderDashboard() {
   renderDashboardBorrowedPanel();
 
   updateNotificationBadges();
-  updateDemoSwitcherUI();
 }
 
 function renderDashboardListingsPanel() {

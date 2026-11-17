@@ -7,7 +7,7 @@ Featuring:
 2. **Auto-Sliding Featured Items Hero Carousel**: Eye-catching sliding banner inspired by Daraz showcasing featured NUB campus items with badges ("Student Deal", "Available to Borrow", "Featured Exchange", "Lab Ready"), 3.5s auto-transitions, pause on hover, touch swipe support, and "View Item" CTA buttons.
 3. **Official NUB Authentication**: Strictly restricted to `@nub.ac.bd` university emails with clean "Login" and "Sign Up" actions.
 4. **Realistic NUB Academic Marketplace**: Populated with 10 authentic university study items with course codes, condition badges, and high-resolution academic photos.
-5. **1-Click Student Demo Switcher**: Instant switching between **Rifat Hasan** (`202110045`) and **Ruma Akter** (`202220015`) to test the complete peer borrow and exchange lifecycle.
+5. **Authentic University Authentication**: Strict validation for official `@nub.ac.bd` domain emails, session persistence, and zero demo banner clutter.
 6. **Peer Borrow & Exchange State Machine**: Full lifecycle tracking (`Available` ➔ `Requested` ➔ `Borrowed / In Exchange` ➔ `Returned`).
 7. **Student Transactions Dashboard**: Dedicated hub for Incoming Requests, Active Listings, and Borrowed Items with real-time due date countdowns.
 8. **Peer & Seller Rating System**: Interactive 5-star review engine with dynamic average calculations.
@@ -61,21 +61,22 @@ CampusKart features a redesigned, modern header and animated hero section modele
 
 ---
 
-## 👥 Student Demo Switcher ('Rifat' & 'Ruma')
+## 👥 Authentic NUB Student Accounts & Authentication
 
-CampusKart includes a persistent **Peer Demo Testing Bar** at the top of every page and a **Floating Quick-Switcher Pill** at the bottom-left:
+CampusKart features authentic university authentication without intrusive demo banners:
 
-- **Rifat Hasan** (`rifat.cse@nub.ac.bd` &bull; ID: `202110045` &bull; CSE '25):
-  - Owner of: *Casio fx-991MS*, *DLD Breadboard kit*, *Drafting T-Scale*, *Boylestad Circuit kit*, and *Casio fx-991EX ClassWiz*.
-  - Has 1 pending incoming borrow request from Ruma awaiting approval.
-- **Ruma Akter** (`ruma.cse@nub.ac.bd` &bull; ID: `202220015` &bull; CSE '26):
-  - Owner of: *Discrete Mathematics (CSE 103)*, *Microprocessor 8086 Manual (CSE 221)*, *Forouzan Networking (CSE 231)*, *C Programming (CSE 111)*, and *Principles of Marketing (BBA 201)*.
-  - Active borrower requesting Rifat's DLD Breadboard kit for her midterm lab.
+- **Pre-Seeded Test Student Accounts**:
+  - **Rifat Hasan** (`rifat.cse@nub.ac.bd` &bull; ID: `202110045` &bull; Password: `campus123` &bull; CSE '25):
+    - Owner of: *Casio fx-991MS*, *DLD Breadboard kit*, *Drafting T-Scale*, *Boylestad Circuit kit*, and *Casio fx-991EX ClassWiz*.
+    - Has 1 pending incoming borrow request from Ruma awaiting approval.
+  - **Ruma Akter** (`ruma.cse@nub.ac.bd` &bull; ID: `202220015` &bull; Password: `campus123` &bull; CSE '26):
+    - Owner of: *Discrete Mathematics (CSE 103)*, *Microprocessor 8086 Manual (CSE 221)*, *Forouzan Networking (CSE 231)*, *C Programming (CSE 111)*, and *Principles of Marketing (BBA 201)*.
+    - Active borrower requesting Rifat's DLD Breadboard kit for her midterm lab.
 
-### How to Switch:
-- Click **"Rifat Hasan"** or **"Ruma Akter"** directly in the top demo banner or bottom-left floating pill.
-- Click **"Toggle Student"** (`🔀`) to instantly toggle back and forth.
-- In the **Sign In modal**, click either **"Rifat (202110045)"** or **"Ruma (202220015)"** for 1-click authentication.
+### How to Sign In:
+- Click the **"Login"** button in the top navbar.
+- Enter either student email (`rifat.cse@nub.ac.bd` or `ruma.cse@nub.ac.bd`) or Student ID (`202110045` or `202220015`) and password `campus123`.
+- Or click **"Sign Up"** to register a new student account with an official `@nub.ac.bd` university email.
 
 ---
 
@@ -103,27 +104,25 @@ CampusKart includes a persistent **Peer Demo Testing Bar** at the top of every p
 ```
 
 ### Complete Walkthrough Test:
-1. **View Pre-Seeded Incoming Request (as Rifat)**:
-   - On page load, you are already signed in as **Rifat Hasan**.
-   - Notice the amber notification badge `1` on the **"Transactions"** button in the navbar.
-   - Click **"Transactions"** (or use the profile menu) to open the dashboard.
+1. **Sign In as Rifat (Item Owner)**:
+   - Click **"Login"** and enter `202110045` with password `campus123`.
+   - Notice the amber notification badge `1` on the **"Transactions"** shortcut (and profile menu).
+   - Click **"Transactions"** (or use the profile avatar menu) to open the dashboard.
    - Under **"Incoming Requests"**, see the request from **Ruma Akter** for your *Digital Logic Design Breadboard with IC Kit*.
-   - Click **"Approve & Set Due Date"**, select **"7 Days"** (or a custom date), and click **"Confirm Approval"**.
+   - Click **"Approve & Set Due Date"**, select **"7 Days"**, and click **"Confirm Approval"**.
    - The item status updates to **`Borrowed`** with an active countdown!
 
-2. **Switch to Ruma (as Borrower)**:
-   - Click the **"Ruma Akter"** button in the demo switcher bar or floating pill.
-   - Notice your active student profile updates to **Ruma Akter (202220015)**.
+2. **Sign In as Ruma (Borrower)**:
+   - Click the Profile Avatar ➔ **"Sign Out"**.
+   - Click **"Login"** and enter `202220015` with password `campus123`.
    - Open **"Transactions"** and navigate to the **"Items I Borrowed"** tab.
    - You will see the *DLD Breadboard kit* with a live return countdown (e.g. `Due in 7 days`).
 
-3. **Request a Book from Ruma (as Rifat)**:
-   - Switch back to **Rifat Hasan**.
-   - In the marketplace, find Ruma's listing: **"Discrete Mathematics and Its Applications (CSE 103)"**.
-   - Click **"Borrow"** on the card.
-   - Choose your duration (e.g. `14 Days`) and submit your request.
+3. **Request a Book from Ruma**:
+   - While signed in as Rifat, find Ruma's listing: **"Discrete Mathematics and Its Applications (CSE 103)"**.
+   - Click **"Borrow"** on the card, choose duration (e.g. `14 Days`), and submit.
    - The card status changes to **`Requested`**.
-   - Switch to **Ruma** and open her **Transactions Dashboard** ➔ Rifat's new request is waiting for her approval!
+   - Sign in as **Ruma** and open her **Transactions Dashboard** ➔ Rifat's new request is waiting for her approval!
 
 4. **Mark as Returned & Rate Seller**:
    - The item owner clicks **"Mark as Returned"** in the dashboard.

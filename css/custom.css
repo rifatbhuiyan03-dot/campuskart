@@ -313,37 +313,28 @@ body {
   50% { opacity: 0.75; }
 }
 
-/* Demo Student Switcher Widget */
-.demo-switch-bar {
-  background: linear-gradient(90deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
-  border-bottom: 1px solid rgba(99, 102, 241, 0.25);
+/* ==========================================================================
+   GLOBAL LAYOUT & HORIZONTAL OVERFLOW PREVENTION
+   ========================================================================== */
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+  position: relative;
 }
 
-.demo-btn-active {
-  background: #4f46e5;
-  color: #ffffff;
-  border-color: #6366f1;
-  box-shadow: 0 0 12px rgba(99, 102, 241, 0.45);
+/* Category pills touch-smooth horizontal scroll */
+.category-scroll-container,
+.no-scrollbar {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
 }
 
-.demo-btn-inactive {
-  background: rgba(30, 41, 59, 0.8);
-  color: #94a3b8;
-  border-color: rgba(51, 65, 85, 0.8);
-}
-
-.demo-btn-inactive:hover {
-  background: rgba(51, 65, 85, 0.9);
-  color: #ffffff;
-  border-color: #64748b;
-}
-
-/* Floating Student Quick-Switch Bar at bottom-right */
-.floating-demo-switcher {
-  backdrop-filter: blur(12px);
-  background: rgba(15, 23, 42, 0.92);
-  border: 1px solid rgba(99, 102, 241, 0.35);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+.category-scroll-container::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
+  width: 0;
+  height: 0;
 }
 
 /* ==========================================================================
@@ -379,11 +370,14 @@ body {
   box-shadow: 0 0 8px rgba(249, 115, 22, 0.6);
 }
 
-/* Mobile responsive carousel image smoothing */
+/* Mobile responsive carousel image smoothing & clean spacing */
 @media (max-width: 640px) {
   .carousel-slide h2 {
-    font-size: 1.35rem;
+    font-size: 1.25rem;
     line-height: 1.25;
+  }
+  .carousel-slide {
+    padding: 0.875rem 0.75rem;
   }
 }
 
