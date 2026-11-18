@@ -92,6 +92,17 @@
             </span>
           </button>
 
+          <!-- Messages & Offers Shortcut Button (With unread badge) -->
+          <button type="button" 
+                  id="navMessagesBtn" 
+                  title="Messages & Offers"
+                  class="relative p-2 rounded-xl text-slate-600 hover:text-orange-600 hover:bg-orange-50/50 border border-slate-200/80 transition flex items-center justify-center">
+            <i class="fa-regular fa-comments text-sm sm:text-base text-slate-700"></i>
+            <span id="navMessagesBadge" class="hidden absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-orange-500 text-white text-[9px] font-bold flex items-center justify-center shadow-sm">
+              0
+            </span>
+          </button>
+
           <!-- Dynamic Auth Container (User Profile Avatar OR Login/Register Button) -->
           <div id="navAuthContainer" class="flex items-center relative">
             <!-- Populated dynamically by app.js: Login/Sign Up buttons OR Student Profile Dropdown -->
@@ -1498,6 +1509,164 @@
           <span>Submit Peer Rating</span>
         </button>
       </form>
+    </div>
+  </div>
+
+  <!-- ================= CHAT WITH SELLER / MAKE OFFER MODAL ================= -->
+  <div id="chatModal" class="hidden fixed inset-0 z-50 overflow-y-auto modal-backdrop flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full shadow-2xl border border-slate-200 animate-pop my-auto flex flex-col h-[620px] max-h-[92vh] overflow-hidden relative">
+      
+      <!-- Modal Header -->
+      <div class="p-3.5 sm:p-4 border-b border-slate-200/90 bg-slate-50/80 flex items-center justify-between shrink-0">
+        <div class="flex items-center space-x-2.5 min-w-0">
+          <button type="button" 
+                  id="chatBackToListBtn" 
+                  class="hidden p-1.5 -ml-1 text-slate-500 hover:text-slate-800 rounded-lg transition" 
+                  title="Back to conversations list">
+            <i class="fa-solid fa-arrow-left text-sm"></i>
+          </button>
+          <div class="relative shrink-0">
+            <img id="chatPeerAvatar" 
+                 src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" 
+                 alt="Student" 
+                 class="w-10 h-10 rounded-full object-cover ring-2 ring-indigo-500/40" />
+            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white"></span>
+          </div>
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5">
+              <h3 id="chatPeerName" class="text-xs sm:text-sm font-bold text-slate-900 truncate">Rifat Hasan</h3>
+              <span class="bg-blue-100 text-blue-800 text-[9px] font-bold px-1.5 py-0.2 rounded shrink-0">NUB</span>
+            </div>
+            <p id="chatPeerSub" class="text-[10px] text-slate-500 truncate font-mono">ID: 202110045 &bull; Active</p>
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-1 sm:space-x-1.5 shrink-0">
+          <!-- All Chats Toggle Button -->
+          <button type="button" 
+                  id="chatToggleAllConversationsBtn" 
+                  class="px-2.5 py-1 text-xs font-semibold text-slate-600 hover:text-indigo-600 bg-white hover:bg-indigo-50 border border-slate-200 rounded-xl transition flex items-center gap-1"
+                  title="View all chats">
+            <i class="fa-solid fa-inbox text-[11px]"></i>
+            <span class="hidden sm:inline">My Chats</span>
+          </button>
+
+          <!-- Close Modal Button -->
+          <button type="button" 
+                  id="closeChatModal" 
+                  class="w-8 h-8 rounded-full bg-white hover:bg-slate-200 text-slate-500 border border-slate-200 flex items-center justify-center transition" 
+                  title="Close chat">
+            <i class="fa-solid fa-xmark text-sm"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Item Context Strip (Compact Listing Bar) -->
+      <div id="chatItemStrip" class="px-3.5 py-2 bg-indigo-50/60 border-b border-indigo-100/80 flex items-center justify-between shrink-0 text-xs">
+        <div class="flex items-center space-x-2.5 min-w-0">
+          <img id="chatItemThumb" src="" alt="Listing" class="w-9 h-9 rounded-lg object-cover ring-1 ring-indigo-200 shrink-0" />
+          <div class="min-w-0">
+            <p id="chatItemTitle" class="text-xs font-bold text-slate-800 truncate max-w-[200px] sm:max-w-xs">Item Title</p>
+            <div class="flex items-center gap-1.5 text-[10px] text-slate-500">
+              <span id="chatItemPrice" class="font-bold text-indigo-700">৳650</span>
+              <span>&bull;</span>
+              <span id="chatItemCondition" class="text-slate-600">Like New</span>
+            </div>
+          </div>
+        </div>
+        <button type="button" 
+                id="chatToggleOfferBtn" 
+                class="px-2.5 py-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-lg text-[11px] font-bold shadow-xs transition shrink-0 flex items-center gap-1">
+          <i class="fa-solid fa-tag text-[10px]"></i>
+          <span>Make Offer</span>
+        </button>
+      </div>
+
+      <!-- Make Offer Proposal Drawer (Collapsible) -->
+      <div id="chatOfferDrawer" class="hidden p-3 bg-amber-50/90 border-b border-amber-200 text-xs shrink-0 transition-all">
+        <div class="flex items-center justify-between mb-2">
+          <span class="font-bold text-amber-900 flex items-center gap-1.5">
+            <i class="fa-solid fa-hand-holding-dollar text-amber-600"></i>
+            <span>Propose Offer Price for this Item:</span>
+          </span>
+          <button type="button" id="closeOfferDrawerBtn" class="text-amber-800 hover:text-amber-950 text-xs">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        <div class="flex items-center gap-2 mb-2">
+          <div class="relative flex-1">
+            <span class="absolute inset-y-0 left-0 pl-3 flex items-center font-bold text-slate-500 text-xs">৳</span>
+            <input type="number" 
+                   id="chatOfferAmountInput" 
+                   placeholder="Enter offer (BDT)" 
+                   class="w-full pl-7 pr-3 py-1.5 bg-white border border-amber-300 rounded-xl text-xs font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+          </div>
+          <button type="button" 
+                  id="chatSendOfferBtn" 
+                  class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs shadow-xs transition shrink-0 flex items-center gap-1">
+            <span>Send Offer</span>
+            <i class="fa-solid fa-paper-plane text-[10px]"></i>
+          </button>
+        </div>
+        <div class="flex items-center gap-1.5 text-[10px] text-amber-900">
+          <span class="text-amber-700">Quick Suggest:</span>
+          <div id="chatQuickOfferPills" class="flex items-center gap-1">
+            <!-- Populated dynamically with -10%, -15%, -20% -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Conversation Chat Thread View -->
+      <div id="chatThreadView" class="flex-1 flex flex-col min-h-0">
+        
+        <!-- Messages Scrollable Body -->
+        <div id="chatMessagesList" class="flex-1 overflow-y-auto p-3.5 sm:p-4 space-y-2.5 bg-slate-50/60 no-scrollbar">
+          <!-- Populated dynamically by app.js -->
+        </div>
+
+        <!-- Quick Icebreaker Chips -->
+        <div id="chatIcebreakersBar" class="px-3.5 py-1.5 bg-slate-50 border-t border-slate-100 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0 text-[11px]">
+          <span class="text-[10px] text-slate-400 font-bold uppercase shrink-0">Quick:</span>
+          <button type="button" class="chat-quick-reply px-2.5 py-1 rounded-full bg-white hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 text-slate-600 transition shrink-0">
+            👋 Is this still available?
+          </button>
+          <button type="button" class="chat-quick-reply px-2.5 py-1 rounded-full bg-white hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 text-slate-600 transition shrink-0">
+            📍 Can we meet at NUB library?
+          </button>
+          <button type="button" class="chat-quick-reply px-2.5 py-1 rounded-full bg-white hover:bg-indigo-50 hover:text-indigo-600 border border-slate-200 text-slate-600 transition shrink-0">
+            ⚡ What is your best price?
+          </button>
+        </div>
+
+        <!-- Bottom Input Bar -->
+        <div class="p-2.5 sm:p-3 bg-white border-t border-slate-200 shrink-0">
+          <form id="chatMessageForm" onsubmit="event.preventDefault(); handleSendChatMessage();" class="flex items-center gap-2">
+            <button type="button" 
+                    id="chatQuickOfferToggleBtn" 
+                    title="Propose Price Offer" 
+                    class="p-2 rounded-xl text-amber-600 hover:bg-amber-50 border border-amber-200 transition shrink-0">
+              <i class="fa-solid fa-tag text-xs sm:text-sm"></i>
+            </button>
+            <input type="text" 
+                   id="chatInputText" 
+                   placeholder="Type your message to the student..." 
+                   class="flex-1 px-3.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition text-slate-800" />
+            <button type="submit" 
+                    id="sendChatMessageBtn" 
+                    title="Send Message"
+                    class="px-3.5 sm:px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition shadow-md shadow-indigo-600/20 active:scale-95 shrink-0 flex items-center gap-1.5">
+              <span class="hidden sm:inline">Send</span>
+              <i class="fa-solid fa-paper-plane text-xs"></i>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Conversations List View (Visible when clicking "My Chats") -->
+      <div id="chatConversationsListView" class="hidden flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 bg-slate-50/70">
+        <!-- Populated dynamically -->
+      </div>
+
     </div>
   </div>
 

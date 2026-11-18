@@ -381,6 +381,40 @@ html, body {
   }
 }
 
+/* ==========================================================================
+   CHAT WITH SELLER & PEER OFFER SYSTEM STYLES
+   ========================================================================== */
+.chat-bubble-outgoing {
+  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+  color: #ffffff;
+  border-radius: 1.25rem 1.25rem 0.25rem 1.25rem;
+}
+
+.chat-bubble-incoming {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #1e293b;
+  border-radius: 1.25rem 1.25rem 1.25rem 0.25rem;
+}
+
+.chat-offer-badge-pulse {
+  animation: offerPulse 2.5s infinite;
+}
+
+@keyframes offerPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.03); opacity: 0.95; }
+}
+
+.chat-quick-reply {
+  user-select: none;
+  cursor: pointer;
+}
+
+.chat-quick-reply:active {
+  transform: scale(0.96);
+}
+
 
 
 

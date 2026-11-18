@@ -14,6 +14,74 @@ const STORAGE_WISHLIST_KEY = 'campuskart_wishlist_v2';
 const STORAGE_AUTH_KEY = 'campuskart_auth_session_v2';
 const STORAGE_USERS_KEY = 'campuskart_registered_users_v2';
 const STORAGE_REVIEWS_KEY = 'campuskart_reviews_v2';
+const STORAGE_MESSAGES_KEY = 'campuskart_messages_v2';
+
+// Pre-seeded peer chat messages between Ruma Akter and Rifat Hasan
+const DEFAULT_CHAT_MESSAGES = [
+  {
+    id: 'msg-seed-1',
+    itemId: 'ck-101',
+    itemTitle: 'Casio fx-991MS Scientific Calculator',
+    itemImage: 'https://images.unsplash.com/photo-1587145820266-a5951ee6f620?auto=format&fit=crop&w=800&q=80',
+    itemPrice: '৳650',
+    itemCondition: 'Like New',
+    sellerId: '202110045',
+    sellerName: 'Rifat Hasan',
+    buyerId: '202220015',
+    buyerName: 'Ruma Akter',
+    senderId: '202220015',
+    senderName: 'Ruma Akter',
+    receiverId: '202110045',
+    receiverName: 'Rifat Hasan',
+    text: 'Hi Rifat! Is your Casio fx-991MS calculator still available? Does it come with the original hard slide cover?',
+    offerPrice: null,
+    offerStatus: null,
+    timestamp: Date.now() - 3600000 * 2, // 2 hrs ago
+    readBy: ['202220015', '202110045']
+  },
+  {
+    id: 'msg-seed-2',
+    itemId: 'ck-101',
+    itemTitle: 'Casio fx-991MS Scientific Calculator',
+    itemImage: 'https://images.unsplash.com/photo-1587145820266-a5951ee6f620?auto=format&fit=crop&w=800&q=80',
+    itemPrice: '৳650',
+    itemCondition: 'Like New',
+    sellerId: '202110045',
+    sellerName: 'Rifat Hasan',
+    buyerId: '202220015',
+    buyerName: 'Ruma Akter',
+    senderId: '202110045',
+    senderName: 'Rifat Hasan',
+    receiverId: '202220015',
+    receiverName: 'Ruma Akter',
+    text: 'Yes Ruma! The slide cover is included, and I put in a fresh Maxell button cell battery last week. All 401 functions work perfectly.',
+    offerPrice: null,
+    offerStatus: null,
+    timestamp: Date.now() - 3600000 * 1.5, // 1.5 hrs ago
+    readBy: ['202110045', '202220015']
+  },
+  {
+    id: 'msg-seed-3',
+    itemId: 'ck-101',
+    itemTitle: 'Casio fx-991MS Scientific Calculator',
+    itemImage: 'https://images.unsplash.com/photo-1587145820266-a5951ee6f620?auto=format&fit=crop&w=800&q=80',
+    itemPrice: '৳650',
+    itemCondition: 'Like New',
+    sellerId: '202110045',
+    sellerName: 'Rifat Hasan',
+    buyerId: '202220015',
+    buyerName: 'Ruma Akter',
+    senderId: '202220015',
+    senderName: 'Ruma Akter',
+    receiverId: '202110045',
+    receiverName: 'Rifat Hasan',
+    text: 'Would you consider ৳580 if we meet today at the NUB Central Library 2nd floor?',
+    offerPrice: 580,
+    offerStatus: 'pending',
+    timestamp: Date.now() - 1800000, // 30 mins ago
+    readBy: ['202220015'] // unread for Rifat!
+  }
+];
 
 // Pre-seeded verified NUB student accounts for peer testing
 const DEFAULT_NUB_USERS = [
@@ -44,6 +112,8 @@ let items = [];
 let wishlist = new Set();
 let registeredUsers = [];
 let reviews = [];
+let chatMessages = [];
+let activeChatContext = null;
 let currentUser = null;
 let pendingAuthAction = null;
 let selectedApprovalDays = 7;
@@ -78,6 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
   bindEvents();
   bindAuthEvents();
   bindStateMachineEvents();
+  bindChatEvents();
   renderItems();
   updateWishlistCount();
   updateAuthUI();
@@ -199,6 +270,12 @@ function updateAuthUI() {
                 <span id="menuRequestBadge" class="hidden bg-amber-500 text-white text-[9px] px-1.5 py-0.2 rounded-full font-bold">0</span>
               </button>
               <button type="button" 
+                      id="menuMessagesBtn" 
+                      class="w-full text-left px-4 py-2 text-xs font-bold text-slate-700 hover:bg-orange-50 hover:text-orange-600 flex items-center justify-between transition">
+                <span class="flex items-center gap-2"><i class="fa-regular fa-comments text-xs text-orange-500"></i> Messages & Offers</span>
+                <span id="menuMessagesBadge" class="hidden bg-orange-500 text-white text-[9px] px-1.5 py-0.2 rounded-full font-bold">0</span>
+              </button>
+              <button type="button" 
                       id="menuSavedItemsBtn" 
                       class="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-2.5">
                 <i class="fa-solid fa-heart text-slate-400 text-xs"></i>
@@ -231,6 +308,11 @@ function updateAuthUI() {
       document.getElementById('menuDashboardBtn')?.addEventListener('click', () => {
         menu?.classList.add('hidden');
         openDashboard('requests');
+      });
+
+      document.getElementById('menuMessagesBtn')?.addEventListener('click', () => {
+        menu?.classList.add('hidden');
+        openNavbarMessages();
       });
 
       document.getElementById('menuSavedItemsBtn')?.addEventListener('click', () => {
@@ -1353,15 +1435,20 @@ function renderDashboardBorrowedPanel() {
 }
 
 function updateNotificationBadges() {
+  const navBadge = document.getElementById('navRequestsBadge');
+  const menuBadge = document.getElementById('menuRequestBadge');
+  const msgBadge = document.getElementById('navMessagesBadge');
+  const menuMsgBadge = document.getElementById('menuMessagesBadge');
+
   if (!currentUser) {
-    const navBadge = document.getElementById('navRequestsBadge');
     if (navBadge) navBadge.classList.add('hidden');
+    if (menuBadge) menuBadge.classList.add('hidden');
+    if (msgBadge) msgBadge.classList.add('hidden');
+    if (menuMsgBadge) menuMsgBadge.classList.add('hidden');
     return;
   }
 
   const pendingRequests = items.filter(it => it.seller.studentId === currentUser.studentId && it.status === 'Requested');
-  const navBadge = document.getElementById('navRequestsBadge');
-  const menuBadge = document.getElementById('menuRequestBadge');
 
   if (navBadge) {
     if (pendingRequests.length > 0) {
@@ -1378,6 +1465,27 @@ function updateNotificationBadges() {
       menuBadge.classList.remove('hidden');
     } else {
       menuBadge.classList.add('hidden');
+    }
+  }
+
+  // Unread chat messages badge calculation
+  const unreadMsgCount = getUnreadMessagesCount();
+
+  if (msgBadge) {
+    if (unreadMsgCount > 0) {
+      msgBadge.textContent = unreadMsgCount;
+      msgBadge.classList.remove('hidden');
+    } else {
+      msgBadge.classList.add('hidden');
+    }
+  }
+
+  if (menuMsgBadge) {
+    if (unreadMsgCount > 0) {
+      menuMsgBadge.textContent = `${unreadMsgCount} new`;
+      menuMsgBadge.classList.remove('hidden');
+    } else {
+      menuMsgBadge.classList.add('hidden');
     }
   }
 }
@@ -1481,11 +1589,20 @@ function loadData() {
       reviews = [...INITIAL_REVIEWS];
       saveReviewsToStorage();
     }
+
+    const savedMessages = localStorage.getItem(STORAGE_MESSAGES_KEY);
+    if (savedMessages) {
+      chatMessages = JSON.parse(savedMessages);
+    } else {
+      chatMessages = [...DEFAULT_CHAT_MESSAGES];
+      saveChatMessagesToStorage();
+    }
   } catch (err) {
     console.error('Error reading localStorage', err);
     items = [...INITIAL_ITEMS];
     wishlist = new Set();
     reviews = [...INITIAL_REVIEWS];
+    chatMessages = [...DEFAULT_CHAT_MESSAGES];
   }
 }
 
@@ -1510,6 +1627,14 @@ function saveReviewsToStorage() {
     localStorage.setItem(STORAGE_REVIEWS_KEY, JSON.stringify(reviews));
   } catch (e) {
     console.warn('Could not save reviews to localStorage', e);
+  }
+}
+
+function saveChatMessagesToStorage() {
+  try {
+    localStorage.setItem(STORAGE_MESSAGES_KEY, JSON.stringify(chatMessages));
+  } catch (e) {
+    console.warn('Could not save chat messages to localStorage', e);
   }
 }
 
@@ -2621,46 +2746,43 @@ function openDetailsModal(itemId) {
           ` : ''}
         </div>
 
-        <div class="pt-2 border-t border-slate-200 space-y-2">
+        <div class="pt-3 border-t border-slate-200 space-y-2">
           ${primaryActionBtn}
 
-          <!-- Direct Chat Box -->
-          <div class="flex gap-2">
-            <input type="text" 
-                   id="studentChatInput" 
-                   placeholder="Hi ${item.seller.name.split(' ')[0]}, can we meet at ${item.location}?" 
-                   value="Hi ${item.seller.name.split(' ')[0]}, is this item still available?" 
-                   class="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500" />
+          ${isOwner ? `
             <button type="button" 
-                    id="sendCampusMessageBtn" 
-                    class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold transition shrink-0 flex items-center gap-1">
-              <i class="fa-solid fa-paper-plane text-[10px]"></i>
-              <span>Send</span>
+                    id="detailsOwnerChatsBtn"
+                    onclick="closeDetailsModal(); openChatModal('${item.id}');"
+                    class="w-full py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition flex items-center justify-center gap-2 active:scale-98">
+              <i class="fa-solid fa-comments text-xs text-orange-400"></i>
+              <span>View Buyer Messages & Offers</span>
             </button>
-          </div>
-          <p class="text-[10px] text-slate-400 text-center">Messages are routed to the student's official @nub.ac.bd address.</p>
+          ` : `
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button type="button" 
+                      id="detailsChatWithSellerBtn"
+                      onclick="closeDetailsModal(); openChatModal('${item.id}', 'message');" 
+                      class="w-full py-2.5 px-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-indigo-600/20 transition flex items-center justify-center gap-2 active:scale-98">
+                <i class="fa-solid fa-comments text-xs"></i>
+                <span>Chat with Seller</span>
+              </button>
+              <button type="button" 
+                      id="detailsMakeOfferBtn"
+                      onclick="closeDetailsModal(); openChatModal('${item.id}', 'offer');" 
+                      class="w-full py-2.5 px-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-amber-500/20 transition flex items-center justify-center gap-2 active:scale-98">
+                <i class="fa-solid fa-hand-holding-dollar text-xs"></i>
+                <span>Make an Offer</span>
+              </button>
+            </div>
+          `}
+          <p class="text-[10px] text-slate-400 text-center flex items-center justify-center gap-1.5">
+            <i class="fa-solid fa-shield-halved text-emerald-500 text-[11px]"></i>
+            <span>Real-time in-app peer chat & price negotiation saved to localStorage</span>
+          </p>
         </div>
       </div>
     </div>
   `;
-
-  document.getElementById('sendCampusMessageBtn')?.addEventListener('click', () => {
-    if (!currentUser) {
-      closeDetailsModal();
-      openAuthModal('login', `Please sign in with your @nub.ac.bd account to message ${item.seller.name}.`);
-      return;
-    }
-
-    const input = document.getElementById('studentChatInput');
-    const val = input ? input.value.trim() : '';
-    if (!val) {
-      showToast('Please type a message first', 'warning');
-      return;
-    }
-
-    showToast(`Message sent from ${currentUser.email} to ${item.seller.name}!`, 'success');
-    setTimeout(closeDetailsModal, 1200);
-  });
 
   modal.classList.remove('hidden');
   document.body.classList.add('overflow-hidden');
@@ -2859,4 +2981,607 @@ function showToast(message, type = 'info') {
     toast.style.transition = 'all 0.3s ease';
     setTimeout(() => toast.remove(), 300);
   }, 3200);
+}
+
+/**
+ * =========================================================================
+ * CHAT WITH SELLER & MAKE OFFER SYSTEM (PEER MESSAGING ENGINE)
+ * =========================================================================
+ */
+
+function getUnreadMessagesCount() {
+  if (!currentUser) return 0;
+  return chatMessages.filter(msg => 
+    msg.receiverId === currentUser.studentId && 
+    (!msg.readBy || !msg.readBy.includes(currentUser.studentId))
+  ).length;
+}
+
+function openChatModal(itemId, initialMode = 'message', targetBuyerId = null) {
+  if (!currentUser) {
+    closeDetailsModal();
+    openAuthModal('login', 'Please sign in with your official @nub.ac.bd account to chat with the seller or make an offer.');
+    return;
+  }
+
+  const item = items.find(i => i.id === itemId);
+  if (!item) {
+    openNavbarMessages();
+    return;
+  }
+
+  const isOwner = currentUser.studentId === item.seller.studentId;
+  let peerId, peerName, peerAvatar, peerSub;
+  let buyerId, buyerName;
+
+  if (isOwner) {
+    const itemMessages = chatMessages.filter(m => m.itemId === itemId);
+    if (targetBuyerId) {
+      buyerId = targetBuyerId;
+      const refMsg = itemMessages.find(m => m.buyerId === targetBuyerId || m.senderId === targetBuyerId);
+      buyerName = refMsg ? (refMsg.buyerId === targetBuyerId ? refMsg.buyerName : refMsg.senderName) : 'Interested Buyer';
+    } else if (itemMessages.length > 0) {
+      const latestMsg = itemMessages[itemMessages.length - 1];
+      buyerId = latestMsg.buyerId || latestMsg.senderId;
+      buyerName = latestMsg.buyerName || (latestMsg.senderId !== item.seller.studentId ? latestMsg.senderName : latestMsg.receiverName);
+    } else {
+      showToast('You own this listing. No buyer messages have been received yet.', 'info');
+      return;
+    }
+
+    peerId = buyerId;
+    peerName = buyerName;
+    const peerUser = registeredUsers.find(u => u.studentId === peerId);
+    peerAvatar = peerUser?.avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80';
+    peerSub = `Buyer &bull; ID: ${peerId}`;
+  } else {
+    buyerId = currentUser.studentId;
+    buyerName = currentUser.name;
+    peerId = item.seller.studentId;
+    peerName = item.seller.name;
+    peerAvatar = item.seller.avatar;
+    peerSub = `${item.seller.major || 'Seller'} &bull; ID: ${peerId}`;
+  }
+
+  activeChatContext = {
+    itemId: item.id,
+    itemTitle: item.title,
+    itemImage: item.image,
+    itemPrice: item.priceLabel,
+    itemNumericPrice: typeof item.price === 'number' ? item.price : 500,
+    itemCondition: item.condition,
+    itemLocation: item.location,
+    sellerId: item.seller.studentId,
+    sellerName: item.seller.name,
+    buyerId: buyerId,
+    buyerName: buyerName,
+    peerId: peerId,
+    peerName: peerName,
+    isOwner: isOwner
+  };
+
+  const peerAvatarEl = document.getElementById('chatPeerAvatar');
+  const peerNameEl = document.getElementById('chatPeerName');
+  const peerSubEl = document.getElementById('chatPeerSub');
+  const itemThumbEl = document.getElementById('chatItemThumb');
+  const itemTitleEl = document.getElementById('chatItemTitle');
+  const itemPriceEl = document.getElementById('chatItemPrice');
+  const itemConditionEl = document.getElementById('chatItemCondition');
+  const offerAmountInput = document.getElementById('chatOfferAmountInput');
+  const quickOfferPills = document.getElementById('chatQuickOfferPills');
+
+  if (peerAvatarEl) peerAvatarEl.src = peerAvatar;
+  if (peerNameEl) peerNameEl.textContent = peerName;
+  if (peerSubEl) peerSubEl.innerHTML = peerSub;
+  if (itemThumbEl) itemThumbEl.src = item.image;
+  if (itemTitleEl) itemTitleEl.textContent = item.title;
+  if (itemPriceEl) itemPriceEl.textContent = item.priceLabel;
+  if (itemConditionEl) itemConditionEl.textContent = item.condition;
+
+  const basePrice = typeof item.price === 'number' && item.price > 0 ? item.price : 500;
+  if (offerAmountInput) {
+    offerAmountInput.value = Math.round(basePrice * 0.9);
+    offerAmountInput.placeholder = `e.g. ${Math.round(basePrice * 0.85)}`;
+  }
+
+  if (quickOfferPills) {
+    const p10 = Math.round(basePrice * 0.9);
+    const p15 = Math.round(basePrice * 0.85);
+    const p20 = Math.round(basePrice * 0.8);
+    quickOfferPills.innerHTML = `
+      <button type="button" onclick="setOfferAmount(${p10})" class="px-2 py-0.5 rounded bg-white hover:bg-amber-100 border border-amber-300 font-bold transition">৳${p10} (-10%)</button>
+      <button type="button" onclick="setOfferAmount(${p15})" class="px-2 py-0.5 rounded bg-white hover:bg-amber-100 border border-amber-300 font-bold transition">৳${p15} (-15%)</button>
+      <button type="button" onclick="setOfferAmount(${p20})" class="px-2 py-0.5 rounded bg-white hover:bg-amber-100 border border-amber-300 font-bold transition">৳${p20} (-20%)</button>
+    `;
+  }
+
+  const toggleOfferBtn = document.getElementById('chatToggleOfferBtn');
+  const quickOfferToggle = document.getElementById('chatQuickOfferToggleBtn');
+  if (toggleOfferBtn) toggleOfferBtn.style.display = isOwner ? 'none' : 'flex';
+  if (quickOfferToggle) quickOfferToggle.style.display = isOwner ? 'none' : 'block';
+
+  document.getElementById('chatThreadView')?.classList.remove('hidden');
+  document.getElementById('chatConversationsListView')?.classList.add('hidden');
+  document.getElementById('chatBackToListBtn')?.classList.add('hidden');
+  document.getElementById('chatItemStrip')?.classList.remove('hidden');
+
+  const drawer = document.getElementById('chatOfferDrawer');
+  if (drawer) {
+    if (initialMode === 'offer' && !isOwner) {
+      drawer.classList.remove('hidden');
+    } else {
+      drawer.classList.add('hidden');
+    }
+  }
+
+  renderCurrentChatThread();
+
+  const modal = document.getElementById('chatModal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+  }
+}
+
+function renderCurrentChatThread() {
+  if (!activeChatContext) return;
+  const listContainer = document.getElementById('chatMessagesList');
+  if (!listContainer) return;
+
+  const thread = chatMessages.filter(m => 
+    m.itemId === activeChatContext.itemId && 
+    (m.buyerId === activeChatContext.buyerId || (!m.buyerId && (m.senderId === activeChatContext.buyerId || m.receiverId === activeChatContext.buyerId)))
+  );
+
+  let markedAny = false;
+  thread.forEach(msg => {
+    if (msg.receiverId === currentUser.studentId) {
+      if (!msg.readBy) msg.readBy = [];
+      if (!msg.readBy.includes(currentUser.studentId)) {
+        msg.readBy.push(currentUser.studentId);
+        markedAny = true;
+      }
+    }
+  });
+
+  if (markedAny) {
+    saveChatMessagesToStorage();
+    updateNotificationBadges();
+  }
+
+  const icebreakersBar = document.getElementById('chatIcebreakersBar');
+  if (icebreakersBar) {
+    icebreakersBar.style.display = thread.length <= 2 ? 'flex' : 'none';
+  }
+
+  if (thread.length === 0) {
+    listContainer.innerHTML = `
+      <div class="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500">
+        <div class="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 text-xl mb-3 shadow-xs">
+          <i class="fa-solid fa-comments"></i>
+        </div>
+        <h4 class="text-xs font-bold text-slate-800 mb-1">Start chatting with ${activeChatContext.peerName}</h4>
+        <p class="text-[11px] text-slate-500 max-w-xs mb-4">
+          Ask questions about the ${activeChatContext.itemTitle}, coordinate a meetup on NUB campus, or propose a discounted offer price.
+        </p>
+      </div>
+    `;
+    return;
+  }
+
+  listContainer.innerHTML = thread.map(msg => {
+    const isMe = msg.senderId === currentUser.studentId;
+    const timeFormatted = formatRelativeTime(msg.timestamp);
+
+    if (msg.offerPrice) {
+      let statusPill = '';
+      let actionButtons = '';
+
+      if (msg.offerStatus === 'accepted') {
+        statusPill = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200"><i class="fa-solid fa-check text-[9px]"></i> Offer Accepted</span>`;
+      } else if (msg.offerStatus === 'declined') {
+        statusPill = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700"><i class="fa-solid fa-xmark text-[9px]"></i> Offer Declined</span>`;
+      } else {
+        statusPill = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 chat-offer-badge-pulse"><i class="fa-solid fa-hourglass-half text-[9px]"></i> Offer Pending</span>`;
+        if (msg.receiverId === currentUser.studentId) {
+          actionButtons = `
+            <div class="mt-2.5 pt-2 border-t border-amber-200/80 flex items-center gap-2">
+              <button type="button" onclick="handleAcceptOffer('${msg.id}')" class="flex-1 py-1 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-xs flex items-center justify-center gap-1 active:scale-95">
+                <i class="fa-solid fa-check text-[10px]"></i> Accept ৳${msg.offerPrice}
+              </button>
+              <button type="button" onclick="handleDeclineOffer('${msg.id}')" class="py-1 px-2.5 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-xs font-semibold transition active:scale-95">
+                Decline
+              </button>
+            </div>
+          `;
+        }
+      }
+
+      return `
+        <div class="flex ${isMe ? 'justify-end' : 'justify-start'} w-full">
+          <div class="chat-offer-card ${msg.offerStatus === 'accepted' ? 'accepted' : (msg.offerStatus === 'declined' ? 'declined' : '')} max-w-[85%] sm:max-w-[75%] rounded-2xl p-3 shadow-xs border">
+            <div class="flex items-center justify-between gap-2 mb-1.5">
+              <span class="text-[11px] font-bold text-amber-900 flex items-center gap-1">
+                <i class="fa-solid fa-hand-holding-dollar text-amber-600"></i> Propose Offer
+              </span>
+              ${statusPill}
+            </div>
+            <div class="my-1 flex items-baseline gap-2">
+              <span class="text-xl font-black text-amber-950">৳${msg.offerPrice}</span>
+              <span class="text-[10px] text-slate-500 font-medium">List: ${msg.itemPrice || activeChatContext.itemPrice}</span>
+            </div>
+            ${msg.text ? `<p class="text-xs text-slate-700 mt-1 leading-snug">${escapeHtml(msg.text)}</p>` : ''}
+            ${actionButtons}
+            <div class="mt-1 text-[10px] text-slate-400 text-right">${timeFormatted} &bull; ${msg.senderName}</div>
+          </div>
+        </div>
+      `;
+    }
+
+    if (isMe) {
+      return `
+        <div class="flex justify-end w-full">
+          <div class="chat-bubble-outgoing max-w-[80%] px-3.5 py-2.5 text-xs shadow-xs leading-relaxed">
+            <p>${escapeHtml(msg.text)}</p>
+            <div class="mt-1 text-[9px] text-indigo-200 text-right flex items-center justify-end gap-1">
+              <span>${timeFormatted}</span>
+              <i class="fa-solid fa-check-double text-[8px] opacity-80"></i>
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      return `
+        <div class="flex justify-start items-start gap-2 max-w-[85%]">
+          <div class="chat-bubble-incoming px-3.5 py-2.5 text-xs shadow-xs leading-relaxed border border-slate-200/90">
+            <p class="font-bold text-[10px] text-indigo-700 mb-0.5">${msg.senderName}</p>
+            <p class="text-slate-800">${escapeHtml(msg.text)}</p>
+            <div class="mt-1 text-[9px] text-slate-400">${timeFormatted}</div>
+          </div>
+        </div>
+      `;
+    }
+  }).join('');
+
+  listContainer.scrollTop = listContainer.scrollHeight;
+}
+
+function handleSendChatMessage(customText = null, offerPrice = null) {
+  if (!currentUser) return;
+  if (!activeChatContext) return;
+
+  const inputEl = document.getElementById('chatInputText');
+  const text = customText !== null ? customText : (inputEl ? inputEl.value.trim() : '');
+
+  if (!text && !offerPrice) {
+    showToast('Please type a message or enter an offer amount.', 'warning');
+    return;
+  }
+
+  const newMsg = {
+    id: 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+    itemId: activeChatContext.itemId,
+    itemTitle: activeChatContext.itemTitle,
+    itemImage: activeChatContext.itemImage,
+    itemPrice: activeChatContext.itemPrice,
+    itemCondition: activeChatContext.itemCondition,
+    sellerId: activeChatContext.sellerId,
+    sellerName: activeChatContext.sellerName,
+    buyerId: activeChatContext.buyerId,
+    buyerName: activeChatContext.buyerName,
+    senderId: currentUser.studentId,
+    senderName: currentUser.name,
+    receiverId: activeChatContext.peerId,
+    receiverName: activeChatContext.peerName,
+    text: text,
+    offerPrice: offerPrice ? Number(offerPrice) : null,
+    offerStatus: offerPrice ? 'pending' : null,
+    timestamp: Date.now(),
+    readBy: [currentUser.studentId]
+  };
+
+  chatMessages.push(newMsg);
+  saveChatMessagesToStorage();
+
+  if (inputEl && customText === null) inputEl.value = '';
+
+  document.getElementById('chatOfferDrawer')?.classList.add('hidden');
+
+  renderCurrentChatThread();
+  updateNotificationBadges();
+
+  if (offerPrice) {
+    showToast(`Proposed offer of ৳${offerPrice} sent to ${activeChatContext.peerName}! 🏷️`, 'success');
+  } else {
+    showToast('Message sent! 💬', 'info');
+  }
+}
+
+function handleAcceptOffer(messageId) {
+  const msg = chatMessages.find(m => m.id === messageId);
+  if (!msg) return;
+
+  msg.offerStatus = 'accepted';
+
+  const replyMsg = {
+    id: 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+    itemId: msg.itemId,
+    itemTitle: msg.itemTitle,
+    itemImage: msg.itemImage,
+    itemPrice: msg.itemPrice,
+    itemCondition: msg.itemCondition,
+    sellerId: msg.sellerId,
+    sellerName: msg.sellerName,
+    buyerId: msg.buyerId,
+    buyerName: msg.buyerName,
+    senderId: currentUser.studentId,
+    senderName: currentUser.name,
+    receiverId: msg.senderId,
+    receiverName: msg.senderName,
+    text: `✓ Offer of ৳${msg.offerPrice} accepted! Let's arrange a meetup at the campus library or student cafeteria to complete the exchange.`,
+    offerPrice: null,
+    offerStatus: null,
+    timestamp: Date.now(),
+    readBy: [currentUser.studentId]
+  };
+
+  chatMessages.push(replyMsg);
+  saveChatMessagesToStorage();
+  renderCurrentChatThread();
+  showToast(`Accepted offer of ৳${msg.offerPrice}! 🤝`, 'success');
+}
+
+function handleDeclineOffer(messageId) {
+  const msg = chatMessages.find(m => m.id === messageId);
+  if (!msg) return;
+
+  msg.offerStatus = 'declined';
+
+  const replyMsg = {
+    id: 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+    itemId: msg.itemId,
+    itemTitle: msg.itemTitle,
+    itemImage: msg.itemImage,
+    itemPrice: msg.itemPrice,
+    itemCondition: msg.itemCondition,
+    sellerId: msg.sellerId,
+    sellerName: msg.sellerName,
+    buyerId: msg.buyerId,
+    buyerName: msg.buyerName,
+    senderId: currentUser.studentId,
+    senderName: currentUser.name,
+    receiverId: msg.senderId,
+    receiverName: msg.senderName,
+    text: `Offer of ৳${msg.offerPrice} declined. Feel free to propose another offer or message to discuss terms.`,
+    offerPrice: null,
+    offerStatus: null,
+    timestamp: Date.now(),
+    readBy: [currentUser.studentId]
+  };
+
+  chatMessages.push(replyMsg);
+  saveChatMessagesToStorage();
+  renderCurrentChatThread();
+  showToast('Offer declined.', 'info');
+}
+
+function openConversationsList() {
+  if (!currentUser) {
+    openAuthModal('login', 'Please sign in to view your messages.');
+    return;
+  }
+
+  const threadView = document.getElementById('chatThreadView');
+  const listView = document.getElementById('chatConversationsListView');
+  const backBtn = document.getElementById('chatBackToListBtn');
+  const itemStrip = document.getElementById('chatItemStrip');
+  const peerNameEl = document.getElementById('chatPeerName');
+  const peerSubEl = document.getElementById('chatPeerSub');
+  const drawer = document.getElementById('chatOfferDrawer');
+
+  if (threadView) threadView.classList.add('hidden');
+  if (listView) listView.classList.remove('hidden');
+  if (backBtn) backBtn.classList.add('hidden');
+  if (itemStrip) itemStrip.classList.add('hidden');
+  if (drawer) drawer.classList.add('hidden');
+  if (peerNameEl) peerNameEl.textContent = 'My Messages & Offers';
+  if (peerSubEl) peerSubEl.innerHTML = `${currentUser.name} &bull; ID: ${currentUser.studentId}`;
+
+  const threadMap = new Map();
+  chatMessages.forEach(msg => {
+    const isParticipant = msg.sellerId === currentUser.studentId || 
+                          msg.buyerId === currentUser.studentId || 
+                          msg.senderId === currentUser.studentId || 
+                          msg.receiverId === currentUser.studentId;
+    if (!isParticipant) return;
+
+    const bId = msg.buyerId || (msg.senderId !== msg.sellerId ? msg.senderId : msg.receiverId);
+    const key = `${msg.itemId}_${bId}`;
+
+    if (!threadMap.has(key)) {
+      threadMap.set(key, []);
+    }
+    threadMap.get(key).push(msg);
+  });
+
+  if (threadMap.size === 0) {
+    listView.innerHTML = `
+      <div class="h-full flex flex-col items-center justify-center text-center p-8 text-slate-500">
+        <div class="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 text-2xl mb-3 shadow-xs">
+          <i class="fa-regular fa-comments"></i>
+        </div>
+        <h4 class="text-sm font-bold text-slate-800 mb-1">No messages yet</h4>
+        <p class="text-xs text-slate-500 max-w-xs mb-4">
+          Browse the marketplace, click on any item, and click "Chat with Seller" or "Make an Offer" to start a peer conversation!
+        </p>
+        <button type="button" onclick="closeChatModal();" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-sm">
+          Browse Campus Listings
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  const threadsArray = Array.from(threadMap.entries()).map(([key, msgs]) => {
+    const latest = msgs[msgs.length - 1];
+    const unread = msgs.filter(m => m.receiverId === currentUser.studentId && (!m.readBy || !m.readBy.includes(currentUser.studentId))).length;
+    const isOwner = currentUser.studentId === latest.sellerId;
+    const peerName = isOwner ? (latest.buyerName || 'Buyer') : latest.sellerName;
+    const bId = latest.buyerId || (latest.senderId !== latest.sellerId ? latest.senderId : latest.receiverId);
+    return {
+      key,
+      itemId: latest.itemId,
+      buyerId: bId,
+      peerName,
+      latestMsg: latest,
+      unreadCount: unread,
+      timestamp: latest.timestamp
+    };
+  });
+
+  threadsArray.sort((a, b) => b.timestamp - a.timestamp);
+
+  listView.innerHTML = threadsArray.map(t => {
+    const item = items.find(i => i.id === t.itemId) || { title: t.latestMsg.itemTitle, image: t.latestMsg.itemImage, priceLabel: t.latestMsg.itemPrice };
+    return `
+      <div onclick="openChatModal('${t.itemId}', 'message', '${t.buyerId}')" 
+           class="p-3 bg-white hover:bg-indigo-50/50 border border-slate-200/90 rounded-2xl transition cursor-pointer shadow-xs flex items-center justify-between gap-3 group">
+        <div class="flex items-center space-x-3 min-w-0">
+          <img src="${item.image}" alt="${item.title}" class="w-12 h-12 rounded-xl object-cover shrink-0 ring-1 ring-slate-200" />
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5 mb-0.5">
+              <span class="text-xs font-bold text-slate-900 group-hover:text-indigo-600 transition truncate">${t.peerName}</span>
+              ${t.unreadCount > 0 ? `<span class="w-2 h-2 rounded-full bg-orange-500 shrink-0"></span>` : ''}
+            </div>
+            <p class="text-[11px] font-medium text-slate-600 truncate">${item.title}</p>
+            <p class="text-[11px] text-slate-400 truncate mt-0.5">
+              ${t.latestMsg.offerPrice ? `<span class="text-amber-600 font-bold">🏷️ Offer: ৳${t.latestMsg.offerPrice}</span> &bull; ` : ''}${escapeHtml(t.latestMsg.text || 'Offer proposed')}
+            </p>
+          </div>
+        </div>
+        <div class="text-right shrink-0">
+          <span class="text-[10px] text-slate-400 block mb-1">${formatRelativeTime(t.timestamp)}</span>
+          ${t.unreadCount > 0 ? `
+            <span class="inline-flex px-1.5 py-0.5 rounded-full bg-orange-500 text-white text-[9px] font-bold">
+              ${t.unreadCount} new
+            </span>
+          ` : `
+            <span class="text-xs text-indigo-600 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-chevron-right"></i></span>
+          `}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function openNavbarMessages() {
+  if (!currentUser) {
+    openAuthModal('login', 'Please sign in with your @nub.ac.bd account to view messages and offers.');
+    return;
+  }
+
+  const modal = document.getElementById('chatModal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+  }
+
+  openConversationsList();
+}
+
+function setOfferAmount(val) {
+  const input = document.getElementById('chatOfferAmountInput');
+  if (input) input.value = val;
+}
+
+function formatRelativeTime(ts) {
+  if (!ts) return 'Just now';
+  const diff = Date.now() - ts;
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function closeChatModal() {
+  const modal = document.getElementById('chatModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+  }
+}
+
+function bindChatEvents() {
+  document.getElementById('navMessagesBtn')?.addEventListener('click', openNavbarMessages);
+  document.getElementById('closeChatModal')?.addEventListener('click', closeChatModal);
+
+  document.getElementById('chatToggleOfferBtn')?.addEventListener('click', () => {
+    document.getElementById('chatOfferDrawer')?.classList.toggle('hidden');
+  });
+
+  document.getElementById('chatQuickOfferToggleBtn')?.addEventListener('click', () => {
+    document.getElementById('chatOfferDrawer')?.classList.toggle('hidden');
+  });
+
+  document.getElementById('closeOfferDrawerBtn')?.addEventListener('click', () => {
+    document.getElementById('chatOfferDrawer')?.classList.add('hidden');
+  });
+
+  document.getElementById('chatSendOfferBtn')?.addEventListener('click', () => {
+    const input = document.getElementById('chatOfferAmountInput');
+    const amount = input ? input.value : null;
+    if (!amount || Number(amount) <= 0) {
+      showToast('Please enter a valid offer amount in ৳.', 'warning');
+      return;
+    }
+    handleSendChatMessage(`I would like to propose an offer of ৳${amount} for this item.`, Number(amount));
+  });
+
+  document.getElementById('chatToggleAllConversationsBtn')?.addEventListener('click', () => {
+    const listView = document.getElementById('chatConversationsListView');
+    if (listView && !listView.classList.contains('hidden')) {
+      if (activeChatContext) {
+        document.getElementById('chatThreadView')?.classList.remove('hidden');
+        listView.classList.add('hidden');
+        document.getElementById('chatItemStrip')?.classList.remove('hidden');
+        document.getElementById('chatPeerName').textContent = activeChatContext.peerName;
+        document.getElementById('chatPeerSub').innerHTML = activeChatContext.isOwner ? `Buyer &bull; ID: ${activeChatContext.peerId}` : `${activeChatContext.peerName} &bull; ID: ${activeChatContext.peerId}`;
+        renderCurrentChatThread();
+      }
+    } else {
+      openConversationsList();
+    }
+  });
+
+  document.getElementById('chatBackToListBtn')?.addEventListener('click', openConversationsList);
+
+  document.querySelectorAll('.chat-quick-reply').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const text = this.textContent.trim();
+      const input = document.getElementById('chatInputText');
+      if (input) {
+        input.value = text;
+        input.focus();
+      }
+    });
+  });
+
+  document.getElementById('chatModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'chatModal') {
+      closeChatModal();
+    }
+  });
 }

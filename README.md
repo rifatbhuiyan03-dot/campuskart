@@ -11,6 +11,7 @@ Featuring:
 6. **Peer Borrow & Exchange State Machine**: Full lifecycle tracking (`Available` ➔ `Requested` ➔ `Borrowed / In Exchange` ➔ `Returned`).
 7. **Student Transactions Dashboard**: Dedicated hub for Incoming Requests, Active Listings, and Borrowed Items with real-time due date countdowns.
 8. **Peer & Seller Rating System**: Interactive 5-star review engine with dynamic average calculations.
+9. **Chat with Seller & Make Offer (Peer Negotiation)**: In-app real-time messaging modal with listing context strip, offer drawer (-10% / -15% / -20% quick pills), seller Accept/Decline actions with automated confirmation replies, and unread notification badge counters.
 
 ---
 
@@ -148,6 +149,71 @@ Accessible via the navbar shortcut button or student profile dropdown:
 
 ---
 
+## 💬 Chat with Seller & Make Offer (Peer Negotiation)
+
+CampusKart includes an in-app student chat and peer price negotiation engine directly integrated into item details pages and the main navigation:
+
+### 1. Feature Highlights:
+- **Lightweight Chat Modal (`#chatModal`)**:
+  - Displays peer avatar, active status indicator, student name, and university ID.
+  - **Listing Context Strip**: Sticky banner showing item thumbnail, title, listed price, condition badge, and a toggle button to open the offer drawer.
+  - **Collapsible Offer Drawer**: Propose a custom counter-offer in ৳ or pick one-click percentage discount pills (`-10%`, `-15%`, `-20%`).
+  - **Interactive Icebreakers**: Quick student conversation starters (`"Is this item still available?"`, `"Can we meet at the campus library?"`, `"Are notes/accessories included?"`).
+  - **Offer State Machine**:
+    - Buyer proposes an offer ➔ Card renders with pulsing amber badge `Offer Pending`.
+    - Seller sees prominent **"Accept ৳XXX"** and **"Decline"** buttons right inside the chat thread.
+    - Accepting automatically switches offer status to `Offer Accepted` (emerald badge) and sends an automated meetup confirmation message.
+    - Declining updates status to `Offer Declined` (neutral gray badge) and invites further discussion.
+- **Unread Badge & Multi-Thread View**:
+  - Live orange notification badges on navbar (`#navMessagesBadge`) and student profile dropdown (`#menuMessagesBadge`).
+  - **"My Chats" / Conversation List**: View all active peer chats grouped by listing and buyer, with latest message previews, relative timestamps (`Just now`, `5m ago`), and unread indicator dots.
+  - Data is cleanly persisted in `localStorage` (`campuskart_messages_v2`).
+
+### 2. Peer Negotiation Workflow:
+```
+   [ Buyer Views Listing Details ]
+                 │
+      ┌──────────┴──────────┐
+      ▼                     ▼
+[ Chat with Seller ]  [ Make an Offer ]
+(Opens peer thread)   (Opens offer drawer with quick -10%/-15%/-20% pills)
+      │                     │
+      └──────────┬──────────┘
+                 ▼
+     [ Send Message / Propose Offer ]
+                 │
+                 ▼
+   [ Stored in localStorage & Unread Badge Alert ]
+                 │
+                 ▼
+        [ Seller Views Thread ]
+                 │
+        ┌────────┴────────┐
+        ▼                 ▼
+   [ Accept Offer ]  [ Decline Offer ]
+    (Sets status to   (Sets status to
+     Accepted & auto-  Declined & prompts
+     posts meetup)     counter discussion)
+```
+
+### 3. Step-by-Step Test Walkthrough:
+1. **Sign in as Rifat Hasan** (`202110045` / `campus123`):
+   - Notice the orange notification badge `1` on the Messages button in the navbar.
+   - Click the Messages button or open Casio fx-991MS details ➔ click **"View Buyer Messages & Offers"**.
+   - See the incoming offer of **৳580** from **Ruma Akter** with the pulsing amber `Offer Pending` badge.
+   - Click **"Accept ৳580"**: The offer badge changes to emerald `Offer Accepted`, and an automated meetup message is sent!
+   - Notice the unread message badge in the navbar clears to 0.
+
+2. **Sign in as Ruma Akter** (`202220015` / `campus123`):
+   - Switch accounts by signing out and logging in as Ruma.
+   - Open Rifat's **"Digital Logic Design Breadboard Kit"** (or click any item).
+   - Click **"Make an Offer"**: The offer drawer opens automatically.
+   - Click the **"-10%"** or **"-15%"** pill, or enter a custom amount (e.g. `450`), and click **"Send Offer"**.
+   - The offer card is immediately added to the thread and saved in `localStorage`.
+   - Click **"My Chats"** to switch between conversations across different campus items.
+
+---
+
 ## 🔐 University Authentication (`@nub.ac.bd`)
 
 - **Strict University Domain**: All registrations must end with `@nub.ac.bd`.
@@ -162,10 +228,10 @@ Accessible via the navbar shortcut button or student profile dropdown:
 Software Devlopment Project/
 ├── index.html          # Semantic HTML5 layout with Tailwind CSS & interactive modals
 ├── css/
-│   └── custom.css      # Custom badge styling, animations, floating switcher & star rating
+│   └── custom.css      # Custom styling, chat bubbles, offer cards, badge animations & star rating
 ├── js/
 │   ├── data.js         # 10 realistic NUB study items, course codes, Rifat/Ruma profiles & reviews
-│   └── app.js          # Main app logic, state machine, demo switcher, auth & dashboard
+│   └── app.js          # App logic, state machine, chat & offer engine, auth & dashboard
 └── README.md           # Documentation and guide
 ```
 
