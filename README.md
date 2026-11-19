@@ -12,6 +12,7 @@ Featuring:
 7. **Student Transactions Dashboard**: Dedicated hub for Incoming Requests, Active Listings, and Borrowed Items with real-time due date countdowns.
 8. **Peer & Seller Rating System**: Interactive 5-star review engine with dynamic average calculations.
 9. **Chat with Seller & Make Offer (Peer Negotiation)**: In-app real-time messaging modal with listing context strip, offer drawer (-10% / -15% / -20% quick pills), seller Accept/Decline actions with automated confirmation replies, and unread notification badge counters.
+10. **Supabase PostgreSQL Cloud Backend**: Real cloud persistence using client-side `@supabase/supabase-js` via CDN and public anon keys. Live data synchronization across two core tables (`items` and `transactions`), direct cloud insertions on '+ Post an Item', state machine transaction updates, and resilient offline mock data fallback.
 
 ---
 
@@ -222,17 +223,98 @@ CampusKart includes an in-app student chat and peer price negotiation engine dir
 
 ---
 
+## 🐘 Supabase PostgreSQL Backend & Cloud Persistence
+
+CampusKart connects directly to a **Supabase PostgreSQL** cloud database using client-side `@supabase/supabase-js` (loaded via CDN) and public anon keys protected by PostgreSQL **Row Level Security (RLS)**.
+
+### 1. Database Architecture & Core Tables:
+
+```
+┌──────────────────────────────────────┐       ┌─────────────────────────────────────────┐
+│              items                   │       │              transactions               │
+├──────────────────────────────────────┤       ├─────────────────────────────────────────┤
+│ id                 TEXT PRIMARY KEY  │◄──────│ id                 TEXT PRIMARY KEY     │
+│ title              TEXT NOT NULL     │       │ item_id            TEXT REFERENCES items│
+│ description        TEXT              │       │ borrower_id        TEXT NOT NULL        │
+│ category           TEXT NOT NULL     │       │ seller_id          TEXT NOT NULL        │
+│ course_code        TEXT              │       │ status             TEXT (req/appr/ret)  │
+│ price              NUMERIC           │       │ return_due_date    TIMESTAMPTZ          │
+│ transaction_type   TEXT (Sell/Borrow)│       │ rating             INTEGER (1-5)        │
+│ condition          TEXT              │       │ review_text        TEXT                 │
+│ image_url          TEXT              │       │ created_at         TIMESTAMPTZ          │
+│ seller_id          TEXT NOT NULL     │       │ borrower_name      TEXT                 │
+│ status             TEXT              │       │ duration_requested TEXT                 │
+│ created_at         TIMESTAMPTZ       │       │ note               TEXT                 │
+└──────────────────────────────────────┘       └─────────────────────────────────────────┘
+```
+
+1. **`items` Table**:
+   - `id`: Unique identifier (e.g. `ck-101`, `ck-102`).
+   - `title`: Item title (e.g. Casio fx-991MS Scientific Calculator).
+   - `description`: Detailed academic & condition description.
+   - `category`: Category name (`Tech & Electronics`, `Textbooks`, `Lab & Engineering`, `Notes & Study Kits`).
+   - `course_code`: NUB course code (`MATH 101`, `CSE 103`, `CSE 123`, `CSE 221`, `ME 101`, etc.).
+   - `price`: Numeric price in BDT (৳).
+   - `transaction_type`: `Sell`, `Borrow`, or `Exchange`.
+   - `condition`: `Brand New`, `Like New`, `Good`, `Fair`.
+   - `image_url`: High-resolution academic placeholder image URL.
+   - `seller_id`: University Student ID of the owner (`202110045`, `202220015`).
+   - `status`: `available`, `borrowed`, `requested`, `sold`.
+   - `created_at`: Timestamp with timezone.
+
+2. **`transactions` Table**:
+   - `id`: Transaction identifier (`tx-seed-101`, `tx-...`).
+   - `item_id`: Foreign key referencing `items(id)`.
+   - `borrower_id`: University Student ID of borrower / requester.
+   - `seller_id`: University Student ID of lender / item owner.
+   - `status`: State machine status (`requested`, `approved`, `returned`).
+   - `return_due_date`: Expected return timestamp set by the owner during approval.
+   - `rating`: 1 to 5 star rating left by the borrower after return.
+   - `review_text`: Feedback comment left by the borrower.
+   - `created_at`: Request timestamp.
+
+---
+
+### 2. How to Set Up Your Supabase Cloud Database:
+
+1. **Create a Supabase Project**:
+   - Go to [Supabase](https://supabase.com) and create a free project.
+2. **Execute the SQL Schema**:
+   - Open the **SQL Editor** from your project sidebar.
+   - Copy the contents of [`schema.sql`](file:///c:/Users/rifat/OneDrive/Desktop/Software%20Devlopment%20Project/schema.sql).
+   - Paste into the query window and click **Run**.
+   - This creates both tables, enables Row Level Security (RLS) with public demo policies, and pre-seeds all 10 realistic NUB study items!
+3. **Connect in CampusKart**:
+   - Click the **"Cloud DB"** status button in the top navbar (`#navSupabaseStatusBtn`).
+   - Paste your **Project URL** (`https://<project-ref>.supabase.co`) and **Anon Public Key**.
+   - Click **"Test Ping"** to verify connection, then click **"Save & Connect"**.
+   - The indicator dot will pulse green (`🟢 Supabase Live`), and listings will load directly from your cloud database!
+
+---
+
+### 3. Dynamic Cloud Sync & Offline Fallback:
+
+- **Dynamic Fetch on Page Load**: When configured, listings and active transactions are fetched directly from PostgreSQL (`items` and `transactions`).
+- **Direct Cloud Post**: Submitting the **"+ Post an Item"** form writes immediately to the Supabase `items` table via `supabaseClient.from('items').insert([...])`.
+- **Peer State Machine Sync**: Requesting to borrow/trade inserts into `transactions`; owner approvals and returns automatically update status and return due dates in PostgreSQL.
+- **Graceful Fallback Mode**: If no Supabase credentials are configured or if the device is offline, CampusKart seamlessly switches to **Local Fallback Mode** (`localStorage` & pre-seeded NUB sample items) with no broken UI or errors.
+- **1-Click Cloud Seeding**: Inside the Cloud DB settings modal, click **"🚀 1-Click Seed to Supabase"** to instantly push all 10 authentic items into your live database.
+
+---
+
 ## 📁 Project Structure
 
 ```
 Software Devlopment Project/
-├── index.html          # Semantic HTML5 layout with Tailwind CSS & interactive modals
+├── index.html              # Modern Daraz-style UI with Tailwind CSS & interactive modals
+├── schema.sql              # Ready-to-run PostgreSQL schema with RLS policies & sample data
 ├── css/
-│   └── custom.css      # Custom styling, chat bubbles, offer cards, badge animations & star rating
+│   └── custom.css          # Badges, chat bubbles, offer cards, live status pulses & styling
 ├── js/
-│   ├── data.js         # 10 realistic NUB study items, course codes, Rifat/Ruma profiles & reviews
-│   └── app.js          # App logic, state machine, chat & offer engine, auth & dashboard
-└── README.md           # Documentation and guide
+│   ├── supabase-config.js  # Supabase client setup, test ping, data service & cloud syncing
+│   ├── data.js             # 10 realistic NUB study items, course codes & pre-seeded profiles
+│   └── app.js              # State machine, chat & offer engine, cloud CRUD & dashboard
+└── README.md               # Documentation and setup guide
 ```
 
 ---

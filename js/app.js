@@ -149,11 +149,13 @@ document.addEventListener('DOMContentLoaded', () => {
   bindAuthEvents();
   bindStateMachineEvents();
   bindChatEvents();
+  bindSupabaseEvents();
   renderItems();
   updateWishlistCount();
   updateAuthUI();
   updateNotificationBadges();
   initHeroCarousel();
+  initSupabaseSync();
 });
 
 /**
@@ -820,6 +822,28 @@ function handleRequestFormSubmit(e) {
   };
 
   saveItemsToStorage();
+
+  // Cloud sync to Supabase transactions table
+  if (typeof SupabaseService !== 'undefined' && typeof isSupabaseConfigured === 'function' && isSupabaseConfigured()) {
+    SupabaseService.createTransaction({
+      id: `tx-${Date.now().toString().slice(-6)}`,
+      itemId: item.id,
+      borrowerId: currentUser.studentId,
+      sellerId: item.seller.studentId,
+      status: 'requested',
+      borrowerName: currentUser.name,
+      borrowerEmail: currentUser.email,
+      borrowerDept: currentUser.department,
+      durationRequested: item.transaction === 'Exchange' ? null : duration,
+      offeredItem: item.transaction === 'Exchange' ? offeredItem : null,
+      note: note
+    }).then(res => {
+      if (res && res.success) {
+        console.log('Transaction synced to Supabase PostgreSQL:', res.data);
+      }
+    });
+  }
+
   closeRequestModal();
   renderItems();
   updateNotificationBadges();
@@ -938,6 +962,15 @@ function handleApprovalFormSubmit(e) {
   item.activeRequest = null;
 
   saveItemsToStorage();
+
+  // Cloud sync to Supabase transactions & items
+  if (typeof SupabaseService !== 'undefined' && typeof isSupabaseConfigured === 'function' && isSupabaseConfigured()) {
+    SupabaseService.updateTransactionStatus(item.id, 'approved', {
+      dueDate: finalDueDate,
+      note: meetupNote
+    });
+  }
+
   closeApprovalModal();
   renderItems();
   renderDashboard();
@@ -955,6 +988,12 @@ function handleDeclineRequest(itemId) {
   item.activeRequest = null;
 
   saveItemsToStorage();
+
+  // Cloud sync to Supabase
+  if (typeof SupabaseService !== 'undefined' && typeof isSupabaseConfigured === 'function' && isSupabaseConfigured()) {
+    SupabaseService.updateTransactionStatus(item.id, 'available');
+  }
+
   renderItems();
   renderDashboard();
   updateNotificationBadges();
@@ -977,6 +1016,12 @@ function handleMarkAsReturned(itemId) {
   }
 
   saveItemsToStorage();
+
+  // Cloud sync to Supabase
+  if (typeof SupabaseService !== 'undefined' && typeof isSupabaseConfigured === 'function' && isSupabaseConfigured()) {
+    SupabaseService.updateTransactionStatus(item.id, 'returned');
+  }
+
   renderItems();
   renderDashboard();
   updateNotificationBadges();
@@ -1097,6 +1142,12 @@ function handleReviewFormSubmit(e) {
   });
 
   saveItemsToStorage();
+
+  // Cloud sync to Supabase rating & review
+  if (typeof SupabaseService !== 'undefined' && typeof isSupabaseConfigured === 'function' && isSupabaseConfigured()) {
+    SupabaseService.saveRating(itemId, currentUser.studentId, rating, comment);
+  }
+
   closeReviewModal();
   renderItems();
   renderDashboard();
@@ -2919,6 +2970,23 @@ function handleNewListingSubmit(e) {
   items.unshift(newItem);
   saveItemsToStorage();
 
+  // Cloud persistence: Insert directly into Supabase PostgreSQL 'items' table
+  if (typeof SupabaseService !== 'undefined' && typeof isSupabaseConfigured === 'function' && isSupabaseConfigured()) {
+    SupabaseService.insertItem(newItem).then(res => {
+      if (res && res.success) {
+        showToast('🎉 Your listing is live on Supabase PostgreSQL & CampusKart!', 'success');
+      } else {
+        console.warn('Supabase insert note:', res?.error);
+        showToast(`Saved to local cache (${res?.error || 'Cloud sync note'}).`, 'warning');
+      }
+    }).catch(err => {
+      console.error('Supabase insert failed:', err);
+      showToast('Saved to local storage (Offline fallback mode).', 'info');
+    });
+  } else {
+    showToast('🎉 Your listing is live on CampusKart NUB!', 'success');
+  }
+
   e.target.reset();
   closePostModal();
 
@@ -3585,3 +3653,347 @@ function bindChatEvents() {
     }
   });
 }
+
+/**
+ * =========================================================================
+ * SUPABASE POSTGRESQL CLOUD BACKEND INTEGRATION
+ * =========================================================================
+ */
+
+function openSupabaseModal() {
+  const modal = document.getElementById('supabaseConfigModal');
+  if (!modal) return;
+
+  const urlInput = document.getElementById('supabaseProjectUrlInput');
+  const keyInput = document.getElementById('supabaseAnonKeyInput');
+  const alertEl = document.getElementById('supabaseFeedbackAlert');
+
+  if (alertEl) {
+    alertEl.classList.add('hidden');
+    alertEl.innerHTML = '';
+  }
+
+  if (typeof getSupabaseConfig === 'function') {
+    const config = getSupabaseConfig();
+    if (urlInput) urlInput.value = config.url || '';
+    if (keyInput) keyInput.value = config.anonKey || '';
+  }
+
+  updateSupabaseStatusUI();
+  modal.classList.remove('hidden');
+  document.body.classList.add('overflow-hidden');
+}
+
+function closeSupabaseModal() {
+  const modal = document.getElementById('supabaseConfigModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+  }
+}
+
+function updateSupabaseStatusUI() {
+  const isCfg = typeof isSupabaseConfigured === 'function' && isSupabaseConfigured();
+  const isConn = Boolean(window.supabaseBackendState?.isConnected);
+
+  let state = 'fallback';
+  let label = 'Cloud DB';
+
+  if (isCfg && isConn) {
+    state = 'live';
+    label = 'Supabase Live';
+  } else if (isCfg) {
+    state = 'connecting';
+    label = 'Supabase Configured';
+  } else {
+    state = 'fallback';
+    label = 'Local Fallback';
+  }
+
+  updateSupabaseStatusBadge(state, label);
+}
+
+function updateSupabaseStatusBadge(status, text) {
+  const dot = document.getElementById('supabaseStatusDot');
+  const label = document.getElementById('supabaseStatusText');
+  const modalDot = document.getElementById('modalStatusDot');
+  const modalTitle = document.getElementById('modalStatusTitle');
+  const modalDesc = document.getElementById('modalStatusDesc');
+
+  if (dot) {
+    dot.className = 'w-2 h-2 rounded-full shrink-0 transition-colors';
+    if (status === 'live') {
+      dot.className = 'w-2 h-2 rounded-full shrink-0 supabase-dot-live';
+    } else if (status === 'connecting') {
+      dot.className = 'w-2 h-2 rounded-full shrink-0 supabase-dot-connecting';
+    } else if (status === 'error') {
+      dot.className = 'w-2 h-2 rounded-full shrink-0 supabase-dot-error';
+    } else {
+      dot.className = 'w-2 h-2 rounded-full shrink-0 supabase-dot-fallback';
+    }
+  }
+
+  if (label) {
+    label.textContent = text || (status === 'live' ? 'Supabase Live' : 'Local Fallback');
+  }
+
+  if (modalDot && modalTitle && modalDesc) {
+    modalDot.className = 'w-3 h-3 rounded-full shrink-0';
+    if (status === 'live') {
+      modalDot.className = 'w-3 h-3 rounded-full shrink-0 supabase-dot-live';
+      modalTitle.textContent = '🟢 Connected to Supabase Cloud PostgreSQL';
+      const cfg = typeof getSupabaseConfig === 'function' ? getSupabaseConfig() : { url: '' };
+      modalDesc.textContent = `Live database active: ${cfg.url || 'Supabase'}`;
+    } else if (status === 'connecting') {
+      modalDot.className = 'w-3 h-3 rounded-full shrink-0 supabase-dot-connecting';
+      modalTitle.textContent = 'Connecting to Supabase...';
+      modalDesc.textContent = 'Testing connection and querying PostgreSQL tables...';
+    } else if (status === 'error') {
+      modalDot.className = 'w-3 h-3 rounded-full shrink-0 supabase-dot-error';
+      modalTitle.textContent = '❌ Supabase Connection Issue';
+      modalDesc.textContent = window.supabaseBackendState?.lastError || 'Could not connect. Check your credentials and RLS policies.';
+    } else {
+      modalDot.className = 'w-3 h-3 rounded-full shrink-0 supabase-dot-fallback';
+      modalTitle.textContent = '⚡ Local Fallback Mode';
+      modalDesc.textContent = 'Operating offline with localStorage & 10 authentic NUB sample items.';
+    }
+  }
+}
+
+function mapDbItemToFrontend(row, dbTransactions = []) {
+  const itemTx = dbTransactions.filter(t => t.item_id === row.id);
+  const activeReqTx = itemTx.find(t => t.status === 'requested');
+  const approvedTx = itemTx.find(t => t.status === 'approved');
+
+  const sellerId = row.seller_id;
+  const knownUser = registeredUsers.find(u => u.studentId === sellerId);
+
+  const sellerName = row.seller_name || knownUser?.name || 'Verified Student';
+  const sellerAvatar = row.seller_avatar || knownUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80';
+  const sellerMajor = row.seller_major || knownUser?.department || 'Computer Science & Engineering (CSE)';
+
+  let status = 'Available';
+  const rawStatus = (row.status || '').toLowerCase();
+  if (rawStatus === 'borrowed') status = 'Borrowed';
+  else if (rawStatus === 'in exchange') status = 'In Exchange';
+  else if (rawStatus === 'requested') status = 'Requested';
+  else if (rawStatus === 'sold') status = 'Sold';
+  else status = 'Available';
+
+  let activeRequest = null;
+  if (activeReqTx) {
+    status = 'Requested';
+    activeRequest = {
+      transactionId: activeReqTx.id,
+      requesterId: activeReqTx.borrower_id,
+      requesterName: activeReqTx.borrower_name || `Student #${activeReqTx.borrower_id}`,
+      requesterEmail: activeReqTx.borrower_email || `${activeReqTx.borrower_id}@nub.ac.bd`,
+      requesterDept: activeReqTx.borrower_dept || 'Computer Science & Engineering (CSE)',
+      requestDate: activeReqTx.created_at,
+      durationRequested: activeReqTx.duration_requested,
+      offeredItem: activeReqTx.offered_item,
+      note: activeReqTx.note
+    };
+  }
+
+  let borrowDetails = null;
+  if (approvedTx) {
+    status = row.transaction_type === 'Exchange' ? 'In Exchange' : 'Borrowed';
+    borrowDetails = {
+      transactionId: approvedTx.id,
+      borrowerId: approvedTx.borrower_id,
+      borrowerName: approvedTx.borrower_name || `Student #${approvedTx.borrower_id}`,
+      borrowerEmail: approvedTx.borrower_email || `${approvedTx.borrower_id}@nub.ac.bd`,
+      borrowerDept: approvedTx.borrower_dept || 'Computer Science & Engineering (CSE)',
+      approvedDate: approvedTx.created_at,
+      dueDate: approvedTx.return_due_date,
+      meetupNote: approvedTx.note,
+      returnStatus: 'Active',
+      isReviewed: Boolean(approvedTx.rating)
+    };
+  }
+
+  return {
+    id: row.id,
+    title: row.title,
+    category: row.category,
+    courseCode: row.course_code || 'General',
+    condition: row.condition,
+    transaction: row.transaction_type,
+    status: status,
+    price: Number(row.price) || 0,
+    priceLabel: row.price_label || (row.transaction_type === 'Sell' ? `৳${row.price}` : (row.transaction_type === 'Exchange' ? 'Trade Only' : '৳50 / week')),
+    originalPrice: null,
+    exchangeFor: row.exchange_for || null,
+    borrowTerms: row.borrow_terms || null,
+    image: row.image_url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80',
+    description: row.description || '',
+    location: row.location || 'NUB Central Library 2nd Fl (Ashkona)',
+    seller: {
+      name: sellerName,
+      studentId: sellerId,
+      avatar: sellerAvatar,
+      major: sellerMajor,
+      badge: 'NUB Verified Student',
+      rating: 5.0,
+      reviewsCount: 1,
+      responseTime: '< 5 mins'
+    },
+    postedAt: formatRelativeTime(new Date(row.created_at).getTime()),
+    featured: Boolean(row.featured !== false),
+    views: row.views || 1,
+    activeRequest: activeRequest,
+    borrowDetails: borrowDetails
+  };
+}
+
+async function initSupabaseSync() {
+  updateSupabaseStatusUI();
+
+  if (typeof isSupabaseConfigured === 'function' && isSupabaseConfigured()) {
+    updateSupabaseStatusBadge('connecting', 'Connecting...');
+    try {
+      const result = await SupabaseService.fetchItemsAndTransactions();
+      if (result && result.items) {
+        if (result.items.length > 0) {
+          items = result.items.map(row => mapDbItemToFrontend(row, result.transactions || []));
+          saveItemsToStorage();
+          populateDropdowns();
+          renderItems();
+          renderHeroSlider();
+          updateNotificationBadges();
+          updateSupabaseStatusBadge('live', 'Supabase Live');
+          console.log(`✅ Loaded ${items.length} items directly from Supabase Cloud PostgreSQL.`);
+        } else {
+          updateSupabaseStatusBadge('live', 'Supabase (Empty)');
+        }
+      } else {
+        updateSupabaseStatusBadge('fallback', 'Local Fallback');
+      }
+    } catch (err) {
+      console.warn('Supabase fetch failed, keeping local fallback:', err);
+      updateSupabaseStatusBadge('error', 'Supabase Error');
+    }
+  } else {
+    updateSupabaseStatusBadge('fallback', 'Local Fallback');
+  }
+}
+
+function bindSupabaseEvents() {
+  document.getElementById('navSupabaseStatusBtn')?.addEventListener('click', openSupabaseModal);
+  document.getElementById('closeSupabaseModal')?.addEventListener('click', closeSupabaseModal);
+  document.getElementById('supabaseCancelBtn')?.addEventListener('click', closeSupabaseModal);
+
+  document.getElementById('supabaseConfigModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'supabaseConfigModal') {
+      closeSupabaseModal();
+    }
+  });
+
+  // Test Ping Button
+  document.getElementById('supabaseQuickTestBtn')?.addEventListener('click', async () => {
+    const url = document.getElementById('supabaseProjectUrlInput')?.value.trim();
+    const key = document.getElementById('supabaseAnonKeyInput')?.value.trim();
+    const alertEl = document.getElementById('supabaseFeedbackAlert');
+
+    if (!url || !key) {
+      if (alertEl) {
+        alertEl.className = 'p-3 rounded-xl text-[11px] bg-amber-50 text-amber-800 border border-amber-200';
+        alertEl.textContent = 'Please fill out both Project URL and Public Anon Key before testing.';
+        alertEl.classList.remove('hidden');
+      }
+      return;
+    }
+
+    if (alertEl) {
+      alertEl.className = 'p-3 rounded-xl text-[11px] bg-blue-50 text-blue-800 border border-blue-200';
+      alertEl.textContent = 'Testing connection to Supabase PostgreSQL...';
+      alertEl.classList.remove('hidden');
+    }
+
+    saveSupabaseCredentials(url, key);
+    const res = await testSupabaseConnection();
+
+    if (alertEl) {
+      if (res.success) {
+        alertEl.className = 'p-3 rounded-xl text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-200';
+        alertEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i> ${res.message}`;
+        updateSupabaseStatusBadge('live', 'Supabase Live');
+      } else {
+        alertEl.className = 'p-3 rounded-xl text-[11px] bg-rose-50 text-rose-800 border border-rose-200';
+        alertEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-600"></i> ${res.message}`;
+        updateSupabaseStatusBadge('error', 'Supabase Error');
+      }
+    }
+  });
+
+  // Save Credentials Button
+  document.getElementById('supabaseSaveCredentialsBtn')?.addEventListener('click', async () => {
+    const url = document.getElementById('supabaseProjectUrlInput')?.value.trim();
+    const key = document.getElementById('supabaseAnonKeyInput')?.value.trim();
+
+    if (!url || !key) {
+      showToast('Please provide both Supabase URL and Anon Public Key.', 'warning');
+      return;
+    }
+
+    saveSupabaseCredentials(url, key);
+    showToast('Saved Supabase credentials! Connecting...', 'info');
+
+    await initSupabaseSync();
+    showToast('Connected to Supabase PostgreSQL backend!', 'success');
+    closeSupabaseModal();
+  });
+
+  // Reset to Local Fallback
+  document.getElementById('supabaseResetFallbackBtn')?.addEventListener('click', () => {
+    resetSupabaseCredentials();
+    const urlInput = document.getElementById('supabaseProjectUrlInput');
+    const keyInput = document.getElementById('supabaseAnonKeyInput');
+    if (urlInput) urlInput.value = '';
+    if (keyInput) keyInput.value = '';
+
+    const alertEl = document.getElementById('supabaseFeedbackAlert');
+    if (alertEl) alertEl.classList.add('hidden');
+
+    items = [...INITIAL_ITEMS];
+    saveItemsToStorage();
+    populateDropdowns();
+    renderItems();
+    updateNotificationBadges();
+    updateSupabaseStatusBadge('fallback', 'Local Fallback');
+    showToast('Reverted to Local Storage & Mock Data Fallback.', 'info');
+  });
+
+  // 1-Click Seed Sample Data to Cloud
+  document.getElementById('supabaseSeedDataBtn')?.addEventListener('click', async () => {
+    if (!isSupabaseConfigured()) {
+      showToast('Please configure your Supabase URL & Anon Key first.', 'warning');
+      return;
+    }
+
+    showToast('🚀 Seeding 10 university study items to Supabase PostgreSQL...', 'info');
+    try {
+      const res = await SupabaseService.seedSampleDataToCloud(INITIAL_ITEMS);
+      if (res.success) {
+        showToast(`🎉 Successfully seeded ${res.count} items into Supabase!`, 'success');
+        await initSupabaseSync();
+      }
+    } catch (err) {
+      console.error('Seed error:', err);
+      showToast(`Seed failed: ${err.message}. Did you run schema.sql first?`, 'error');
+    }
+  });
+
+  // Copy SQL Schema Notice Button
+  document.getElementById('supabaseCopySchemaBtn')?.addEventListener('click', () => {
+    const sqlNotice = `-- CampusKart schema.sql is located in the root repository.
+-- Copy the contents of schema.sql and run it in the Supabase SQL Editor.`;
+    navigator.clipboard?.writeText(sqlNotice).then(() => {
+      showToast('📋 Notice copied! Open schema.sql in your editor to copy full SQL.', 'success');
+    }).catch(() => {
+      showToast('schema.sql file is ready in project root directory.', 'info');
+    });
+  });
+}
+
