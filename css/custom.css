@@ -7,6 +7,12 @@
   --primary-hover: #4338ca;
 }
 
+html, body {
+  overflow-x: clip;
+  max-width: 100vw;
+  width: 100%;
+}
+
 body {
   font-family: var(--font-sans);
   background-color: #f8fafc;
@@ -94,10 +100,26 @@ body {
   box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
 }
 
-/* Smooth modal animations */
+/* Smooth modal animations & flexible viewport positioning */
 .modal-backdrop {
-  backdrop-filter: blur(6px);
-  background-color: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(8px);
+  background-color: rgba(15, 23, 42, 0.65);
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  padding: 1.5rem 1rem !important;
+}
+
+.modal-backdrop.hidden {
+  display: none !important;
+}
+
+.modal-backdrop > div {
+  margin-top: 1rem !important;
+  margin-bottom: 3rem !important;
+  max-height: none !important;
 }
 
 .animate-pop {
@@ -263,6 +285,13 @@ body {
   border: 1px solid #cbd5e1;
 }
 
+.status-sold {
+  background-color: #f1f5f9;
+  color: #64748b;
+  border: 1px solid #cbd5e1;
+  text-decoration: none;
+}
+
 /* Dashboard Tabs */
 .dash-tab {
   transition: all 0.2s ease;
@@ -308,9 +337,162 @@ body {
   animation: pulseCountdown 2s infinite;
 }
 
+.countdown-overdue {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #f87171;
+  animation: pulseCountdown 1.2s infinite;
+}
+
 @keyframes pulseCountdown {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.75; }
+}
+
+/* Real-Time Live Campus Clock Styling */
+.campus-clock-pill {
+  font-feature-settings: "tnum" 1, "ss01" 1;
+  letter-spacing: -0.01em;
+}
+
+.campus-clock-pulse {
+  animation: clockPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes clockPulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.92);
+  }
+}
+
+/* ==========================================================================
+   STICKY HEADER & MODERN FROSTED GLASS (GLASSMORPHISM)
+   ========================================================================== */
+.sticky-header {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  width: 100%;
+  box-sizing: border-box;
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+
+  /* Mobile & Desktop Stability: Hardware-accelerated GPU compositing to eliminate scroll flicker & jitter */
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  isolation: isolate;
+  will-change: background-color, backdrop-filter, box-shadow, border-color;
+  transition: background-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              backdrop-filter 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              -webkit-backdrop-filter 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Subtle elevation when scrolled past top */
+.sticky-header.scrolled {
+  background-color: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 8px 25px -4px rgba(0, 0, 0, 0.08), 0 4px 10px -3px rgba(0, 0, 0, 0.03);
+  border-bottom: 1px solid rgba(203, 213, 225, 0.9);
+}
+
+/* Dark mode frosted glass support (Class-based: .dark / body.dark / html.dark) */
+body.dark .sticky-header,
+.dark .sticky-header,
+html.dark .sticky-header {
+  background-color: rgba(15, 23, 42, 0.85);
+  border-bottom: 1px solid rgba(51, 65, 85, 0.8);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+}
+
+body.dark .sticky-header.scrolled,
+.dark .sticky-header.scrolled,
+html.dark .sticky-header.scrolled {
+  background-color: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(71, 85, 105, 0.85);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 4px 10px -4px rgba(0, 0, 0, 0.3);
+}
+
+/* Dark mode mobile drawer menu background */
+body.dark #mobileMenu,
+.dark #mobileMenu,
+html.dark #mobileMenu {
+  background-color: rgba(15, 23, 42, 0.95);
+  border-top-color: rgba(51, 65, 85, 0.8);
+}
+
+/* Dark mode frosted glass support (OS Media Query) */
+@media (prefers-color-scheme: dark) {
+  .sticky-header {
+    background-color: rgba(15, 23, 42, 0.85);
+    border-bottom: 1px solid rgba(51, 65, 85, 0.8);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  }
+
+  .sticky-header.scrolled {
+    background-color: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(71, 85, 105, 0.85);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 4px 10px -4px rgba(0, 0, 0, 0.3);
+  }
+
+  #mobileMenu {
+    background-color: rgba(15, 23, 42, 0.95);
+    border-top-color: rgba(51, 65, 85, 0.8);
+  }
+
+  /* Explicit light override if light theme class is present */
+  body.light .sticky-header,
+  .light .sticky-header,
+  html.light .sticky-header {
+    background-color: rgba(255, 255, 255, 0.85);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+  }
+
+  body.light .sticky-header.scrolled,
+  .light .sticky-header.scrolled,
+  html.light .sticky-header.scrolled {
+    background-color: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(203, 213, 225, 0.9);
+    box-shadow: 0 8px 25px -4px rgba(0, 0, 0, 0.08), 0 4px 10px -3px rgba(0, 0, 0, 0.03);
+  }
+}
+
+/* Ensure all modals & toasts sit safely above sticky header (z-index: 1000) */
+.modal-backdrop,
+#postItemModal,
+#itemDetailsModal,
+#authModal,
+#dashboardModal,
+#requestModal,
+#approvalModal,
+#reviewModal {
+  z-index: 2000 !important;
+}
+
+#toastContainer {
+  z-index: 3000 !important;
 }
 
 /* ==========================================================================
@@ -318,7 +500,7 @@ body {
    ========================================================================== */
 html, body {
   max-width: 100%;
-  overflow-x: hidden;
+  overflow-x: clip;
   position: relative;
 }
 
@@ -382,76 +564,205 @@ html, body {
 }
 
 /* ==========================================================================
-   CHAT WITH SELLER & PEER OFFER SYSTEM STYLES
+   ACADEMIC PRESENTATION & VIVA ENHANCEMENTS
    ========================================================================== */
-.chat-bubble-outgoing {
-  background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
-  color: #ffffff;
-  border-radius: 1.25rem 1.25rem 0.25rem 1.25rem;
+
+/* Flash highlight animation for auto-filled demo fields */
+@keyframes inputGlowPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.6);
+    border-color: #f97316;
+    background-color: #fff7ed;
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(249, 115, 22, 0.25);
+    border-color: #ea580c;
+    background-color: #ffedd5;
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(249, 115, 22, 0);
+    border-color: #e2e8f0;
+    background-color: #f8fafc;
+  }
 }
 
-.chat-bubble-incoming {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  color: #1e293b;
-  border-radius: 1.25rem 1.25rem 1.25rem 0.25rem;
+.input-flash {
+  animation: inputGlowPulse 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-.chat-offer-badge-pulse {
-  animation: offerPulse 2.5s infinite;
+/* Quick Demo Chips */
+.demo-quick-chip {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes offerPulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.03); opacity: 0.95; }
+.demo-quick-chip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(249, 115, 22, 0.15);
 }
 
-.chat-quick-reply {
-  user-select: none;
-  cursor: pointer;
+/* Instant Image Preview and Dropzone */
+.dropzone-dragover {
+  border-color: #6366f1 !important;
+  background-color: #eef2ff !important;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15) !important;
 }
 
-.chat-quick-reply:active {
-  transform: scale(0.96);
+/* Image preview container hover */
+#imagePreviewContainer img {
+  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#imagePreviewContainer:hover img {
+  transform: scale(1.04);
 }
 
 /* ==========================================================================
-   SUPABASE CLOUD STATUS INDICATOR & PULSE
+   CLEAN MODERN TOAST NOTIFICATIONS
    ========================================================================== */
-.supabase-dot-live {
-  background-color: #10b981;
-  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-  animation: supabaseLivePulse 2s infinite;
+
+.campuskart-toast {
+  animation: toastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+  box-shadow: 0 16px 32px -4px rgba(15, 23, 42, 0.12), 0 6px 16px -4px rgba(15, 23, 42, 0.08);
 }
 
-@keyframes supabaseLivePulse {
+.campuskart-toast.toast-hiding {
+  animation: toastSlideOut 0.28s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes toastSlideIn {
   0% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
-  }
-  70% {
-    transform: scale(1);
-    box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+    opacity: 0;
+    transform: translateX(110%) scale(0.92);
   }
   100% {
-    transform: scale(0.95);
-    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    opacity: 1;
+    transform: translateX(0) scale(1);
   }
 }
 
-.supabase-dot-connecting {
-  background-color: #3b82f6;
-  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+@keyframes toastSlideOut {
+  0% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(115%) scale(0.9);
+  }
 }
 
-.supabase-dot-fallback {
-  background-color: #f59e0b;
+.toast-progress-bar {
+  animation: toastProgress linear forwards;
 }
 
-.supabase-dot-error {
-  background-color: #ef4444;
+@keyframes toastProgress {
+  0% { width: 100%; }
+  100% { width: 0%; }
 }
 
+/* Toast Theme Variants */
+.toast-success {
+  border-color: #a7f3d0 !important;
+  background: rgba(255, 255, 255, 0.97) !important;
+}
+.toast-success .toast-icon-box {
+  background-color: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+.toast-success .toast-badge {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+.toast-success .toast-progress-bar {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.toast-primary {
+  border-color: #c7d2fe !important;
+  background: rgba(255, 255, 255, 0.97) !important;
+}
+.toast-primary .toast-icon-box {
+  background-color: #eef2ff;
+  color: #4f46e5;
+  border: 1px solid #c7d2fe;
+}
+.toast-primary .toast-badge {
+  background-color: #e0e7ff;
+  color: #3730a3;
+}
+.toast-primary .toast-progress-bar {
+  background: linear-gradient(90deg, #6366f1, #4f46e5);
+}
+
+.toast-accent {
+  border-color: #bae6fd !important;
+  background: rgba(255, 255, 255, 0.97) !important;
+}
+.toast-accent .toast-icon-box {
+  background-color: #f0f9ff;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
+}
+.toast-accent .toast-badge {
+  background-color: #e0f2fe;
+  color: #0369a1;
+}
+.toast-accent .toast-progress-bar {
+  background: linear-gradient(90deg, #0284c7, #2563eb);
+}
+
+.toast-status {
+  border-color: #99f6e4 !important;
+  background: rgba(255, 255, 255, 0.97) !important;
+}
+.toast-status .toast-icon-box {
+  background-color: #f0fdfa;
+  color: #0d9488;
+  border: 1px solid #99f6e4;
+}
+.toast-status .toast-badge {
+  background-color: #ccfbf1;
+  color: #115e59;
+}
+.toast-status .toast-progress-bar {
+  background: linear-gradient(90deg, #14b8a6, #0d9488);
+}
+
+.toast-warning {
+  border-color: #fde68a !important;
+  background: rgba(255, 255, 255, 0.97) !important;
+}
+.toast-warning .toast-icon-box {
+  background-color: #fffbeb;
+  color: #d97706;
+  border: 1px solid #fde68a;
+}
+.toast-warning .toast-badge {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+.toast-warning .toast-progress-bar {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.toast-info {
+  border-color: #e2e8f0 !important;
+  background: rgba(255, 255, 255, 0.97) !important;
+}
+.toast-info .toast-icon-box {
+  background-color: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+.toast-info .toast-badge {
+  background-color: #e2e8f0;
+  color: #334155;
+}
+.toast-info .toast-progress-bar {
+  background: linear-gradient(90deg, #64748b, #475569);
+}
 
 
 

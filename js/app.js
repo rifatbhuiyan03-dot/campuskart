@@ -14,74 +14,6 @@ const STORAGE_WISHLIST_KEY = 'campuskart_wishlist_v2';
 const STORAGE_AUTH_KEY = 'campuskart_auth_session_v2';
 const STORAGE_USERS_KEY = 'campuskart_registered_users_v2';
 const STORAGE_REVIEWS_KEY = 'campuskart_reviews_v2';
-const STORAGE_MESSAGES_KEY = 'campuskart_messages_v2';
-
-// Pre-seeded peer chat messages between Ruma Akter and Rifat Hasan
-const DEFAULT_CHAT_MESSAGES = [
-  {
-    id: 'msg-seed-1',
-    itemId: 'ck-101',
-    itemTitle: 'Casio fx-991MS Scientific Calculator',
-    itemImage: 'https://images.unsplash.com/photo-1587145820266-a5951ee6f620?auto=format&fit=crop&w=800&q=80',
-    itemPrice: '৳650',
-    itemCondition: 'Like New',
-    sellerId: '202110045',
-    sellerName: 'Rifat Hasan',
-    buyerId: '202220015',
-    buyerName: 'Ruma Akter',
-    senderId: '202220015',
-    senderName: 'Ruma Akter',
-    receiverId: '202110045',
-    receiverName: 'Rifat Hasan',
-    text: 'Hi Rifat! Is your Casio fx-991MS calculator still available? Does it come with the original hard slide cover?',
-    offerPrice: null,
-    offerStatus: null,
-    timestamp: Date.now() - 3600000 * 2, // 2 hrs ago
-    readBy: ['202220015', '202110045']
-  },
-  {
-    id: 'msg-seed-2',
-    itemId: 'ck-101',
-    itemTitle: 'Casio fx-991MS Scientific Calculator',
-    itemImage: 'https://images.unsplash.com/photo-1587145820266-a5951ee6f620?auto=format&fit=crop&w=800&q=80',
-    itemPrice: '৳650',
-    itemCondition: 'Like New',
-    sellerId: '202110045',
-    sellerName: 'Rifat Hasan',
-    buyerId: '202220015',
-    buyerName: 'Ruma Akter',
-    senderId: '202110045',
-    senderName: 'Rifat Hasan',
-    receiverId: '202220015',
-    receiverName: 'Ruma Akter',
-    text: 'Yes Ruma! The slide cover is included, and I put in a fresh Maxell button cell battery last week. All 401 functions work perfectly.',
-    offerPrice: null,
-    offerStatus: null,
-    timestamp: Date.now() - 3600000 * 1.5, // 1.5 hrs ago
-    readBy: ['202110045', '202220015']
-  },
-  {
-    id: 'msg-seed-3',
-    itemId: 'ck-101',
-    itemTitle: 'Casio fx-991MS Scientific Calculator',
-    itemImage: 'https://images.unsplash.com/photo-1587145820266-a5951ee6f620?auto=format&fit=crop&w=800&q=80',
-    itemPrice: '৳650',
-    itemCondition: 'Like New',
-    sellerId: '202110045',
-    sellerName: 'Rifat Hasan',
-    buyerId: '202220015',
-    buyerName: 'Ruma Akter',
-    senderId: '202220015',
-    senderName: 'Ruma Akter',
-    receiverId: '202110045',
-    receiverName: 'Rifat Hasan',
-    text: 'Would you consider ৳580 if we meet today at the NUB Central Library 2nd floor?',
-    offerPrice: 580,
-    offerStatus: 'pending',
-    timestamp: Date.now() - 1800000, // 30 mins ago
-    readBy: ['202220015'] // unread for Rifat!
-  }
-];
 
 // Pre-seeded verified NUB student accounts for peer testing
 const DEFAULT_NUB_USERS = [
@@ -112,8 +44,6 @@ let items = [];
 let wishlist = new Set();
 let registeredUsers = [];
 let reviews = [];
-let chatMessages = [];
-let activeChatContext = null;
 let currentUser = null;
 let pendingAuthAction = null;
 let selectedApprovalDays = 7;
@@ -131,31 +61,128 @@ let activeFilters = {
 
 // Preset images for easy item posting
 const PRESET_IMAGES = [
-  { label: 'Textbook', url: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80' },
-  { label: 'Calculator / Tech', url: 'https://images.unsplash.com/photo-1587145820266-a5951ee6f620?auto=format&fit=crop&w=800&q=80' },
-  { label: 'Lab / STEM Kit', url: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=800&q=80' },
-  { label: 'Dorm / Living', url: 'https://images.unsplash.com/photo-1584992236310-6edddc08acff?auto=format&fit=crop&w=800&q=80' },
-  { label: 'Study Notes / Binder', url: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=800&q=80' },
-  { label: 'Headphones / Gear', url: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80' }
+  { label: 'CSE Textbook', url: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80', type: 'Textbook' },
+  { label: 'Casio Calculator', url: 'https://images.unsplash.com/photo-1587145820266-a5951ee6f620?auto=format&fit=crop&w=800&q=80', type: 'Scientific Calculator' },
+  { label: 'OS Lecture Notes', url: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=800&q=80', type: 'Notes & Study Kit' },
+  { label: 'VLSI & Lab Kit', url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80', type: 'Lab & Engineering' },
+  { label: 'DLD Breadboard Kit', url: 'https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?auto=format&fit=crop&w=800&q=80', type: 'Lab & Engineering' },
+  { label: 'Engineering Drawing', url: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80', type: 'Drawing Tools' }
 ];
+
+// Academic Presentation & Viva Defense Demo Items Dataset (Tailored for NUB CSE)
+const CSE_DEMO_ITEMS = [
+  {
+    title: 'CSE 3373 Operating Systems Notes & Solved Midterm Kit',
+    category: 'Notes & Study Kits',
+    courseCode: 'CSE 3373',
+    condition: 'Like New',
+    transaction: 'Exchange',
+    exchangeFor: 'CSE 3375 Compiler Design Notes or Algorithms Book',
+    price: 0,
+    priceLabel: 'Trade Only',
+    borrowRate: null,
+    borrowTerms: null,
+    location: 'NUB Ashkona Campus - CSE Dept 4th Floor Lounge',
+    description: 'Comprehensive spiral-bound handwritten lecture notes for CSE 3373 Operating Systems. Covers Process Synchronization, Semaphores, Deadlock Avoidance (Banker\'s Algorithm), CPU Scheduling algorithms (SJF, Round Robin), and Virtual Memory Paging. Includes past 4 semesters of solved NUB midterm & final exams with faculty answer keys.',
+    image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=800&q=80',
+    previewType: 'Lecture Notes',
+    badge: 'CSE 3373 Notes'
+  },
+  {
+    title: 'CSE 4279 VLSI Lab Manual & CMOS Circuit Schematics',
+    category: 'Lab & Engineering',
+    courseCode: 'CSE 4279',
+    condition: 'Brand New',
+    transaction: 'Borrow',
+    borrowRate: '৳30 / week',
+    borrowTerms: 'NUB Student ID Card deposit; keep lab report simulation worksheets clean',
+    price: 30,
+    priceLabel: '৳30 / week',
+    exchangeFor: null,
+    location: 'NUB Hardware & VLSI Lab 304 (Ashkona)',
+    description: 'Official Northern University Bangladesh CSE 4279 VLSI Design Lab Manual. Complete with Microwind and DSCH CMOS inverter layout diagrams, stick diagrams, transmission gate simulation guides, spice netlists, and sample viva defense questions for lab evaluations.',
+    image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
+    previewType: 'VLSI Lab Manual',
+    badge: 'CSE 4279 VLSI'
+  },
+  {
+    title: 'Casio fx-991EX ClassWiz Scientific Calculator',
+    category: 'Tech & Electronics',
+    courseCode: 'MATH 201',
+    condition: 'Like New',
+    transaction: 'Sell',
+    price: 1100,
+    priceLabel: '৳1100',
+    borrowRate: null,
+    borrowTerms: null,
+    exchangeFor: null,
+    location: 'NUB Central Library, 2nd Floor Study Area',
+    description: 'Authentic Casio fx-991EX ClassWiz high-resolution scientific calculator with 552 functions. High-res LCD screen displaying textbook formulas, 4x4 matrix inversions, vector dot/cross products, polynomial root solvers, integration, and spreadsheet mode. Includes original hard slide case and battery. Allowed in all NUB engineering midterms and finals.',
+    image: 'https://images.unsplash.com/photo-1587145820266-a5951ee6f620?auto=format&fit=crop&w=800&q=80',
+    previewType: 'Scientific Calculator',
+    badge: 'Casio Calculator'
+  },
+  {
+    title: 'Discrete Mathematics and Its Applications (Kenneth H. Rosen)',
+    category: 'Textbooks',
+    courseCode: 'CSE 103',
+    condition: 'Good',
+    transaction: 'Borrow',
+    borrowRate: '৳20 / week',
+    borrowTerms: '৳150 refundable deposit upon midterm exam completion',
+    price: 20,
+    priceLabel: '৳20 / week',
+    exchangeFor: null,
+    location: 'Building A, Ground Floor Student Lounge',
+    description: '7th Global Edition in great condition with no torn pages. Helpful pencil markings for key chapter problems in graph theory, logic propositions, set theory, and recurrence relations. Ideal for CSE 103 exam preparation.',
+    image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80',
+    previewType: 'Textbook',
+    badge: 'CSE 103 Textbook'
+  },
+  {
+    title: 'Digital Logic Design Breadboard with IC 7408, 7432, 7404 Kit',
+    category: 'Lab & Engineering',
+    courseCode: 'CSE 123',
+    condition: 'Like New',
+    transaction: 'Borrow',
+    borrowRate: '৳40 / week',
+    borrowTerms: 'Return all 12 IC chips, breadboard, and 65 jumper wires intact',
+    price: 40,
+    priceLabel: '৳40 / week',
+    exchangeFor: null,
+    location: 'NUB Digital Electronics Lab, 4th Floor',
+    description: 'Complete DLD hardware kit: Full-size solderless breadboard, 5V regulator module, LED indicators, switches, plus AND (7408), OR (7432), NOT (7404), NAND (7400), and XOR (7486) logic ICs with rainbow jumper wire bundle. Pre-tested in hardware lab.',
+    image: 'https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?auto=format&fit=crop&w=800&q=80',
+    previewType: 'DLD Hardware Kit',
+    badge: 'CSE 123 Kit'
+  }
+];
+
+let currentDemoItemIndex = 0;
+let currentUploadedImageDataUrl = null;
 
 // Initialize application on DOM loaded
 document.addEventListener('DOMContentLoaded', () => {
   loadAuthData();
   loadData();
   initUI();
+  setupImageUploadAndPreview();
+  bindDemoAndOfferEvents();
   populateDropdowns();
   bindEvents();
   bindAuthEvents();
   bindStateMachineEvents();
-  bindChatEvents();
-  bindSupabaseEvents();
   renderItems();
   updateWishlistCount();
   updateAuthUI();
   updateNotificationBadges();
+  // Real-Time Live Clock & Date initialization
+  updateCampusClock();
+  setInterval(updateCampusClock, 1000);
+  setInterval(updateBorrowedCountdowns, 1000);
+
+  // Initialize Featured Items Hero Carousel
   initHeroCarousel();
-  initSupabaseSync();
 });
 
 /**
@@ -246,7 +273,7 @@ function updateAuthUI() {
               </div>
               <span class="text-[10px] text-slate-500 font-mono">ID: ${currentUser.studentId}</span>
             </div>
-            <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 group-hover:text-indigo-600 transition-colors"></i>
+            <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 group-hover:text-indigo-600 transition-colors hidden sm:inline-block"></i>
           </button>
 
           <!-- Dropdown Profile Menu -->
@@ -268,14 +295,8 @@ function updateAuthUI() {
               <button type="button" 
                       id="menuDashboardBtn" 
                       class="w-full text-left px-4 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50 flex items-center justify-between transition">
-                <span class="flex items-center gap-2"><i class="fa-solid fa-chart-line text-xs"></i> My Transactions</span>
+                <span class="flex items-center gap-2"><i class="fa-solid fa-id-badge text-xs"></i> Profile & Dashboard</span>
                 <span id="menuRequestBadge" class="hidden bg-amber-500 text-white text-[9px] px-1.5 py-0.2 rounded-full font-bold">0</span>
-              </button>
-              <button type="button" 
-                      id="menuMessagesBtn" 
-                      class="w-full text-left px-4 py-2 text-xs font-bold text-slate-700 hover:bg-orange-50 hover:text-orange-600 flex items-center justify-between transition">
-                <span class="flex items-center gap-2"><i class="fa-regular fa-comments text-xs text-orange-500"></i> Messages & Offers</span>
-                <span id="menuMessagesBadge" class="hidden bg-orange-500 text-white text-[9px] px-1.5 py-0.2 rounded-full font-bold">0</span>
               </button>
               <button type="button" 
                       id="menuSavedItemsBtn" 
@@ -309,12 +330,7 @@ function updateAuthUI() {
 
       document.getElementById('menuDashboardBtn')?.addEventListener('click', () => {
         menu?.classList.add('hidden');
-        openDashboard('requests');
-      });
-
-      document.getElementById('menuMessagesBtn')?.addEventListener('click', () => {
-        menu?.classList.add('hidden');
-        openNavbarMessages();
+        openDashboard('listings');
       });
 
       document.getElementById('menuSavedItemsBtn')?.addEventListener('click', () => {
@@ -371,8 +387,8 @@ function updateAuthUI() {
             </div>
           </div>
           <div class="grid grid-cols-2 gap-2 mb-2">
-            <button type="button" onclick="openDashboard('requests')" class="py-1.5 px-2 bg-indigo-600 text-white rounded-xl text-xs font-bold text-center">
-              Transactions
+            <button type="button" onclick="openDashboard('listings')" class="py-1.5 px-2 bg-indigo-600 text-white rounded-xl text-xs font-bold text-center">
+              Dashboard
             </button>
             <button type="button" onclick="handleLogout()" class="py-1.5 px-2 bg-white border border-rose-200 text-rose-600 rounded-xl text-xs font-semibold text-center">
               Sign Out
@@ -416,12 +432,105 @@ function updateAuthUI() {
 
 /**
  * =========================================================================
- * STUBBED DEMO FUNCTIONS (SAFEGUARD FOR REMOVED DEMO TOGGLES)
+ * REAL-TIME LIVE CAMPUS CLOCK & DATE (12-Hour + AM/PM + Seconds)
  * =========================================================================
  */
-function updateDemoSwitcherUI() {}
-function switchDemoUser() {}
-function toggleStudentDemo() {}
+
+function updateCampusClock() {
+  const now = new Date();
+
+  // 12-Hour format with AM/PM and seconds: e.g. "10:58:30 PM"
+  let hours = now.getHours();
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12; // 0 hour should be 12
+  const formattedHours = String(hours).padStart(2, '0');
+  const timeString = `${formattedHours}:${minutes}:${seconds} ${ampm}`;
+
+  // Date format: e.g. "Tuesday, 17 Nov 2026"
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const dayName = days[now.getDay()];
+  const dayNum = now.getDate();
+  const monthName = months[now.getMonth()];
+  const year = now.getFullYear();
+  const dateString = `${dayName}, ${dayNum} ${monthName} ${year}`;
+
+  const navClockTime = document.getElementById('campusClockTime');
+  const navClockDate = document.getElementById('campusClockDate');
+  if (navClockTime) navClockTime.textContent = timeString;
+  if (navClockDate) navClockDate.textContent = dateString;
+
+  const topTickerClockTime = document.getElementById('topTickerClockTime');
+  const topTickerClockDate = document.getElementById('topTickerClockDate');
+  if (topTickerClockTime) topTickerClockTime.textContent = timeString;
+  if (topTickerClockDate) topTickerClockDate.textContent = dateString;
+
+  const mobileClockTime = document.getElementById('mobileClockTime');
+  const mobileClockDate = document.getElementById('mobileClockDate');
+  if (mobileClockTime) mobileClockTime.textContent = timeString;
+  if (mobileClockDate) mobileClockDate.textContent = dateString;
+}
+
+/**
+ * =========================================================================
+ * STUDENT DEMO SWITCHER & COMPATIBILITY HELPERS
+ * =========================================================================
+ */
+
+function updateDemoSwitcherUI() {
+  const rifatBtn = document.getElementById('demoSwitchRifatBtn');
+  const rumaBtn = document.getElementById('demoSwitchRumaBtn');
+  const isRifat = currentUser && (currentUser.studentId === '202110045' || currentUser.email?.includes('rifat'));
+  const isRuma = currentUser && (currentUser.studentId === '202220015' || currentUser.email?.includes('ruma'));
+
+  if (rifatBtn) {
+    rifatBtn.className = isRifat 
+      ? 'px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition demo-btn-active' 
+      : 'px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition demo-btn-inactive';
+  }
+
+  if (rumaBtn) {
+    rumaBtn.className = isRuma 
+      ? 'px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition demo-btn-active' 
+      : 'px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition demo-btn-inactive';
+  }
+}
+
+function switchDemoUser(target) {
+  let targetUser = null;
+  if (target === 'rifat') {
+    targetUser = registeredUsers.find(u => u.studentId === '202110045') || DEFAULT_NUB_USERS[0];
+  } else if (target === 'ruma') {
+    targetUser = registeredUsers.find(u => u.studentId === '202220015') || DEFAULT_NUB_USERS[1];
+  }
+
+  if (!targetUser) return;
+
+  currentUser = { ...targetUser };
+  saveSessionToStorage(currentUser);
+
+  updateAuthUI();
+  renderItems();
+  updateNotificationBadges();
+
+  const dashModal = document.getElementById('dashboardModal');
+  if (dashModal && !dashModal.classList.contains('hidden')) {
+    renderDashboard();
+  }
+
+  showToast(`Switched active student to ${currentUser.name} (${currentUser.studentId}) 🎓`, 'success');
+}
+
+function toggleStudentDemo() {
+  if (currentUser && currentUser.studentId === '202110045') {
+    switchDemoUser('ruma');
+  } else {
+    switchDemoUser('rifat');
+  }
+}
 
 function openAuthModal(mode = 'login', noticeMessage = null) {
   const modal = document.getElementById('authModal');
@@ -804,7 +913,11 @@ function handleRequestFormSubmit(e) {
   const note = document.getElementById('requestNoteInput')?.value.trim();
 
   if (item.transaction === 'Exchange' && !offeredItem) {
-    showToast('Please specify what item you are offering in trade.', 'warning');
+    showToast({
+      title: 'Missing Trade Item',
+      message: 'Please specify what item you are offering in trade.',
+      type: 'warning'
+    });
     return;
   }
 
@@ -822,33 +935,140 @@ function handleRequestFormSubmit(e) {
   };
 
   saveItemsToStorage();
-
-  // Cloud sync to Supabase transactions table
-  if (typeof SupabaseService !== 'undefined' && typeof isSupabaseConfigured === 'function' && isSupabaseConfigured()) {
-    SupabaseService.createTransaction({
-      id: `tx-${Date.now().toString().slice(-6)}`,
-      itemId: item.id,
-      borrowerId: currentUser.studentId,
-      sellerId: item.seller.studentId,
-      status: 'requested',
-      borrowerName: currentUser.name,
-      borrowerEmail: currentUser.email,
-      borrowerDept: currentUser.department,
-      durationRequested: item.transaction === 'Exchange' ? null : duration,
-      offeredItem: item.transaction === 'Exchange' ? offeredItem : null,
-      note: note
-    }).then(res => {
-      if (res && res.success) {
-        console.log('Transaction synced to Supabase PostgreSQL:', res.data);
-      }
-    });
-  }
-
   closeRequestModal();
   renderItems();
   updateNotificationBadges();
 
-  showToast(`🎉 Request sent to ${item.seller.name}! Awaiting their approval in their dashboard.`, 'success');
+  if (item.transaction === 'Exchange') {
+    showToast({
+      title: 'Offer Made',
+      message: `Exchange proposal offering "${offeredItem}" submitted to ${item.seller.name}!`,
+      type: 'success',
+      actionType: 'offer_made',
+      icon: 'fa-solid fa-handshake'
+    });
+  } else {
+    showToast({
+      title: 'Request Sent',
+      message: `Borrow request (${duration}) for "${item.title}" sent to ${item.seller.name}! Awaiting approval.`,
+      type: 'success',
+      actionType: 'request_sent',
+      icon: 'fa-solid fa-paper-plane'
+    });
+  }
+}
+
+/**
+ * =========================================================================
+ * MAKE PRICE OFFER SYSTEM (FOR SALE ITEMS)
+ * =========================================================================
+ */
+
+function openMakeOfferModal(itemId) {
+  const item = items.find(i => i.id === itemId);
+  if (!item) return;
+
+  if (!currentUser) {
+    pendingAuthAction = () => openMakeOfferModal(itemId);
+    openAuthModal('login', `Please sign in with your @nub.ac.bd account to make an offer on ${item.title}.`);
+    return;
+  }
+
+  if (item.seller.studentId === currentUser.studentId) {
+    showToast({
+      title: 'Action Not Allowed',
+      message: 'You cannot make an offer on your own listing!',
+      type: 'warning'
+    });
+    return;
+  }
+
+  const modal = document.getElementById('makeOfferModal');
+  const preview = document.getElementById('makeOfferItemPreview');
+  const itemIdInput = document.getElementById('offerItemId');
+  const priceInput = document.getElementById('offerPriceInput');
+  const chipsContainer = document.getElementById('quickOfferChips');
+
+  if (!modal) return;
+
+  itemIdInput.value = item.id;
+  const askingPrice = item.price || 500;
+  const defaultOffer = Math.max(10, Math.round(askingPrice * 0.9));
+  if (priceInput) {
+    priceInput.value = defaultOffer;
+  }
+
+  if (preview) {
+    preview.innerHTML = `
+      <img src="${item.image}" alt="${item.title}" class="w-12 h-12 rounded-xl object-cover ring-1 ring-slate-200" />
+      <div class="min-w-0 flex-1">
+        <h4 class="text-xs font-bold text-slate-900 truncate">${item.title}</h4>
+        <p class="text-[11px] text-slate-500">Seller: <strong>${item.seller.name}</strong> • ${item.courseCode}</p>
+        <p class="text-xs text-orange-600 font-extrabold">Asking Price: ৳${askingPrice}</p>
+      </div>
+    `;
+  }
+
+  if (chipsContainer) {
+    const offer90 = Math.max(10, Math.round(askingPrice * 0.9));
+    const offer85 = Math.max(10, Math.round(askingPrice * 0.85));
+    const offer80 = Math.max(10, Math.round(askingPrice * 0.8));
+    chipsContainer.innerHTML = `
+      <span class="text-[10px] text-slate-400 font-bold uppercase mr-1">Quick:</span>
+      <button type="button" onclick="setOfferPrice(${offer90})" class="px-2 py-0.5 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold text-[10px] border border-orange-200 transition">৳${offer90} (-10%)</button>
+      <button type="button" onclick="setOfferPrice(${offer85})" class="px-2 py-0.5 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold text-[10px] border border-orange-200 transition">৳${offer85} (-15%)</button>
+      <button type="button" onclick="setOfferPrice(${offer80})" class="px-2 py-0.5 rounded-lg bg-orange-50 hover:bg-orange-100 text-orange-700 font-bold text-[10px] border border-orange-200 transition">৳${offer80} (-20%)</button>
+    `;
+  }
+
+  closeDetailsModal();
+  modal.classList.remove('hidden');
+  document.body.classList.add('overflow-hidden');
+}
+
+function setOfferPrice(val) {
+  const priceInput = document.getElementById('offerPriceInput');
+  if (priceInput) priceInput.value = val;
+}
+
+function closeMakeOfferModal() {
+  const modal = document.getElementById('makeOfferModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+  }
+}
+
+function handleMakeOfferFormSubmit(e) {
+  e.preventDefault();
+  const itemId = document.getElementById('offerItemId')?.value;
+  const item = items.find(i => i.id === itemId);
+  if (!item || !currentUser) return;
+
+  const rawOffer = document.getElementById('offerPriceInput')?.value;
+  const offeredPrice = parseFloat(rawOffer) || 0;
+  const note = document.getElementById('offerNoteInput')?.value.trim();
+
+  item.offers = item.offers || [];
+  item.offers.push({
+    buyerId: currentUser.studentId,
+    buyerName: currentUser.name,
+    buyerEmail: currentUser.email,
+    offeredPrice: offeredPrice,
+    note: note,
+    date: new Date().toISOString()
+  });
+
+  saveItemsToStorage();
+  closeMakeOfferModal();
+
+  showToast({
+    title: 'Offer Made',
+    message: `Price offer of ৳${offeredPrice} submitted to ${item.seller.name} for "${item.title}"!`,
+    type: 'success',
+    actionType: 'offer_made',
+    icon: 'fa-solid fa-tags'
+  });
 }
 
 /**
@@ -962,21 +1182,18 @@ function handleApprovalFormSubmit(e) {
   item.activeRequest = null;
 
   saveItemsToStorage();
-
-  // Cloud sync to Supabase transactions & items
-  if (typeof SupabaseService !== 'undefined' && typeof isSupabaseConfigured === 'function' && isSupabaseConfigured()) {
-    SupabaseService.updateTransactionStatus(item.id, 'approved', {
-      dueDate: finalDueDate,
-      note: meetupNote
-    });
-  }
-
   closeApprovalModal();
   renderItems();
   renderDashboard();
   updateNotificationBadges();
 
-  showToast(`✅ Approved! Status changed to ${nextStatus}. Return due date set to ${formatDate(finalDueDate)}.`, 'success');
+  showToast({
+    title: 'Borrow Status Updated',
+    message: `Approved! Status changed to "${nextStatus}". Return due date set to ${formatDate(finalDueDate)}.`,
+    type: 'success',
+    actionType: 'status_updated',
+    icon: 'fa-solid fa-calendar-check'
+  });
 }
 
 function handleDeclineRequest(itemId) {
@@ -988,17 +1205,17 @@ function handleDeclineRequest(itemId) {
   item.activeRequest = null;
 
   saveItemsToStorage();
-
-  // Cloud sync to Supabase
-  if (typeof SupabaseService !== 'undefined' && typeof isSupabaseConfigured === 'function' && isSupabaseConfigured()) {
-    SupabaseService.updateTransactionStatus(item.id, 'available');
-  }
-
   renderItems();
   renderDashboard();
   updateNotificationBadges();
 
-  showToast('Request declined. Item status reverted back to Available.', 'info');
+  showToast({
+    title: 'Borrow Status Updated',
+    message: `Request declined. "${item.title}" status reverted back to Available.`,
+    type: 'info',
+    actionType: 'status_updated',
+    icon: 'fa-solid fa-arrows-rotate'
+  });
 }
 
 /**
@@ -1016,17 +1233,17 @@ function handleMarkAsReturned(itemId) {
   }
 
   saveItemsToStorage();
-
-  // Cloud sync to Supabase
-  if (typeof SupabaseService !== 'undefined' && typeof isSupabaseConfigured === 'function' && isSupabaseConfigured()) {
-    SupabaseService.updateTransactionStatus(item.id, 'returned');
-  }
-
   renderItems();
   renderDashboard();
   updateNotificationBadges();
 
-  showToast(`🎉 Item "${item.title}" successfully marked as returned! It is now available again on CampusKart.`, 'success');
+  showToast({
+    title: 'Borrow Status Updated',
+    message: `Item "${item.title}" successfully marked as returned! Now available again on CampusKart.`,
+    type: 'success',
+    actionType: 'status_updated',
+    icon: 'fa-solid fa-circle-check'
+  });
 }
 
 /**
@@ -1142,12 +1359,6 @@ function handleReviewFormSubmit(e) {
   });
 
   saveItemsToStorage();
-
-  // Cloud sync to Supabase rating & review
-  if (typeof SupabaseService !== 'undefined' && typeof isSupabaseConfigured === 'function' && isSupabaseConfigured()) {
-    SupabaseService.saveRating(itemId, currentUser.studentId, rating, comment);
-  }
-
   closeReviewModal();
   renderItems();
   renderDashboard();
@@ -1157,26 +1368,43 @@ function handleReviewFormSubmit(e) {
 
 /**
  * =========================================================================
- * USER TRANSACTIONS DASHBOARD
+ * USER PROFILE & CAMPUS DASHBOARD SYSTEM
+ * Three Organized Tabs:
+ * (1) My Active Listings (with Edit, Delete & Mark as Sold)
+ * (2) Borrowed Items (with Return Due-Date Countdown & 'Mark as Returned')
+ * (3) Received Reviews (with Peer Ratings & Classmate Feedback)
  * =========================================================================
  */
 
-function openDashboard(defaultTab = 'requests') {
+function openDashboard(defaultTab = 'listings') {
   if (!currentUser) {
     pendingAuthAction = () => openDashboard(defaultTab);
-    openAuthModal('login', 'Please sign in with your @nub.ac.bd account to view your transactions dashboard.');
+    openAuthModal('login', 'Please sign in with your @nub.ac.bd account to view your user profile and dashboard.');
     return;
   }
 
   const modal = document.getElementById('dashboardModal');
-  const userSub = document.getElementById('dashUserSub');
   if (!modal) return;
 
-  if (userSub) {
-    userSub.innerHTML = `Signed in as <strong>${currentUser.name}</strong> (ID: <span class="font-mono">${currentUser.studentId}</span>) &bull; ${currentUser.department || 'NUB'}`;
+  // Populate User Profile Header
+  const userAvatar = document.getElementById('dashUserAvatar');
+  const userName = document.getElementById('dashUserName');
+  const userDept = document.getElementById('dashUserDept');
+  const userIdBadge = document.getElementById('dashUserIdBadge');
+
+  if (userAvatar) userAvatar.src = currentUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80';
+  if (userName) userName.textContent = currentUser.name;
+  if (userDept) userDept.textContent = currentUser.department || 'Computer Science & Engineering (CSE)';
+  if (userIdBadge) userIdBadge.textContent = `ID: ${currentUser.studentId}`;
+
+  // Switch to the requested tab
+  if (defaultTab === 'requests') {
+    switchDashboardTab('listings');
+    filterDashListings('Requested');
+  } else {
+    switchDashboardTab(defaultTab);
   }
 
-  switchDashboardTab(defaultTab);
   renderDashboard();
 
   modal.classList.remove('hidden');
@@ -1192,33 +1420,36 @@ function closeDashboardModal() {
 }
 
 function switchDashboardTab(tabName) {
-  const btnRequests = document.getElementById('dashTabRequestsBtn');
   const btnListings = document.getElementById('dashTabListingsBtn');
   const btnBorrowed = document.getElementById('dashTabBorrowedBtn');
+  const btnReviews = document.getElementById('dashTabReviewsBtn');
 
-  const panelRequests = document.getElementById('dashRequestsPanel');
   const panelListings = document.getElementById('dashListingsPanel');
   const panelBorrowed = document.getElementById('dashBorrowedPanel');
+  const panelReviews = document.getElementById('dashReviewsPanel');
 
-  [btnRequests, btnListings, btnBorrowed].forEach(b => {
-    b?.classList.remove('active', 'border-indigo-600', 'text-indigo-600');
+  [btnListings, btnBorrowed, btnReviews].forEach(b => {
+    b?.classList.remove('active', 'border-indigo-600', 'text-indigo-600', 'bg-indigo-50/60');
     b?.classList.add('border-transparent', 'text-slate-600');
   });
 
-  [panelRequests, panelListings, panelBorrowed].forEach(p => p?.classList.add('hidden'));
+  [panelListings, panelBorrowed, panelReviews].forEach(p => p?.classList.add('hidden'));
 
-  if (tabName === 'requests') {
-    btnRequests?.classList.add('active', 'border-indigo-600', 'text-indigo-600');
-    btnRequests?.classList.remove('border-transparent', 'text-slate-600');
-    panelRequests?.classList.remove('hidden');
-  } else if (tabName === 'listings') {
-    btnListings?.classList.add('active', 'border-indigo-600', 'text-indigo-600');
+  if (tabName === 'listings' || tabName === 'requests') {
+    btnListings?.classList.add('active', 'border-indigo-600', 'text-indigo-600', 'bg-indigo-50/60');
     btnListings?.classList.remove('border-transparent', 'text-slate-600');
     panelListings?.classList.remove('hidden');
+    renderDashboardListingsPanel();
   } else if (tabName === 'borrowed') {
-    btnBorrowed?.classList.add('active', 'border-indigo-600', 'text-indigo-600');
+    btnBorrowed?.classList.add('active', 'border-indigo-600', 'text-indigo-600', 'bg-indigo-50/60');
     btnBorrowed?.classList.remove('border-transparent', 'text-slate-600');
     panelBorrowed?.classList.remove('hidden');
+    renderDashboardBorrowedPanel();
+  } else if (tabName === 'reviews') {
+    btnReviews?.classList.add('active', 'border-indigo-600', 'text-indigo-600', 'bg-indigo-50/60');
+    btnReviews?.classList.remove('border-transparent', 'text-slate-600');
+    panelReviews?.classList.remove('hidden');
+    renderDashboardReviewsPanel();
   }
 }
 
@@ -1226,12 +1457,21 @@ function filterDashListings(status) {
   currentDashListingFilter = status;
   const btns = document.querySelectorAll('.dash-listing-filter');
   btns.forEach(b => {
-    b.className = 'dash-listing-filter px-2 py-0.5 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200';
+    b.className = 'dash-listing-filter px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition';
   });
 
-  const activeBtn = Array.from(btns).find(b => b.textContent.toLowerCase() === status.toLowerCase() || (status === 'Borrowed' && b.textContent.includes('Borrowed')));
+  const activeBtn = Array.from(btns).find(b => {
+    const text = b.textContent.toLowerCase();
+    if (status === 'all') return text === 'all';
+    if (status === 'Available') return text === 'available';
+    if (status === 'Sold') return text === 'sold';
+    if (status === 'Requested') return text.includes('request');
+    if (status === 'Borrowed') return text.includes('borrowed');
+    return false;
+  });
+
   if (activeBtn) {
-    activeBtn.className = 'dash-listing-filter px-2 py-0.5 rounded-lg bg-indigo-600 text-white font-medium';
+    activeBtn.className = 'dash-listing-filter px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-medium shadow-xs';
   }
 
   renderDashboardListingsPanel();
@@ -1240,79 +1480,99 @@ function filterDashListings(status) {
 function renderDashboard() {
   if (!currentUser) return;
 
-  // 1. Incoming requests
-  const incoming = items.filter(it => it.seller.studentId === currentUser.studentId && it.status === 'Requested');
-  const requestsPanel = document.getElementById('dashRequestsPanel');
-  const requestsBadge = document.getElementById('dashRequestsCountBadge');
+  const myListings = items.filter(it => it.seller.studentId === currentUser.studentId);
+  const myBorrows = items.filter(it => 
+    (it.borrowDetails && it.borrowDetails.borrowerId === currentUser.studentId) ||
+    (it.activeRequest && it.activeRequest.requesterId === currentUser.studentId)
+  );
+  const myReviews = reviews.filter(r => r.sellerId === currentUser.studentId);
+  const incomingRequests = myListings.filter(it => it.status === 'Requested');
 
-  if (requestsBadge) requestsBadge.textContent = incoming.length;
+  // Update Header Metric Strip
+  const statListings = document.getElementById('dashStatListings');
+  const statBorrowed = document.getElementById('dashStatBorrowed');
+  const statRating = document.getElementById('dashStatRating');
+  const statReviewsCount = document.getElementById('dashStatReviewsCount');
 
-  if (requestsPanel) {
-    if (incoming.length === 0) {
-      requestsPanel.innerHTML = `
-        <div class="py-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-6">
-          <div class="w-12 h-12 mx-auto mb-2 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-lg">
-            <i class="fa-solid fa-inbox"></i>
+  if (statListings) statListings.textContent = myListings.length;
+  if (statBorrowed) statBorrowed.textContent = myBorrows.filter(it => it.status === 'Borrowed' || it.status === 'In Exchange').length;
+  
+  const avgRating = myReviews.length > 0 
+    ? (myReviews.reduce((sum, r) => sum + r.rating, 0) / myReviews.length).toFixed(1) 
+    : '5.0';
+  if (statRating) statRating.textContent = avgRating;
+  if (statReviewsCount) statReviewsCount.textContent = `${myReviews.length} Review${myReviews.length === 1 ? '' : 's'}`;
+
+  // Update Tab Badges
+  const badgeListings = document.getElementById('dashListingsCountBadge');
+  const badgeBorrowed = document.getElementById('dashBorrowedCountBadge');
+  const badgeReviews = document.getElementById('dashReviewsCountBadge');
+
+  if (badgeListings) badgeListings.textContent = myListings.length;
+  if (badgeBorrowed) badgeBorrowed.textContent = myBorrows.length;
+  if (badgeReviews) badgeReviews.textContent = myReviews.length;
+
+  // Render Pending Requests Banner inside Listings Tab
+  const banner = document.getElementById('dashPendingRequestsBanner');
+  if (banner) {
+    if (incomingRequests.length > 0) {
+      banner.className = 'p-3.5 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/90 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs mb-3 shadow-xs animate-pop';
+      banner.innerHTML = `
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm shadow-amber-500/30">
+            <i class="fa-solid fa-bell text-sm"></i>
           </div>
-          <h4 class="text-sm font-bold text-slate-800">No Pending Requests</h4>
-          <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1">When classmates request to borrow or exchange your listings, they will appear here with instant approval controls.</p>
+          <div>
+            <p class="font-bold text-amber-950 text-xs sm:text-sm">
+              ${incomingRequests.length} Pending Peer Request${incomingRequests.length === 1 ? '' : 's'}
+            </p>
+            <p class="text-amber-700 text-[11px]">Classmates have requested to borrow or trade your listings. Review proposal & set due dates.</p>
+          </div>
         </div>
+        <button type="button" onclick="filterDashListings('Requested')" class="self-start sm:self-auto px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-xl text-xs shadow-xs transition flex items-center gap-1.5 active:scale-95">
+          <i class="fa-solid fa-clock text-[10px]"></i>
+          <span>View Requests (${incomingRequests.length})</span>
+        </button>
       `;
     } else {
-      requestsPanel.innerHTML = incoming.map(it => `
-        <div class="p-4 bg-white rounded-2xl border border-amber-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div class="flex items-start space-x-3.5">
-            <img src="${it.image}" alt="${it.title}" class="w-14 h-14 rounded-xl object-cover shrink-0 ring-1 ring-slate-200" />
-            <div>
-              <div class="flex items-center gap-2 mb-1">
-                <span class="status-pill status-requested"><i class="fa-solid fa-clock"></i> Request Pending</span>
-                <span class="text-xs font-bold text-slate-400 font-mono">${it.courseCode}</span>
-              </div>
-              <h4 class="text-sm font-bold text-slate-900 leading-snug">${it.title}</h4>
-              <div class="mt-1 text-xs text-slate-600 space-y-0.5">
-                <p>From: <strong>${it.activeRequest?.requesterName}</strong> (Student ID: <span class="font-mono">${it.activeRequest?.requesterId}</span>)</p>
-                ${it.activeRequest?.durationRequested ? `<p class="text-purple-700 font-semibold"><i class="fa-solid fa-calendar-days mr-1"></i>Requested duration: ${it.activeRequest.durationRequested}</p>` : ''}
-                ${it.activeRequest?.offeredItem ? `<p class="text-sky-700 font-semibold"><i class="fa-solid fa-arrows-rotate mr-1"></i>Offered in trade: ${it.activeRequest.offeredItem}</p>` : ''}
-                ${it.activeRequest?.note ? `<p class="italic text-slate-500 text-[11px] mt-1 bg-slate-50 p-1.5 rounded-lg border border-slate-100">"${it.activeRequest.note}"</p>` : ''}
-              </div>
-            </div>
-          </div>
-
-          <div class="flex items-center space-x-2 shrink-0 self-end md:self-center">
-            <button type="button" onclick="handleDeclineRequest('${it.id}')" class="px-3 py-2 bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-300 rounded-xl text-xs font-bold transition">
-              Decline
-            </button>
-            <button type="button" onclick="openApprovalModal('${it.id}')" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-emerald-600/30 transition flex items-center gap-1.5">
-              <i class="fa-solid fa-check text-[11px]"></i>
-              <span>Approve & Set Due Date</span>
-            </button>
-          </div>
-        </div>
-      `).join('');
+      banner.className = 'hidden';
+      banner.innerHTML = '';
     }
   }
 
-  // 2. My Listings Panel
-  renderDashboardListingsPanel();
+  // Render the current active tab panel
+  const panelListings = document.getElementById('dashListingsPanel');
+  const panelBorrowed = document.getElementById('dashBorrowedPanel');
+  const panelReviews = document.getElementById('dashReviewsPanel');
 
-  // 3. Items I Borrowed Panel
-  renderDashboardBorrowedPanel();
+  if (panelListings && !panelListings.classList.contains('hidden')) {
+    renderDashboardListingsPanel();
+  } else if (panelBorrowed && !panelBorrowed.classList.contains('hidden')) {
+    renderDashboardBorrowedPanel();
+  } else if (panelReviews && !panelReviews.classList.contains('hidden')) {
+    renderDashboardReviewsPanel();
+  }
 
   updateNotificationBadges();
 }
+
+/**
+ * =========================================================================
+ * TAB 1: MY ACTIVE LISTINGS (with Edit, Delete & Mark as Sold)
+ * =========================================================================
+ */
 
 function renderDashboardListingsPanel() {
   if (!currentUser) return;
   const myListings = items.filter(it => it.seller.studentId === currentUser.studentId);
   const container = document.getElementById('dashListingsContainer');
-  const countBadge = document.getElementById('dashListingsCountBadge');
   const summaryText = document.getElementById('dashListingsSummaryText');
-
-  if (countBadge) countBadge.textContent = myListings.length;
 
   let filtered = myListings;
   if (currentDashListingFilter === 'Available') {
     filtered = myListings.filter(it => it.status === 'Available');
+  } else if (currentDashListingFilter === 'Sold') {
+    filtered = myListings.filter(it => it.status === 'Sold');
   } else if (currentDashListingFilter === 'Requested') {
     filtered = myListings.filter(it => it.status === 'Requested');
   } else if (currentDashListingFilter === 'Borrowed') {
@@ -1320,70 +1580,428 @@ function renderDashboardListingsPanel() {
   }
 
   if (summaryText) {
-    summaryText.textContent = `Showing ${filtered.length} of ${myListings.length} items`;
+    summaryText.textContent = `Showing ${filtered.length} of ${myListings.length} listing${myListings.length === 1 ? '' : 's'}`;
   }
 
   if (!container) return;
 
+  if (myListings.length === 0) {
+    container.innerHTML = `
+      <div class="py-12 text-center bg-slate-50/70 rounded-2xl border border-dashed border-slate-200 p-6">
+        <div class="w-12 h-12 mx-auto mb-2 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl shadow-sm">
+          <i class="fa-solid fa-box-open"></i>
+        </div>
+        <h4 class="text-sm font-bold text-slate-800">No Listings Yet</h4>
+        <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">Post your textbooks, engineering tools, lab components, or dorm supplies to start sharing on CampusKart.</p>
+        <button type="button" onclick="closeDashboardModal(); openPostModal();" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/30 transition inline-flex items-center gap-1.5 active:scale-95">
+          <i class="fa-solid fa-plus text-[10px]"></i>
+          <span>Create Your First Listing</span>
+        </button>
+      </div>
+    `;
+    return;
+  }
+
   if (filtered.length === 0) {
     container.innerHTML = `
-      <div class="py-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-6">
-        <p class="text-xs text-slate-500">No listings found for this filter. Post textbooks or equipment to share with NUB classmates!</p>
+      <div class="py-10 text-center bg-slate-50/70 rounded-2xl border border-dashed border-slate-200 p-6">
+        <p class="text-xs text-slate-500">No listings match the "<strong>${currentDashListingFilter}</strong>" filter.</p>
+        <button type="button" onclick="filterDashListings('all')" class="mt-2 text-xs font-bold text-indigo-600 hover:underline">Show All Listings</button>
       </div>
     `;
     return;
   }
 
   container.innerHTML = filtered.map(it => {
+    // Dynamic Status Badge
     let statusBadge = `<span class="status-pill status-available"><i class="fa-solid fa-circle-check text-[10px]"></i> Available</span>`;
-    let actionArea = ``;
+    let isSold = it.status === 'Sold';
 
-    if (it.status === 'Requested') {
-      statusBadge = `<span class="status-pill status-requested"><i class="fa-solid fa-clock text-[10px]"></i> Action Needed</span>`;
-      actionArea = `
-        <button type="button" onclick="openApprovalModal('${it.id}')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-xs">
-          Review Request
-        </button>
-      `;
+    if (it.status === 'Sold') {
+      statusBadge = `<span class="status-pill status-sold"><i class="fa-solid fa-bag-shopping text-[10px]"></i> Sold</span>`;
+    } else if (it.status === 'Requested') {
+      statusBadge = `<span class="status-pill status-requested"><i class="fa-solid fa-clock text-[10px]"></i> Request Pending</span>`;
     } else if (it.status === 'Borrowed' || it.status === 'In Exchange') {
-      const remaining = it.borrowDetails ? getDaysRemaining(it.borrowDetails.dueDate) : { label: 'Active', isUrgent: false };
+      const remaining = it.borrowDetails ? getCountdownDetails(it.borrowDetails.dueDate) : { formattedText: 'Active Borrow', badgeClass: 'countdown-normal' };
       statusBadge = `
         <span class="status-pill status-borrowed"><i class="fa-solid fa-arrows-spin text-[10px]"></i> ${it.status}</span>
-        <span class="text-[11px] px-2 py-0.5 rounded-full font-bold ${remaining.isUrgent ? 'countdown-urgent' : 'countdown-normal'}">
-          ${remaining.label}
+        <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${remaining.badgeClass}">
+          ${remaining.formattedText}
         </span>
-      `;
-      actionArea = `
-        <button type="button" onclick="handleMarkAsReturned('${it.id}')" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1">
-          <i class="fa-solid fa-check text-[10px]"></i>
-          <span>Mark as Returned</span>
-        </button>
       `;
     }
 
-    return `
-      <div class="p-3.5 bg-white rounded-2xl border border-slate-200/90 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div class="flex items-center space-x-3 min-w-0">
-          <img src="${it.image}" alt="${it.title}" class="w-12 h-12 rounded-xl object-cover shrink-0 ring-1 ring-slate-200" />
-          <div class="min-w-0">
-            <div class="flex items-center gap-1.5 flex-wrap mb-0.5">
-              ${statusBadge}
-              <span class="text-[11px] font-mono text-slate-400">${it.courseCode}</span>
-            </div>
-            <h4 class="text-xs font-bold text-slate-900 truncate">${it.title}</h4>
-            <p class="text-[11px] text-slate-500">${it.priceLabel} &bull; ${it.category}</p>
-          </div>
-        </div>
+    // Transaction Pill
+    const txLabel = it.transaction === 'Borrow' ? 'BORROW' : (it.transaction === 'Exchange' ? 'EXCHANGE' : 'FOR SALE');
+    const txColor = it.transaction === 'Borrow' ? 'bg-purple-100 text-purple-700 border-purple-200' : (it.transaction === 'Exchange' ? 'bg-sky-100 text-sky-700 border-sky-200' : 'bg-emerald-100 text-emerald-700 border-emerald-200');
 
-        <div class="flex items-center space-x-2 shrink-0 self-end sm:self-auto">
-          ${actionArea}
-          <button type="button" onclick="openDetailsModal('${it.id}')" class="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold border border-slate-200 transition">
-            View
-          </button>
+    // Condition Pill
+    const condColor = it.condition === 'Brand New' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : (it.condition === 'Like New' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-amber-50 text-amber-700 border-amber-200');
+
+    // Sold Toggle Button
+    const soldButtonHtml = isSold
+      ? `<button type="button" onclick="handleToggleSold('${it.id}')" title="Re-activate this listing on marketplace" class="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 rounded-xl text-xs font-bold transition flex items-center gap-1 active:scale-95">
+           <i class="fa-solid fa-arrow-rotate-left text-[10px]"></i>
+           <span>Relist as Available</span>
+         </button>`
+      : `<button type="button" onclick="handleToggleSold('${it.id}')" title="Mark this item as sold/completed" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold shadow-xs transition flex items-center gap-1 active:scale-95">
+           <i class="fa-solid fa-tag text-[10px]"></i>
+           <span>Mark as Sold</span>
+         </button>`;
+
+    // Review Request Action if Requested
+    const reviewRequestHtml = it.status === 'Requested'
+      ? `<button type="button" onclick="openApprovalModal('${it.id}')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1 active:scale-95 animate-pulse">
+           <i class="fa-solid fa-check-double text-[10px]"></i>
+           <span>Review Request</span>
+         </button>`
+      : '';
+
+    return `
+      <div class="p-4 bg-white rounded-2xl border ${isSold ? 'border-slate-200/60 bg-slate-50/40 opacity-90' : 'border-slate-200/90 shadow-xs'} transition hover:border-indigo-200">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+          
+          <!-- Item Thumbnail & Info -->
+          <div class="flex items-start space-x-3.5 min-w-0">
+            <div class="relative shrink-0">
+              <img src="${it.image}" alt="${it.title}" class="w-16 h-16 rounded-xl object-cover ring-1 ring-slate-200 ${isSold ? 'grayscale-[50%]' : ''}" onerror="this.src='https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=400&q=80'" />
+              ${isSold ? '<span class="absolute inset-0 bg-slate-900/30 rounded-xl flex items-center justify-center text-white text-[9px] font-black uppercase tracking-wider">Sold</span>' : ''}
+            </div>
+
+            <div class="min-w-0 space-y-1">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                ${statusBadge}
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${txColor}">${txLabel}</span>
+                <span class="text-[10px] font-mono text-slate-500 font-bold bg-slate-100 px-1.5 py-0.2 rounded">${it.courseCode || 'General'}</span>
+              </div>
+
+              <h4 class="text-sm font-bold text-slate-900 truncate ${isSold ? 'line-through text-slate-500' : ''}" title="${it.title}">
+                ${it.title}
+              </h4>
+
+              <div class="flex items-center gap-2 text-xs text-slate-600 flex-wrap">
+                <span class="font-extrabold text-indigo-700">${it.priceLabel}</span>
+                <span class="text-slate-300">&bull;</span>
+                <span class="text-slate-500">${it.category}</span>
+                <span class="text-slate-300">&bull;</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded font-semibold border ${condColor}">${it.condition}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Organized Action Controls: Edit / Delete & Mark as Sold -->
+          <div class="flex items-center space-x-1.5 shrink-0 self-end sm:self-auto flex-wrap gap-y-1.5">
+            ${reviewRequestHtml}
+            ${soldButtonHtml}
+
+            <!-- Edit Button -->
+            <button type="button" 
+                    onclick="openEditItemModal('${it.id}')" 
+                    title="Edit listing details" 
+                    class="px-3 py-1.5 bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-600 border border-slate-200 hover:border-indigo-200 rounded-xl text-xs font-bold transition flex items-center gap-1 active:scale-95">
+              <i class="fa-solid fa-pen-to-square text-[10px]"></i>
+              <span>Edit</span>
+            </button>
+
+            <!-- Delete Button -->
+            <button type="button" 
+                    onclick="handleDeleteListing('${it.id}')" 
+                    title="Delete listing permanently" 
+                    class="px-3 py-1.5 bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-600 border border-slate-200 hover:border-rose-200 rounded-xl text-xs font-bold transition flex items-center gap-1 active:scale-95">
+              <i class="fa-solid fa-trash-can text-[10px]"></i>
+              <span>Delete</span>
+            </button>
+
+            <!-- View Details Button -->
+            <button type="button" 
+                    onclick="openDetailsModal('${it.id}')" 
+                    title="View public details" 
+                    class="p-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl text-xs font-semibold border border-slate-200 transition">
+              <i class="fa-solid fa-arrow-up-right-from-square text-[11px]"></i>
+            </button>
+          </div>
+
         </div>
       </div>
     `;
   }).join('');
+}
+
+/**
+ * Handle Mark as Sold / Relist toggle
+ */
+function handleToggleSold(itemId) {
+  const item = items.find(i => i.id === itemId);
+  if (!item || !currentUser) return;
+
+  if (item.seller.studentId !== currentUser.studentId) {
+    showToast('You can only modify your own listings.', 'warning');
+    return;
+  }
+
+  if (item.status === 'Sold') {
+    item.status = 'Available';
+    saveItemsToStorage();
+    renderItems();
+    renderDashboard();
+    showToast({
+      title: 'Borrow Status Updated',
+      message: `Listing "${item.title}" relisted as Available on CampusKart!`,
+      type: 'success',
+      actionType: 'status_updated',
+      icon: 'fa-solid fa-rotate'
+    });
+  } else {
+    item.status = 'Sold';
+    saveItemsToStorage();
+    renderItems();
+    renderDashboard();
+    showToast({
+      title: 'Borrow Status Updated',
+      message: `"${item.title}" marked as Sold! Great job on your campus sale.`,
+      type: 'success',
+      actionType: 'status_updated',
+      icon: 'fa-solid fa-bag-shopping'
+    });
+  }
+}
+
+/**
+ * Handle Delete Listing with safe confirmation
+ */
+function handleDeleteListing(itemId) {
+  const item = items.find(i => i.id === itemId);
+  if (!item || !currentUser) return;
+
+  if (item.seller.studentId !== currentUser.studentId) {
+    showToast('You can only delete your own listings.', 'warning');
+    return;
+  }
+
+  const confirmMsg = `Are you sure you want to delete "${item.title}" from CampusKart?\n\nThis will remove it from the student marketplace.`;
+  if (confirm(confirmMsg)) {
+    const idx = items.findIndex(i => i.id === itemId);
+    if (idx !== -1) {
+      items.splice(idx, 1);
+      wishlist.delete(itemId);
+      saveItemsToStorage();
+      saveWishlistToStorage();
+      renderItems();
+      renderDashboard();
+      updateWishlistCount();
+      showToast(`🗑️ Listing "${item.title}" was successfully deleted.`, 'info');
+    }
+  }
+}
+
+/**
+ * Open Dedicated Edit Listing Modal
+ */
+function openEditItemModal(itemId) {
+  const item = items.find(i => i.id === itemId);
+  if (!item || !currentUser) return;
+
+  const modal = document.getElementById('editListingModal');
+  const catSelect = document.getElementById('editCategorySelect');
+  if (!modal) return;
+
+  // Populate Categories
+  if (catSelect) {
+    const selectableCats = CATEGORIES.filter(c => c !== 'All Categories');
+    catSelect.innerHTML = selectableCats.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+  }
+
+  // Populate Values
+  document.getElementById('editItemId').value = item.id;
+  document.getElementById('editTitleInput').value = item.title || '';
+  if (catSelect) catSelect.value = item.category || 'Textbooks';
+  document.getElementById('editCourseInput').value = item.courseCode || '';
+  document.getElementById('editConditionSelect').value = item.condition || 'Like New';
+  document.getElementById('editTransactionSelect').value = item.transaction || 'Sell';
+  document.getElementById('editPriceInput').value = item.price || 0;
+  document.getElementById('editBorrowRateInput').value = item.borrowRate || '৳20 / week';
+  document.getElementById('editBorrowTermsInput').value = item.borrowTerms || '';
+  document.getElementById('editExchangeForInput').value = item.exchangeFor || '';
+  document.getElementById('editLocationInput').value = item.location || 'NUB Central Library';
+  document.getElementById('editDescriptionInput').value = item.description || '';
+  
+  const imgInput = document.getElementById('editImageUrlInput');
+  const imgPreview = document.getElementById('editImagePreview');
+  if (imgInput) imgInput.value = item.image || '';
+  if (imgPreview) imgPreview.src = item.image || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=400&q=80';
+
+  updateEditModalFieldVisibility();
+
+  modal.classList.remove('hidden');
+}
+
+function closeEditListingModal() {
+  const modal = document.getElementById('editListingModal');
+  if (modal) modal.classList.add('hidden');
+}
+
+function updateEditModalFieldVisibility() {
+  const tx = document.getElementById('editTransactionSelect')?.value || 'Sell';
+  const priceRow = document.getElementById('editPriceRow');
+  const borrowRow = document.getElementById('editBorrowRow');
+  const exchangeRow = document.getElementById('editExchangeRow');
+
+  if (priceRow) priceRow.classList.add('hidden');
+  if (borrowRow) borrowRow.classList.add('hidden');
+  if (exchangeRow) exchangeRow.classList.add('hidden');
+
+  if (tx === 'Sell' && priceRow) {
+    priceRow.classList.remove('hidden');
+  } else if (tx === 'Borrow' && borrowRow) {
+    borrowRow.classList.remove('hidden');
+  } else if (tx === 'Exchange' && exchangeRow) {
+    exchangeRow.classList.remove('hidden');
+  }
+}
+
+function handleEditListingSubmit(e) {
+  e.preventDefault();
+  const itemId = document.getElementById('editItemId')?.value;
+  const item = items.find(i => i.id === itemId);
+  if (!item || !currentUser) return;
+
+  const title = document.getElementById('editTitleInput')?.value.trim();
+  const category = document.getElementById('editCategorySelect')?.value;
+  const courseCode = document.getElementById('editCourseInput')?.value.trim().toUpperCase() || 'General';
+  const condition = document.getElementById('editConditionSelect')?.value;
+  const transaction = document.getElementById('editTransactionSelect')?.value;
+  const price = parseFloat(document.getElementById('editPriceInput')?.value) || 0;
+  const borrowRate = document.getElementById('editBorrowRateInput')?.value.trim();
+  const borrowTerms = document.getElementById('editBorrowTermsInput')?.value.trim();
+  const exchangeFor = document.getElementById('editExchangeForInput')?.value.trim();
+  const location = document.getElementById('editLocationInput')?.value.trim();
+  const description = document.getElementById('editDescriptionInput')?.value.trim();
+  const image = document.getElementById('editImageUrlInput')?.value.trim() || item.image;
+
+  if (!title || !description) {
+    showToast('Please provide both a title and description.', 'warning');
+    return;
+  }
+
+  let priceLabel = 'Free';
+  if (transaction === 'Sell') {
+    priceLabel = `৳${price}`;
+  } else if (transaction === 'Borrow') {
+    priceLabel = borrowRate || '৳20 / week';
+  } else if (transaction === 'Exchange') {
+    priceLabel = 'Trade Item';
+  }
+
+  // Update Item fields
+  item.title = title;
+  item.category = category;
+  item.courseCode = courseCode;
+  item.condition = condition;
+  item.transaction = transaction;
+  item.transactionType = transaction;
+  item.price = price;
+  item.priceLabel = priceLabel;
+  item.borrowRate = transaction === 'Borrow' ? borrowRate : null;
+  item.borrowTerms = transaction === 'Borrow' ? borrowTerms : null;
+  item.exchangeFor = transaction === 'Exchange' ? exchangeFor : null;
+  item.location = location || 'NUB Campus';
+  item.description = description;
+  item.image = image;
+
+  saveItemsToStorage();
+  closeEditListingModal();
+  renderItems();
+  renderDashboard();
+
+  showToast(`🎉 Listing "${item.title}" updated successfully!`, 'success');
+}
+
+/**
+ * =========================================================================
+ * TAB 2: BORROWED ITEMS (showing return due-date countdown & 'Mark as Returned' button)
+ * =========================================================================
+ */
+
+function getCountdownDetails(dueDateISO) {
+  if (!dueDateISO) {
+    return {
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0,
+      isUrgent: false,
+      isOverdue: false,
+      formattedText: 'No Due Date Set',
+      badgeClass: 'countdown-normal'
+    };
+  }
+
+  const now = Date.now();
+  const due = new Date(dueDateISO).getTime();
+  const diffMs = due - now;
+
+  if (diffMs <= 0) {
+    const overdueMs = Math.abs(diffMs);
+    const d = Math.floor(overdueMs / (1000 * 60 * 60 * 24));
+    const h = Math.floor((overdueMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const m = Math.floor((overdueMs % (1000 * 60 * 60)) / (1000 * 60));
+    const s = Math.floor((overdueMs % (1000 * 60)) / 1000);
+    const text = d > 0 ? `🚨 Overdue by ${d}d ${h}h ${m}m` : `🚨 Overdue by ${h}h ${m}m ${s}s`;
+    return {
+      days: -d,
+      hours: -h,
+      minutes: -m,
+      seconds: -s,
+      isUrgent: true,
+      isOverdue: true,
+      formattedText: text,
+      badgeClass: 'countdown-overdue'
+    };
+  }
+
+  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+
+  const isUrgent = days < 2;
+  let formattedText = '';
+  if (days > 0) {
+    formattedText = `⏳ ${days}d ${hours}h ${minutes}m ${seconds}s remaining`;
+  } else if (hours > 0) {
+    formattedText = `⚠️ Due Today: ${hours}h ${minutes}m ${seconds}s left`;
+  } else {
+    formattedText = `🚨 Due very soon: ${minutes}m ${seconds}s left!`;
+  }
+
+  return {
+    days,
+    hours,
+    minutes,
+    seconds,
+    isUrgent,
+    isOverdue: false,
+    formattedText,
+    badgeClass: isUrgent ? 'countdown-urgent' : 'countdown-normal'
+  };
+}
+
+function updateBorrowedCountdowns() {
+  const elements = document.querySelectorAll('[data-due-countdown]');
+  if (!elements || elements.length === 0) return;
+
+  elements.forEach(el => {
+    const itemId = el.getAttribute('data-due-countdown');
+    const item = items.find(i => i.id === itemId);
+    if (item && item.borrowDetails?.dueDate) {
+      const countdown = getCountdownDetails(item.borrowDetails.dueDate);
+      el.textContent = countdown.formattedText;
+      const parentCard = el.closest('.countdown-container');
+      if (parentCard) {
+        parentCard.className = `countdown-container p-3 rounded-2xl border ${countdown.badgeClass} flex flex-col sm:flex-row sm:items-center justify-between gap-2.5`;
+      }
+    }
+  });
 }
 
 function renderDashboardBorrowedPanel() {
@@ -1402,104 +2020,328 @@ function renderDashboardBorrowedPanel() {
 
   if (myBorrows.length === 0) {
     container.innerHTML = `
-      <div class="py-12 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 p-6">
-        <div class="w-12 h-12 mx-auto mb-2 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center text-lg">
+      <div class="py-12 text-center bg-slate-50/70 rounded-2xl border border-dashed border-slate-200 p-6">
+        <div class="w-12 h-12 mx-auto mb-2 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xl shadow-sm">
           <i class="fa-solid fa-clock-rotate-left"></i>
         </div>
         <h4 class="text-sm font-bold text-slate-800">No Borrowed Items</h4>
-        <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1">You haven't requested or borrowed any academic materials yet. Browse textbooks and lab kits on the marketplace!</p>
+        <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">You have no active borrows or peer exchanges. Find textbooks, calculators, and lab breadboards from classmates!</p>
+        <button type="button" onclick="closeDashboardModal(); activeFilters.transaction = 'Borrow'; renderItems();" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/30 transition inline-flex items-center gap-1.5 active:scale-95">
+          <i class="fa-solid fa-magnifying-glass text-[10px]"></i>
+          <span>Browse Available Borrows</span>
+        </button>
       </div>
     `;
     return;
   }
 
   container.innerHTML = myBorrows.map(it => {
-    let statusHtml = '';
-    let actionHtml = '';
+    let statusPill = '';
+    let actionArea = '';
+    let countdownArea = '';
 
     if (it.status === 'Requested') {
-      statusHtml = `
-        <span class="status-pill status-requested"><i class="fa-solid fa-clock"></i> Awaiting Owner Approval</span>
-      `;
-      actionHtml = `
-        <span class="text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200">Pending Review</span>
+      statusPill = `<span class="status-pill status-requested"><i class="fa-solid fa-clock"></i> Awaiting Owner Approval</span>`;
+      actionArea = `
+        <span class="text-xs text-amber-700 bg-amber-50 px-2.5 py-1.5 rounded-xl border border-amber-200 font-semibold flex items-center gap-1">
+          <i class="fa-solid fa-hourglass-half text-[10px]"></i> Pending Review
+        </span>
       `;
     } else if (it.borrowDetails?.returnStatus === 'Returned') {
-      statusHtml = `
-        <span class="status-pill status-completed"><i class="fa-solid fa-circle-check text-emerald-500"></i> Returned / Completed</span>
-      `;
+      statusPill = `<span class="status-pill status-completed"><i class="fa-solid fa-circle-check text-emerald-600"></i> Returned / Completed</span>`;
+      
       if (!it.borrowDetails.isReviewed) {
-        actionHtml = `
-          <button type="button" onclick="openReviewModal('${it.id}')" class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold shadow-xs flex items-center gap-1 animate-pulse">
-            <i class="fa-solid fa-star text-[10px]"></i>
+        actionArea = `
+          <button type="button" onclick="openReviewModal('${it.id}')" class="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-xl text-xs font-bold shadow-sm shadow-amber-500/30 flex items-center gap-1.5 transition active:scale-95 animate-pulse">
+            <i class="fa-solid fa-star text-xs"></i>
             <span>Rate Lender</span>
           </button>
         `;
       } else {
-        actionHtml = `
-          <span class="text-xs text-amber-600 font-bold bg-amber-50 px-2 py-1 rounded-lg border border-amber-200 flex items-center gap-1">
-            <i class="fa-solid fa-star text-[10px]"></i> Rated
+        actionArea = `
+          <span class="text-xs text-amber-600 font-bold bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-200 flex items-center gap-1.5">
+            <i class="fa-solid fa-star text-xs"></i> Rated ★ 5.0
           </span>
         `;
       }
     } else if (it.status === 'Borrowed' || it.status === 'In Exchange') {
-      const remaining = getDaysRemaining(it.borrowDetails.dueDate);
-      statusHtml = `
-        <span class="status-pill status-borrowed"><i class="fa-solid fa-handshake"></i> ${it.status}</span>
-        <span class="text-xs px-2.5 py-0.5 rounded-full font-bold ${remaining.isUrgent ? 'countdown-urgent' : 'countdown-normal'}">
-          ${remaining.label}
-        </span>
-      `;
-      actionHtml = `
-        <div class="text-right">
-          <p class="text-[11px] text-slate-500">Due: <strong>${formatDate(it.borrowDetails.dueDate)}</strong></p>
-          <span class="text-[10px] text-indigo-600">Return to: ${it.seller.name}</span>
+      const countdown = getCountdownDetails(it.borrowDetails.dueDate);
+      statusPill = `<span class="status-pill status-borrowed"><i class="fa-solid fa-handshake"></i> ${it.status}</span>`;
+
+      // Live Countdown display
+      countdownArea = `
+        <div class="countdown-container p-3 rounded-2xl border ${countdown.badgeClass} flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 my-3 shadow-xs">
+          <div class="flex items-center space-x-2.5">
+            <div class="w-8 h-8 rounded-xl bg-white/80 flex items-center justify-center shrink-0 text-slate-700">
+              <i class="fa-solid fa-stopwatch text-sm"></i>
+            </div>
+            <div>
+              <p class="text-[11px] font-bold uppercase tracking-wider text-slate-700">Return Due-Date Countdown</p>
+              <p class="text-xs font-extrabold" data-due-countdown="${it.id}">
+                ${countdown.formattedText}
+              </p>
+            </div>
+          </div>
+          <div class="text-right text-[11px] text-slate-600">
+            <span>Official Due Date: <strong>${formatDate(it.borrowDetails.dueDate)}</strong></span>
+          </div>
         </div>
+      `;
+
+      // 'Mark as Returned' Button
+      actionArea = `
+        <button type="button" 
+                onclick="handleMarkAsReturnedByBorrower('${it.id}')" 
+                class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/25 transition flex items-center gap-1.5 active:scale-95">
+          <i class="fa-solid fa-circle-check text-xs"></i>
+          <span>Mark as Returned</span>
+        </button>
       `;
     }
 
     return `
-      <div class="p-4 bg-white rounded-2xl border border-slate-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3">
-        <div class="flex items-start space-x-3.5">
-          <img src="${it.image}" alt="${it.title}" class="w-14 h-14 rounded-xl object-cover ring-1 ring-slate-200 shrink-0" />
-          <div>
-            <div class="flex items-center gap-2 mb-1 flex-wrap">
-              ${statusHtml}
+      <div class="p-4 sm:p-5 bg-white rounded-2xl border border-slate-200 shadow-xs transition hover:border-indigo-200">
+        <div class="flex flex-col md:flex-row md:items-start justify-between gap-3.5">
+          
+          <!-- Item Thumbnail & Info -->
+          <div class="flex items-start space-x-3.5 min-w-0">
+            <img src="${it.image}" alt="${it.title}" class="w-16 h-16 rounded-xl object-cover ring-1 ring-slate-200 shrink-0" onerror="this.src='https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=400&q=80'" />
+            <div class="min-w-0 space-y-1">
+              <div class="flex items-center gap-1.5 flex-wrap">
+                ${statusPill}
+                <span class="text-[10px] font-mono text-slate-500 font-bold bg-slate-100 px-1.5 py-0.2 rounded">${it.courseCode || 'General'}</span>
+                <span class="text-[10px] text-purple-700 font-bold bg-purple-50 px-2 py-0.2 rounded-full border border-purple-200">${it.priceLabel}</span>
+              </div>
+              
+              <h4 class="text-sm font-bold text-slate-900 leading-snug truncate" title="${it.title}">
+                ${it.title}
+              </h4>
+
+              <!-- Lender Profile Info -->
+              <div class="flex items-center gap-2 text-xs text-slate-600 flex-wrap pt-0.5">
+                <span class="flex items-center gap-1">
+                  <img src="${it.seller.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}" class="w-4 h-4 rounded-full object-cover" alt="${it.seller.name}" />
+                  Lender: <strong>${it.seller.name}</strong>
+                </span>
+                <span class="text-slate-300">&bull;</span>
+                <span class="text-slate-500"><i class="fa-solid fa-location-dot text-rose-500 mr-1"></i>${it.location}</span>
+              </div>
             </div>
-            <h4 class="text-sm font-bold text-slate-900">${it.title}</h4>
-            <p class="text-xs text-slate-600 mt-0.5">
-              Lender: <strong>${it.seller.name}</strong> (${it.seller.major})
-              &bull; Meetup Spot: <span class="text-slate-500">${it.location}</span>
-            </p>
           </div>
+
+          <!-- Action Buttons -->
+          <div class="flex items-center space-x-2 shrink-0 self-end md:self-start">
+            ${actionArea}
+            <button type="button" onclick="openDetailsModal('${it.id}')" class="p-2 bg-slate-50 hover:bg-slate-100 text-slate-600 rounded-xl text-xs font-semibold border border-slate-200 transition" title="View details">
+              <i class="fa-solid fa-arrow-up-right-from-square text-[11px]"></i>
+            </button>
+          </div>
+
         </div>
 
-        <div class="flex items-center space-x-2 shrink-0 self-end md:self-center">
-          ${actionHtml}
-          <button type="button" onclick="openDetailsModal('${it.id}')" class="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 rounded-xl text-xs font-semibold border border-slate-200 transition">
-            Details
-          </button>
-        </div>
+        <!-- Return Due-Date Countdown Area -->
+        ${countdownArea}
       </div>
     `;
   }).join('');
 }
 
-function updateNotificationBadges() {
-  const navBadge = document.getElementById('navRequestsBadge');
-  const menuBadge = document.getElementById('menuRequestBadge');
-  const msgBadge = document.getElementById('navMessagesBadge');
-  const menuMsgBadge = document.getElementById('menuMessagesBadge');
+/**
+ * Handle borrower marking an item as returned
+ */
+function handleMarkAsReturnedByBorrower(itemId) {
+  const item = items.find(i => i.id === itemId);
+  if (!item || !currentUser) return;
 
+  const confirmMsg = `Have you returned "${item.title}" to ${item.seller.name}?\n\nThis will mark the borrowing cycle as completed and prompt you to leave a peer rating for ${item.seller.name}.`;
+  if (confirm(confirmMsg)) {
+    item.status = 'Available';
+    if (!item.borrowDetails) item.borrowDetails = {};
+    item.borrowDetails.returnStatus = 'Returned';
+    item.borrowDetails.returnedDate = new Date().toISOString();
+    item.borrowDetails.isReviewed = false;
+
+    saveItemsToStorage();
+    renderItems();
+    renderDashboard();
+
+    showToast({
+      title: 'Borrow Status Updated',
+      message: `Item "${item.title}" successfully returned! Marked as completed on CampusKart.`,
+      type: 'success',
+      actionType: 'status_updated',
+      icon: 'fa-solid fa-arrows-rotate'
+    });
+
+    // Automatically prompt review modal so borrower can review the peer lender
+    setTimeout(() => {
+      openReviewModal(itemId);
+    }, 400);
+  }
+}
+
+/**
+ * =========================================================================
+ * TAB 3: RECEIVED REVIEWS (displaying peer ratings & feedback)
+ * =========================================================================
+ */
+
+function renderDashboardReviewsPanel() {
+  if (!currentUser) return;
+  const container = document.getElementById('dashReviewsPanel');
+  const countBadge = document.getElementById('dashReviewsCountBadge');
+
+  const myReviews = reviews.filter(r => r.sellerId === currentUser.studentId);
+  if (countBadge) countBadge.textContent = myReviews.length;
+  if (!container) return;
+
+  if (myReviews.length === 0) {
+    container.innerHTML = `
+      <div class="py-12 text-center bg-slate-50/70 rounded-2xl border border-dashed border-slate-200 p-6">
+        <div class="w-12 h-12 mx-auto mb-2 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center text-xl shadow-sm">
+          <i class="fa-solid fa-star"></i>
+        </div>
+        <h4 class="text-sm font-bold text-slate-800">No Peer Reviews Yet</h4>
+        <p class="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">When classmates borrow, trade, or purchase items from your listings, their feedback ratings and peer reviews will appear here.</p>
+        <button type="button" onclick="switchDashboardTab('listings')" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/30 transition inline-flex items-center gap-1.5 active:scale-95">
+          <i class="fa-solid fa-boxes-stacked text-[10px]"></i>
+          <span>View Your Active Listings</span>
+        </button>
+      </div>
+    `;
+    return;
+  }
+
+  // Calculate Overall Average & Star Breakdown
+  const total = myReviews.length;
+  const avg = (myReviews.reduce((sum, r) => sum + r.rating, 0) / total).toFixed(1);
+  const starCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+  myReviews.forEach(r => {
+    const star = Math.min(5, Math.max(1, Math.round(r.rating || 5)));
+    starCounts[star] = (starCounts[star] || 0) + 1;
+  });
+
+  const starBarsHtml = [5, 4, 3, 2, 1].map(s => {
+    const count = starCounts[s] || 0;
+    const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+    return `
+      <div class="flex items-center gap-2 text-xs">
+        <span class="w-12 font-bold text-slate-600 flex items-center gap-1">
+          ${s} <i class="fa-solid fa-star text-amber-400 text-[10px]"></i>
+        </span>
+        <div class="flex-1 bg-slate-200 h-2 rounded-full overflow-hidden">
+          <div class="bg-amber-400 h-2 rounded-full transition-all duration-500" style="width: ${pct}%"></div>
+        </div>
+        <span class="w-8 text-right text-slate-400 text-[11px] font-mono">${count}</span>
+      </div>
+    `;
+  }).join('');
+
+  const reviewsListHtml = myReviews.map(r => {
+    const stars = '★'.repeat(r.rating || 5) + '☆'.repeat(5 - (r.rating || 5));
+    const txPill = r.transactionType 
+      ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${r.transactionType === 'Borrowed' ? 'bg-purple-100 text-purple-700' : 'bg-emerald-100 text-emerald-700'}">${r.transactionType}</span>` 
+      : '';
+
+    return `
+      <div class="p-4 bg-white rounded-2xl border border-slate-200/90 shadow-xs hover:border-amber-200 transition">
+        <div class="flex items-start justify-between gap-3">
+          
+          <!-- Reviewer Info -->
+          <div class="flex items-center space-x-3">
+            <img src="${r.reviewerAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'}" 
+                 alt="${r.reviewerName}" 
+                 class="w-10 h-10 rounded-full object-cover ring-2 ring-indigo-500/30" 
+                 onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80'" />
+            <div>
+              <div class="flex items-center gap-1.5 flex-wrap">
+                <h5 class="text-xs sm:text-sm font-bold text-slate-900">${r.reviewerName}</h5>
+                <span class="bg-blue-100 text-blue-800 text-[9px] font-bold px-1.5 py-0.2 rounded-full">Verified Student</span>
+                ${txPill}
+              </div>
+              <p class="text-[11px] text-slate-500">${r.reviewerDept || 'NUB Student'} &bull; <span class="text-slate-400 font-mono">${r.date || 'Recently'}</span></p>
+            </div>
+          </div>
+
+          <!-- Star Rating -->
+          <div class="text-right shrink-0">
+            <div class="text-amber-400 text-xs sm:text-sm tracking-wider font-bold">
+              ${stars}
+            </div>
+            <span class="text-[10px] text-slate-400 font-bold">${r.rating}.0 / 5.0</span>
+          </div>
+        </div>
+
+        <!-- Reviewed Item tag -->
+        ${r.itemTitle ? `
+          <div class="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-50 rounded-lg border border-slate-100 text-[11px] text-slate-600 font-medium">
+            <i class="fa-solid fa-box text-slate-400 text-[10px]"></i>
+            <span>Item: <strong>${r.itemTitle}</strong></span>
+          </div>
+        ` : ''}
+
+        <!-- Classmate Feedback Comment -->
+        <div class="mt-2 text-xs text-slate-700 bg-slate-50/70 p-3 rounded-xl border border-slate-100 italic leading-relaxed">
+          "${r.comment || 'Smooth, friendly and timely academic item exchange. Highly recommended classmate!'}"
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = `
+    <!-- Peer Rating Overview Header Card -->
+    <div class="p-4 sm:p-5 bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-transparent border border-amber-200/80 rounded-2xl shadow-xs">
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+        
+        <!-- Score Column -->
+        <div class="md:col-span-4 text-center md:text-left border-b md:border-b-0 md:border-r border-slate-200 pb-3 md:pb-0 md:pr-4">
+          <div class="flex items-center justify-center md:justify-start gap-2">
+            <span class="text-3xl sm:text-4xl font-black text-slate-900">${avg}</span>
+            <div>
+              <div class="text-amber-500 text-sm">★★★★★</div>
+              <span class="text-[11px] text-slate-500 font-medium">out of 5.0</span>
+            </div>
+          </div>
+          <p class="text-xs font-bold text-slate-800 mt-1">${total} Verified Peer Review${total === 1 ? '' : 's'}</p>
+          <div class="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+            <i class="fa-solid fa-shield-check text-[9px]"></i> 100% Verified NUB Student Reviews
+          </div>
+        </div>
+
+        <!-- Rating Distribution Progress Bars -->
+        <div class="md:col-span-8 space-y-1.5">
+          ${starBarsHtml}
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Reviews List Header -->
+    <div class="flex items-center justify-between pt-2">
+      <h4 class="text-xs font-bold uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+        <i class="fa-solid fa-comments text-indigo-600 text-xs"></i>
+        <span>Classmate Feedback & Testimonials</span>
+      </h4>
+      <span class="text-[11px] text-slate-400 font-mono">${myReviews.length} record${myReviews.length === 1 ? '' : 's'}</span>
+    </div>
+
+    <!-- Review Cards Feed -->
+    <div class="space-y-3">
+      ${reviewsListHtml}
+    </div>
+  `;
+}
+
+function updateNotificationBadges() {
   if (!currentUser) {
+    const navBadge = document.getElementById('navRequestsBadge');
     if (navBadge) navBadge.classList.add('hidden');
-    if (menuBadge) menuBadge.classList.add('hidden');
-    if (msgBadge) msgBadge.classList.add('hidden');
-    if (menuMsgBadge) menuMsgBadge.classList.add('hidden');
     return;
   }
 
   const pendingRequests = items.filter(it => it.seller.studentId === currentUser.studentId && it.status === 'Requested');
+  const navBadge = document.getElementById('navRequestsBadge');
+  const menuBadge = document.getElementById('menuRequestBadge');
 
   if (navBadge) {
     if (pendingRequests.length > 0) {
@@ -1516,27 +2358,6 @@ function updateNotificationBadges() {
       menuBadge.classList.remove('hidden');
     } else {
       menuBadge.classList.add('hidden');
-    }
-  }
-
-  // Unread chat messages badge calculation
-  const unreadMsgCount = getUnreadMessagesCount();
-
-  if (msgBadge) {
-    if (unreadMsgCount > 0) {
-      msgBadge.textContent = unreadMsgCount;
-      msgBadge.classList.remove('hidden');
-    } else {
-      msgBadge.classList.add('hidden');
-    }
-  }
-
-  if (menuMsgBadge) {
-    if (unreadMsgCount > 0) {
-      menuMsgBadge.textContent = `${unreadMsgCount} new`;
-      menuMsgBadge.classList.remove('hidden');
-    } else {
-      menuMsgBadge.classList.add('hidden');
     }
   }
 }
@@ -1566,23 +2387,37 @@ function formatDate(dateISO) {
 }
 
 function bindStateMachineEvents() {
-  document.getElementById('navTransactionsBtn')?.addEventListener('click', () => openDashboard('requests'));
+  // Navigation button shortcut to Dashboard
+  document.getElementById('navTransactionsBtn')?.addEventListener('click', () => openDashboard('listings'));
   document.getElementById('closeDashboardModal')?.addEventListener('click', closeDashboardModal);
   document.getElementById('dashPostShortcutBtn')?.addEventListener('click', () => {
     closeDashboardModal();
     openPostModal();
   });
 
-  document.getElementById('dashTabRequestsBtn')?.addEventListener('click', () => switchDashboardTab('requests'));
+  // Three Dashboard Tab Buttons
   document.getElementById('dashTabListingsBtn')?.addEventListener('click', () => switchDashboardTab('listings'));
   document.getElementById('dashTabBorrowedBtn')?.addEventListener('click', () => switchDashboardTab('borrowed'));
+  document.getElementById('dashTabReviewsBtn')?.addEventListener('click', () => switchDashboardTab('reviews'));
 
+  // Dedicated Edit Listing Modal Events
+  document.getElementById('closeEditListingModal')?.addEventListener('click', closeEditListingModal);
+  document.getElementById('cancelEditListingBtn')?.addEventListener('click', closeEditListingModal);
+  document.getElementById('editListingForm')?.addEventListener('submit', handleEditListingSubmit);
+  document.getElementById('editTransactionSelect')?.addEventListener('change', updateEditModalFieldVisibility);
+  document.getElementById('editImageUrlInput')?.addEventListener('input', (e) => {
+    const preview = document.getElementById('editImagePreview');
+    if (preview) preview.src = e.target.value.trim() || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=400&q=80';
+  });
+
+  // Request & Approval Modals
   document.getElementById('closeRequestModal')?.addEventListener('click', closeRequestModal);
   document.getElementById('requestForm')?.addEventListener('submit', handleRequestFormSubmit);
 
   document.getElementById('closeApprovalModal')?.addEventListener('click', closeApprovalModal);
   document.getElementById('approvalForm')?.addEventListener('submit', handleApprovalFormSubmit);
 
+  // Review Modal
   document.getElementById('closeReviewModal')?.addEventListener('click', closeReviewModal);
   document.getElementById('reviewForm')?.addEventListener('submit', handleReviewFormSubmit);
 
@@ -1596,11 +2431,12 @@ function bindStateMachineEvents() {
 
   // Modal backdrop click
   const dashboardModal = document.getElementById('dashboardModal');
+  const editListingModal = document.getElementById('editListingModal');
   const requestModal = document.getElementById('requestModal');
   const approvalModal = document.getElementById('approvalModal');
   const reviewModal = document.getElementById('reviewModal');
 
-  [dashboardModal, requestModal, approvalModal, reviewModal].forEach(m => {
+  [dashboardModal, editListingModal, requestModal, approvalModal, reviewModal].forEach(m => {
     if (m) {
       m.addEventListener('click', (e) => {
         if (e.target === m) {
@@ -1637,23 +2473,47 @@ function loadData() {
     if (savedReviews) {
       reviews = JSON.parse(savedReviews);
     } else {
-      reviews = [...INITIAL_REVIEWS];
+      reviews = typeof INITIAL_REVIEWS !== 'undefined' ? [...INITIAL_REVIEWS] : [];
       saveReviewsToStorage();
-    }
-
-    const savedMessages = localStorage.getItem(STORAGE_MESSAGES_KEY);
-    if (savedMessages) {
-      chatMessages = JSON.parse(savedMessages);
-    } else {
-      chatMessages = [...DEFAULT_CHAT_MESSAGES];
-      saveChatMessagesToStorage();
     }
   } catch (err) {
     console.error('Error reading localStorage', err);
     items = [...INITIAL_ITEMS];
     wishlist = new Set();
-    reviews = [...INITIAL_REVIEWS];
-    chatMessages = [...DEFAULT_CHAT_MESSAGES];
+    reviews = typeof INITIAL_REVIEWS !== 'undefined' ? [...INITIAL_REVIEWS] : [];
+  }
+
+  // Ensure reviews are populated
+  if (!reviews || reviews.length === 0) {
+    reviews = typeof INITIAL_REVIEWS !== 'undefined' ? [...INITIAL_REVIEWS] : [];
+    saveReviewsToStorage();
+  }
+
+  // Data Normalization pass to ensure compatibility
+  if (items && items.length > 0) {
+    items.forEach(it => {
+      it.transaction = it.transaction || it.transactionType || 'Sell';
+      it.transactionType = it.transaction;
+      it.status = it.status || 'Available';
+      if (!it.priceLabel) {
+        if (it.transaction === 'Sell') {
+          it.priceLabel = it.price ? `৳${it.price}` : 'Free';
+        } else if (it.transaction === 'Borrow') {
+          it.priceLabel = it.borrowRate || '৳20 / week';
+        } else {
+          it.priceLabel = 'Trade Item';
+        }
+      }
+      if (it.seller && !it.seller.studentId) {
+        if (it.seller.email?.includes('rifat') || it.seller.name?.includes('Rifat')) {
+          it.seller.studentId = '202110045';
+        } else if (it.seller.email?.includes('ruma') || it.seller.name?.includes('Ruma')) {
+          it.seller.studentId = '202220015';
+        } else {
+          it.seller.studentId = '42240101512';
+        }
+      }
+    });
   }
 }
 
@@ -1678,14 +2538,6 @@ function saveReviewsToStorage() {
     localStorage.setItem(STORAGE_REVIEWS_KEY, JSON.stringify(reviews));
   } catch (e) {
     console.warn('Could not save reviews to localStorage', e);
-  }
-}
-
-function saveChatMessagesToStorage() {
-  try {
-    localStorage.setItem(STORAGE_MESSAGES_KEY, JSON.stringify(chatMessages));
-  } catch (e) {
-    console.warn('Could not save chat messages to localStorage', e);
   }
 }
 
@@ -1762,10 +2614,15 @@ function initUI() {
   if (presetContainer) {
     presetContainer.innerHTML = PRESET_IMAGES.map((preset, idx) => `
       <button type="button" 
-              class="preset-image-btn text-left p-1.5 rounded-lg border border-slate-200 hover:border-indigo-500 transition-all group flex items-center space-x-2 ${idx === 0 ? 'border-indigo-500 bg-indigo-50/40 ring-1 ring-indigo-500' : 'bg-white'}" 
-              data-url="${preset.url}">
-        <img src="${preset.url}" class="w-8 h-8 rounded object-cover shadow-xs" alt="${preset.label}" />
-        <span class="text-xs font-medium text-slate-700 group-hover:text-indigo-600">${preset.label}</span>
+              class="preset-image-btn text-left p-1.5 rounded-xl border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/20 transition-all group flex items-center space-x-2 ${idx === 0 ? 'border-indigo-500 bg-indigo-50/40 ring-1 ring-indigo-500' : 'bg-white'}" 
+              data-url="${preset.url}"
+              data-label="${preset.label}"
+              data-type="${preset.type || 'Course Material'}">
+        <img src="${preset.url}" class="w-8 h-8 rounded-lg object-cover shadow-xs shrink-0" alt="${preset.label}" />
+        <div class="min-w-0 flex-1">
+          <span class="block text-xs font-bold text-slate-700 group-hover:text-indigo-600 truncate">${preset.label}</span>
+          <span class="block text-[9px] text-slate-400 truncate">${preset.type || 'Academic'}</span>
+        </div>
       </button>
     `).join('');
 
@@ -1779,25 +2636,385 @@ function initUI() {
         current.classList.add('border-indigo-500', 'bg-indigo-50/40', 'ring-1', 'ring-indigo-500');
         current.classList.remove('border-slate-200', 'bg-white');
         
+        currentUploadedImageDataUrl = null;
+        const uploadStatus = document.getElementById('uploadedFileStatus');
+        if (uploadStatus) uploadStatus.classList.add('hidden');
+
         const urlInput = document.getElementById('postImageUrl');
+        const selectedUrl = current.getAttribute('data-url');
+        const selectedType = current.getAttribute('data-type');
+        const selectedLabel = current.getAttribute('data-label');
         if (urlInput) {
-          urlInput.value = current.getAttribute('data-url');
-          updatePostImagePreview(current.getAttribute('data-url'));
+          urlInput.value = selectedUrl;
         }
+        updatePostImagePreview(selectedUrl, selectedType, selectedLabel);
       });
     });
   }
 }
 
-function updatePostImagePreview(url) {
+/**
+ * Instant Image Preview Helper
+ * Updates preview card, badge tags, source tag, and error handling
+ */
+function updatePostImagePreview(url, typeLabel = 'Preset Photo', titleSnippet = null) {
   const preview = document.getElementById('postImagePreview');
+  const errorOverlay = document.getElementById('previewErrorOverlay');
+  const typeText = document.getElementById('previewTypeText');
+  const sourceText = document.getElementById('imageSourceText');
+  const titleSnippetEl = document.getElementById('previewItemTitleSnippet');
+  const subSnippetEl = document.getElementById('previewItemSubSnippet');
+  const resolutionTag = document.getElementById('previewResolutionTag');
+  const clearUrlBtn = document.getElementById('clearImageUrlBtn');
+
+  const finalUrl = url || currentUploadedImageDataUrl || PRESET_IMAGES[0]?.url || '';
+
+  if (clearUrlBtn) {
+    if (url && url.trim().length > 0) clearUrlBtn.classList.remove('hidden');
+    else clearUrlBtn.classList.add('hidden');
+  }
+
   if (preview) {
-    if (url) {
-      preview.src = url;
+    if (finalUrl) {
+      if (errorOverlay) errorOverlay.classList.add('hidden');
+      preview.src = finalUrl;
       preview.classList.remove('hidden');
     } else {
       preview.classList.add('hidden');
+      if (errorOverlay) errorOverlay.classList.remove('hidden');
     }
+  }
+
+  if (typeText) typeText.textContent = typeLabel || 'Course Material';
+
+  if (sourceText) {
+    if (currentUploadedImageDataUrl) {
+      sourceText.textContent = 'Device Photo Uploaded';
+    } else if (url && url.startsWith('http')) {
+      sourceText.textContent = 'Web URL Linked';
+    } else {
+      sourceText.textContent = 'Preset Loaded';
+    }
+  }
+
+  if (titleSnippetEl) {
+    const rawTitle = titleSnippet || document.getElementById('postTitle')?.value.trim() || 'Textbook / Notes Photo';
+    titleSnippetEl.textContent = `Preview: ${rawTitle}`;
+  }
+
+  if (subSnippetEl) {
+    const course = document.getElementById('postCourse')?.value.trim() || 'General';
+    subSnippetEl.textContent = `Ready to post for NUB students • ${course}`;
+  }
+
+  if (resolutionTag) {
+    resolutionTag.textContent = finalUrl.startsWith('data:') ? 'Local File' : 'HD Ready';
+  }
+}
+
+/**
+ * Image Upload & Instant URL Preview Setup
+ */
+function setupImageUploadAndPreview() {
+  const urlInput = document.getElementById('postImageUrl');
+  const fileInput = document.getElementById('postImageFileInput');
+  const dropzone = document.getElementById('dropzoneArea');
+  const previewImg = document.getElementById('postImagePreview');
+  const clearUrlBtn = document.getElementById('clearImageUrlBtn');
+  const resetBtn = document.getElementById('resetPhotoBtn');
+  const removeUploadBtn = document.getElementById('removeUploadedPhotoBtn');
+  const modeUrlBtn = document.getElementById('imgModeUrlBtn');
+  const modeUploadBtn = document.getElementById('imgModeUploadBtn');
+  const urlContainer = document.getElementById('imageUrlContainer');
+  const uploadContainer = document.getElementById('imageUploadContainer');
+  const errorOverlay = document.getElementById('previewErrorOverlay');
+
+  // Mode switching tabs
+  if (modeUrlBtn && modeUploadBtn && urlContainer && uploadContainer) {
+    modeUrlBtn.addEventListener('click', () => {
+      modeUrlBtn.classList.add('bg-white', 'text-indigo-600', 'shadow-xs');
+      modeUrlBtn.classList.remove('text-slate-600');
+      modeUploadBtn.classList.remove('bg-white', 'text-indigo-600', 'shadow-xs');
+      modeUploadBtn.classList.add('text-slate-600');
+      urlContainer.classList.remove('hidden');
+      uploadContainer.classList.add('hidden');
+    });
+
+    modeUploadBtn.addEventListener('click', () => {
+      modeUploadBtn.classList.add('bg-white', 'text-indigo-600', 'shadow-xs');
+      modeUploadBtn.classList.remove('text-slate-600');
+      modeUrlBtn.classList.remove('bg-white', 'text-indigo-600', 'shadow-xs');
+      modeUrlBtn.classList.add('text-slate-600');
+      uploadContainer.classList.remove('hidden');
+      urlContainer.classList.add('hidden');
+    });
+  }
+
+  // Instant live URL input preview
+  if (urlInput) {
+    ['input', 'paste', 'change', 'keyup'].forEach(evt => {
+      urlInput.addEventListener(evt, () => {
+        setTimeout(() => {
+          const val = urlInput.value.trim();
+          currentUploadedImageDataUrl = null;
+          const uploadStatus = document.getElementById('uploadedFileStatus');
+          if (uploadStatus) uploadStatus.classList.add('hidden');
+          updatePostImagePreview(val, 'Web URL Linked', document.getElementById('postTitle')?.value || 'Photo Preview');
+        }, 15);
+      });
+    });
+  }
+
+  if (clearUrlBtn && urlInput) {
+    clearUrlBtn.addEventListener('click', () => {
+      urlInput.value = '';
+      clearUrlBtn.classList.add('hidden');
+      updatePostImagePreview('', 'No Photo Selected', 'Paste URL or select preset');
+    });
+  }
+
+  // File Upload handling
+  function handleFileSelected(file) {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      showToast({
+        title: 'Invalid File',
+        message: 'Please select a valid image file (PNG, JPG, WebP).',
+        type: 'warning'
+      });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      currentUploadedImageDataUrl = e.target.result;
+      const statusBox = document.getElementById('uploadedFileStatus');
+      const nameSpan = document.getElementById('uploadedFileName');
+      if (statusBox && nameSpan) {
+        nameSpan.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
+        statusBox.classList.remove('hidden');
+      }
+      if (urlInput) urlInput.value = '';
+      updatePostImagePreview(currentUploadedImageDataUrl, 'Device Photo', file.name);
+      showToast({
+        title: 'Photo Uploaded',
+        message: `Photo "${file.name}" loaded for instant preview!`,
+        type: 'success',
+        icon: 'fa-solid fa-camera'
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  if (fileInput) {
+    fileInput.addEventListener('change', (e) => {
+      const file = e.target.files && e.target.files[0];
+      handleFileSelected(file);
+    });
+  }
+
+  // Drag and drop dropzone
+  if (dropzone && fileInput) {
+    dropzone.addEventListener('click', () => fileInput.click());
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+      dropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.add('dropzone-dragover');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+      dropzone.addEventListener(eventName, (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropzone.classList.remove('dropzone-dragover');
+      });
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      const dt = e.dataTransfer;
+      const file = dt && dt.files && dt.files[0];
+      if (file) {
+        handleFileSelected(file);
+      }
+    });
+  }
+
+  if (removeUploadBtn) {
+    removeUploadBtn.addEventListener('click', () => {
+      currentUploadedImageDataUrl = null;
+      if (fileInput) fileInput.value = '';
+      const statusBox = document.getElementById('uploadedFileStatus');
+      if (statusBox) statusBox.classList.add('hidden');
+      const defaultUrl = PRESET_IMAGES[0]?.url || '';
+      if (urlInput) urlInput.value = defaultUrl;
+      updatePostImagePreview(defaultUrl, 'CSE Textbook', 'Textbook Photo');
+    });
+  }
+
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      currentUploadedImageDataUrl = null;
+      if (fileInput) fileInput.value = '';
+      const statusBox = document.getElementById('uploadedFileStatus');
+      if (statusBox) statusBox.classList.add('hidden');
+      const defaultUrl = PRESET_IMAGES[0]?.url || '';
+      if (urlInput) urlInput.value = defaultUrl;
+      updatePostImagePreview(defaultUrl, 'Default Preset', 'Casio / Textbook Photo');
+      showToast({
+        title: 'Photo Reset',
+        message: 'Photo preview restored to default preset',
+        type: 'info'
+      });
+    });
+  }
+
+  if (previewImg) {
+    previewImg.addEventListener('error', () => {
+      if (errorOverlay) errorOverlay.classList.remove('hidden');
+    });
+    previewImg.addEventListener('load', () => {
+      if (errorOverlay) errorOverlay.classList.add('hidden');
+    });
+  }
+
+  // Title sync to preview snippet
+  document.getElementById('postTitle')?.addEventListener('input', (e) => {
+    const titleSnippetEl = document.getElementById('previewItemTitleSnippet');
+    if (titleSnippetEl) {
+      titleSnippetEl.textContent = `Preview: ${e.target.value.trim() || 'New Academic Listing'}`;
+    }
+  });
+
+  document.getElementById('postCourse')?.addEventListener('input', (e) => {
+    const subSnippetEl = document.getElementById('previewItemSubSnippet');
+    if (subSnippetEl) {
+      subSnippetEl.textContent = `Ready to post for NUB students • ${e.target.value.trim() || 'General'}`;
+    }
+  });
+}
+
+/**
+ * =========================================================================
+ * ACADEMIC PRESENTATION & VIVA AUTO-FILL DEMO SYSTEM
+ * =========================================================================
+ */
+
+function autoFillNextDemoItem() {
+  const demo = CSE_DEMO_ITEMS[currentDemoItemIndex];
+  populateListingFormWithDemo(demo, currentDemoItemIndex);
+  currentDemoItemIndex = (currentDemoItemIndex + 1) % CSE_DEMO_ITEMS.length;
+}
+
+function autoFillDemoByIndex(index) {
+  if (index >= 0 && index < CSE_DEMO_ITEMS.length) {
+    currentDemoItemIndex = index;
+    const demo = CSE_DEMO_ITEMS[index];
+    populateListingFormWithDemo(demo, index);
+    currentDemoItemIndex = (index + 1) % CSE_DEMO_ITEMS.length;
+  }
+}
+
+function populateListingFormWithDemo(demo, index = 0) {
+  const titleInput = document.getElementById('postTitle');
+  const catInput = document.getElementById('postCategory');
+  const courseInput = document.getElementById('postCourse');
+  const locInput = document.getElementById('postLocation');
+  const descInput = document.getElementById('postDescription');
+  const urlInput = document.getElementById('postImageUrl');
+  const indexBadge = document.getElementById('demoItemIndexBadge');
+
+  if (titleInput) titleInput.value = demo.title;
+  if (catInput) catInput.value = demo.category;
+  if (courseInput) courseInput.value = demo.courseCode;
+  if (locInput) locInput.value = demo.location;
+  if (descInput) descInput.value = demo.description;
+
+  currentUploadedImageDataUrl = null;
+  const uploadStatus = document.getElementById('uploadedFileStatus');
+  if (uploadStatus) uploadStatus.classList.add('hidden');
+
+  if (urlInput) urlInput.value = demo.image;
+
+  if (indexBadge) {
+    indexBadge.textContent = `${index + 1}/${CSE_DEMO_ITEMS.length}`;
+  }
+
+  // Radio Condition
+  const conditionRadios = document.querySelectorAll('input[name="postCondition"]');
+  conditionRadios.forEach(r => {
+    r.checked = (r.value.toLowerCase() === demo.condition.toLowerCase());
+  });
+
+  // Radio Transaction
+  const transactionRadios = document.querySelectorAll('input[name="postTransaction"]');
+  transactionRadios.forEach(r => {
+    r.checked = (r.value.toLowerCase() === demo.transaction.toLowerCase());
+  });
+  updatePostModalFields();
+
+  // Price or Borrow or Exchange inputs
+  if (demo.transaction === 'Sell') {
+    const priceInput = document.getElementById('postPriceInput');
+    if (priceInput) priceInput.value = demo.price || 650;
+  } else if (demo.transaction === 'Borrow') {
+    const borrowRate = document.getElementById('postBorrowRateInput');
+    const borrowTerms = document.getElementById('postBorrowTermsInput');
+    if (borrowRate) borrowRate.value = demo.borrowRate || '৳30 / week';
+    if (borrowTerms) borrowTerms.value = demo.borrowTerms || 'NUB Student ID Card deposit';
+  } else if (demo.transaction === 'Exchange') {
+    const exchangeFor = document.getElementById('postExchangeForInput');
+    if (exchangeFor) exchangeFor.value = demo.exchangeFor || 'Open to relevant course trades';
+  }
+
+  // Update instant image preview
+  updatePostImagePreview(demo.image, demo.previewType || 'Course Material', demo.title);
+
+  // Flash highlight animation on form inputs
+  [titleInput, courseInput, descInput].forEach(el => {
+    if (el) {
+      el.classList.remove('input-flash');
+      void el.offsetWidth; // re-flow
+      el.classList.add('input-flash');
+    }
+  });
+
+  // Show clean notification
+  showToast({
+    title: 'Demo Item Auto-Filled',
+    message: `Populated "${demo.title}" (${demo.courseCode}) for presentation demo!`,
+    type: 'info',
+    actionType: 'notification',
+    icon: 'fa-solid fa-wand-magic-sparkles'
+  });
+}
+
+/**
+ * Bind Auto-Fill Demo & Offer Modal Events
+ */
+function bindDemoAndOfferEvents() {
+  const autoFillBtn = document.getElementById('autoFillDemoBtn');
+  if (autoFillBtn) {
+    autoFillBtn.addEventListener('click', autoFillNextDemoItem);
+  }
+
+  // Close Make Offer Modal
+  const closeOfferBtn = document.getElementById('closeMakeOfferModal');
+  if (closeOfferBtn) closeOfferBtn.addEventListener('click', closeMakeOfferModal);
+
+  // Form submit for Price Offer
+  const makeOfferForm = document.getElementById('makeOfferForm');
+  if (makeOfferForm) {
+    makeOfferForm.addEventListener('submit', handleMakeOfferFormSubmit);
+  }
+
+  // Close when clicking modal backdrop
+  const offerModal = document.getElementById('makeOfferModal');
+  if (offerModal) {
+    offerModal.addEventListener('click', (e) => {
+      if (e.target === offerModal) closeMakeOfferModal();
+    });
   }
 }
 
@@ -1811,7 +3028,7 @@ let heroCarouselTimer = null;
 const HERO_SLIDE_INTERVAL = 3500; // 3.5 seconds
 
 function handleHeaderSearch() {
-  const input = document.getElementById('searchInput');
+  const input = document.getElementById('headerSearchInput') || document.getElementById('searchInput');
   if (input) {
     activeFilters.searchQuery = input.value.trim().toLowerCase();
     renderItems();
@@ -1933,10 +3150,71 @@ function initHeroCarousel() {
 
 function bindEvents() {
   const searchInput = document.getElementById('searchInput');
+  const headerSearchInput = document.getElementById('headerSearchInput');
+  const mobileStickySearchInput = document.getElementById('mobileStickySearchInput');
+  const headerClearSearchBtn = document.getElementById('headerClearSearchBtn');
+  const mobileClearSearchBtn = document.getElementById('mobileClearSearchBtn');
+
+  // Synchronized search across hero bar, sticky desktop header, and sticky mobile bar
+  function handleSearchUpdate(val, sourceEl) {
+    const query = (val || '').trim().toLowerCase();
+    activeFilters.searchQuery = query;
+
+    if (searchInput && sourceEl !== searchInput) searchInput.value = val;
+    if (headerSearchInput && sourceEl !== headerSearchInput) headerSearchInput.value = val;
+    if (mobileStickySearchInput && sourceEl !== mobileStickySearchInput) mobileStickySearchInput.value = val;
+
+    if (headerClearSearchBtn) {
+      if (val) headerClearSearchBtn.classList.remove('hidden');
+      else headerClearSearchBtn.classList.add('hidden');
+    }
+    if (mobileClearSearchBtn) {
+      if (val) mobileClearSearchBtn.classList.remove('hidden');
+      else mobileClearSearchBtn.classList.add('hidden');
+    }
+
+    renderItems();
+  }
+
   if (searchInput) {
     searchInput.addEventListener('input', (e) => {
-      activeFilters.searchQuery = e.target.value.trim().toLowerCase();
-      renderItems();
+      handleSearchUpdate(e.target.value, searchInput);
+    });
+  }
+
+  if (headerSearchInput) {
+    headerSearchInput.addEventListener('input', (e) => {
+      handleSearchUpdate(e.target.value, headerSearchInput);
+    });
+    headerSearchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        document.getElementById('marketplace')?.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+  }
+
+  if (mobileStickySearchInput) {
+    mobileStickySearchInput.addEventListener('input', (e) => {
+      handleSearchUpdate(e.target.value, mobileStickySearchInput);
+    });
+    mobileStickySearchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        document.getElementById('marketplace')?.scrollIntoView({ behavior: 'smooth' });
+      }
+    });
+  }
+
+  if (headerClearSearchBtn) {
+    headerClearSearchBtn.addEventListener('click', () => {
+      handleSearchUpdate('', null);
+      if (headerSearchInput) headerSearchInput.focus();
+    });
+  }
+
+  if (mobileClearSearchBtn) {
+    mobileClearSearchBtn.addEventListener('click', () => {
+      handleSearchUpdate('', null);
+      if (mobileStickySearchInput) mobileStickySearchInput.focus();
     });
   }
 
@@ -1944,10 +3222,43 @@ function bindEvents() {
   if (headerSearchForm) {
     headerSearchForm.addEventListener('submit', (e) => {
       e.preventDefault();
-      handleHeaderSearch();
+      const val = (headerSearchInput?.value || searchInput?.value || mobileStickySearchInput?.value || '').trim();
+      handleSearchUpdate(val, null);
+      document.getElementById('marketplace')?.scrollIntoView({ behavior: 'smooth' });
     });
   }
 
+  // Smooth jitter-free scroll elevation for sticky frosted glass header
+  const mainHeader = document.getElementById('mainHeader');
+  if (mainHeader) {
+    let scrollTicking = false;
+    let isScrolled = null;
+
+    const updateStickyHeader = () => {
+      const scrollY = window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0;
+      const shouldBeScrolled = scrollY > 20;
+
+      if (shouldBeScrolled !== isScrolled) {
+        isScrolled = shouldBeScrolled;
+        if (isScrolled) {
+          mainHeader.classList.add('scrolled');
+        } else {
+          mainHeader.classList.remove('scrolled');
+        }
+      }
+      scrollTicking = false;
+    };
+
+    window.addEventListener('scroll', () => {
+      if (!scrollTicking) {
+        window.requestAnimationFrame(updateStickyHeader);
+        scrollTicking = true;
+      }
+    }, { passive: true });
+
+    // Initial check to preserve consistent elevation on page load or scroll restoration
+    updateStickyHeader();
+  }
   const filterCourse = document.getElementById('filterCourse');
   if (filterCourse) {
     filterCourse.addEventListener('change', (e) => {
@@ -2081,6 +3392,7 @@ function bindEvents() {
       closeDetailsModal();
       closeAuthModal();
       closeDashboardModal();
+      closeEditListingModal();
       closeRequestModal();
       closeApprovalModal();
       closeReviewModal();
@@ -2140,12 +3452,20 @@ function resetFilters() {
   };
 
   const searchInput = document.getElementById('searchInput');
+  const headerSearchInput = document.getElementById('headerSearchInput');
+  const mobileStickySearchInput = document.getElementById('mobileStickySearchInput');
+  const headerClearSearchBtn = document.getElementById('headerClearSearchBtn');
+  const mobileClearSearchBtn = document.getElementById('mobileClearSearchBtn');
   const filterCourse = document.getElementById('filterCourse');
   const filterCategory = document.getElementById('filterCategory');
   const filterCondition = document.getElementById('filterCondition');
   const sortBy = document.getElementById('sortBy');
 
   if (searchInput) searchInput.value = '';
+  if (headerSearchInput) headerSearchInput.value = '';
+  if (mobileStickySearchInput) mobileStickySearchInput.value = '';
+  if (headerClearSearchBtn) headerClearSearchBtn.classList.add('hidden');
+  if (mobileClearSearchBtn) mobileClearSearchBtn.classList.add('hidden');
   if (filterCourse) filterCourse.value = 'All Courses';
   if (filterCategory) filterCategory.value = 'All Categories';
   if (filterCondition) filterCondition.value = 'All';
@@ -2326,6 +3646,8 @@ function renderItems() {
       const action = btn.getAttribute('data-action');
       if (action === 'request') {
         openRequestModal(itemId);
+      } else if (action === 'offer') {
+        openMakeOfferModal(itemId);
       } else {
         openDetailsModal(itemId);
       }
@@ -2448,13 +3770,23 @@ function generateCardHtml(item) {
       `;
     } else {
       actionButtonHtml = `
-        <button type="button" 
-                data-id="${item.id}" 
-                data-action="view"
-                class="card-action-btn px-3 py-1.5 bg-white hover:bg-indigo-600 hover:text-white border border-slate-200 hover:border-indigo-600 text-slate-700 text-xs font-semibold rounded-xl transition-all shadow-xs shrink-0 flex items-center gap-1">
-          <span>View</span>
-          <i class="fa-solid fa-arrow-right text-[10px]"></i>
-        </button>
+        <div class="flex items-center gap-1">
+          <button type="button" 
+                  data-id="${item.id}" 
+                  data-action="offer"
+                  class="card-action-btn px-2.5 py-1.5 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 text-xs font-bold rounded-xl transition-all shadow-xs shrink-0 flex items-center gap-1"
+                  title="Make a Price Offer">
+            <i class="fa-solid fa-tag text-[10px]"></i>
+            <span>Offer</span>
+          </button>
+          <button type="button" 
+                  data-id="${item.id}" 
+                  data-action="view"
+                  class="card-action-btn px-2.5 py-1.5 bg-white hover:bg-indigo-600 hover:text-white border border-slate-200 hover:border-indigo-600 text-slate-700 text-xs font-semibold rounded-xl transition-all shadow-xs shrink-0 flex items-center gap-1">
+            <span>View</span>
+            <i class="fa-solid fa-arrow-right text-[10px]"></i>
+          </button>
+        </div>
       `;
     }
   }
@@ -2509,7 +3841,7 @@ function generateCardHtml(item) {
           <!-- Category & Posted Date -->
           <div class="flex items-center justify-between text-xs text-slate-400 mb-1.5 font-medium">
             <span>${item.category}</span>
-            <span><i class="fa-regular fa-clock mr-1"></i>${item.postedAt}</span>
+            <span><i class="fa-regular fa-clock mr-1"></i>${item.postedAt || item.datePosted || 'Just now'}</span>
           </div>
 
           <!-- Title -->
@@ -2658,17 +3990,30 @@ function openDetailsModal(itemId) {
     // Available
     if (item.transaction === 'Borrow') {
       primaryActionBtn = `
-        <button type="button" onclick="closeDetailsModal(); openRequestModal('${item.id}');" class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-md shadow-purple-600/30 transition flex items-center justify-center gap-1.5">
+        <button type="button" onclick="closeDetailsModal(); openRequestModal('${item.id}');" class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-md shadow-purple-600/30 transition flex items-center justify-center gap-1.5 active:scale-95">
           <i class="fa-solid fa-clock text-xs"></i>
           <span>Request to Borrow (${item.priceLabel})</span>
         </button>
       `;
     } else if (item.transaction === 'Exchange') {
       primaryActionBtn = `
-        <button type="button" onclick="closeDetailsModal(); openRequestModal('${item.id}');" class="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold shadow-md shadow-sky-600/30 transition flex items-center justify-center gap-1.5">
+        <button type="button" onclick="closeDetailsModal(); openRequestModal('${item.id}');" class="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold shadow-md shadow-sky-600/30 transition flex items-center justify-center gap-1.5 active:scale-95">
           <i class="fa-solid fa-arrows-rotate text-xs"></i>
           <span>Propose an Exchange</span>
         </button>
+      `;
+    } else {
+      primaryActionBtn = `
+        <div class="grid grid-cols-2 gap-2">
+          <button type="button" onclick="openMakeOfferModal('${item.id}');" class="w-full py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl text-xs font-bold shadow-md shadow-orange-500/25 transition flex items-center justify-center gap-1.5 active:scale-95">
+            <i class="fa-solid fa-tags text-xs"></i>
+            <span>Make an Offer</span>
+          </button>
+          <button type="button" onclick="document.getElementById('studentChatInput')?.focus();" class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 active:scale-95">
+            <i class="fa-solid fa-comments text-xs"></i>
+            <span>Message Seller</span>
+          </button>
+        </div>
       `;
     }
   }
@@ -2712,7 +4057,7 @@ function openDetailsModal(itemId) {
         <div>
           <div class="flex items-center justify-between text-xs text-slate-400 font-medium mb-1">
             <span>${item.category}</span>
-            <span>Posted ${item.postedAt} &bull; ${item.views || 45} views</span>
+            <span>Posted ${item.postedAt || item.datePosted || 'Just now'} &bull; ${item.views || 45} views</span>
           </div>
 
           <h2 class="text-xl font-bold text-slate-900 leading-snug mb-3">${item.title}</h2>
@@ -2797,43 +4142,46 @@ function openDetailsModal(itemId) {
           ` : ''}
         </div>
 
-        <div class="pt-3 border-t border-slate-200 space-y-2">
+        <div class="pt-2 border-t border-slate-200 space-y-2">
           ${primaryActionBtn}
 
-          ${isOwner ? `
+          <!-- Direct Chat Box -->
+          <div class="flex gap-2">
+            <input type="text" 
+                   id="studentChatInput" 
+                   placeholder="Hi ${item.seller.name.split(' ')[0]}, can we meet at ${item.location}?" 
+                   value="Hi ${item.seller.name.split(' ')[0]}, is this item still available?" 
+                   class="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500" />
             <button type="button" 
-                    id="detailsOwnerChatsBtn"
-                    onclick="closeDetailsModal(); openChatModal('${item.id}');"
-                    class="w-full py-2.5 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition flex items-center justify-center gap-2 active:scale-98">
-              <i class="fa-solid fa-comments text-xs text-orange-400"></i>
-              <span>View Buyer Messages & Offers</span>
+                    id="sendCampusMessageBtn" 
+                    class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold transition shrink-0 flex items-center gap-1">
+              <i class="fa-solid fa-paper-plane text-[10px]"></i>
+              <span>Send</span>
             </button>
-          ` : `
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              <button type="button" 
-                      id="detailsChatWithSellerBtn"
-                      onclick="closeDetailsModal(); openChatModal('${item.id}', 'message');" 
-                      class="w-full py-2.5 px-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-indigo-600/20 transition flex items-center justify-center gap-2 active:scale-98">
-                <i class="fa-solid fa-comments text-xs"></i>
-                <span>Chat with Seller</span>
-              </button>
-              <button type="button" 
-                      id="detailsMakeOfferBtn"
-                      onclick="closeDetailsModal(); openChatModal('${item.id}', 'offer');" 
-                      class="w-full py-2.5 px-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-amber-500/20 transition flex items-center justify-center gap-2 active:scale-98">
-                <i class="fa-solid fa-hand-holding-dollar text-xs"></i>
-                <span>Make an Offer</span>
-              </button>
-            </div>
-          `}
-          <p class="text-[10px] text-slate-400 text-center flex items-center justify-center gap-1.5">
-            <i class="fa-solid fa-shield-halved text-emerald-500 text-[11px]"></i>
-            <span>Real-time in-app peer chat & price negotiation saved to localStorage</span>
-          </p>
+          </div>
+          <p class="text-[10px] text-slate-400 text-center">Messages are routed to the student's official @nub.ac.bd address.</p>
         </div>
       </div>
     </div>
   `;
+
+  document.getElementById('sendCampusMessageBtn')?.addEventListener('click', () => {
+    if (!currentUser) {
+      closeDetailsModal();
+      openAuthModal('login', `Please sign in with your @nub.ac.bd account to message ${item.seller.name}.`);
+      return;
+    }
+
+    const input = document.getElementById('studentChatInput');
+    const val = input ? input.value.trim() : '';
+    if (!val) {
+      showToast('Please type a message first', 'warning');
+      return;
+    }
+
+    showToast(`Message sent from ${currentUser.email} to ${item.seller.name}!`, 'success');
+    setTimeout(closeDetailsModal, 1200);
+  });
 
   modal.classList.remove('hidden');
   document.body.classList.add('overflow-hidden');
@@ -2867,7 +4215,12 @@ function openPostModal() {
   const postModal = document.getElementById('postItemModal');
   if (postModal) {
     updateAuthUI();
+    const sellerInput = document.getElementById('postSellerName');
+    if (sellerInput && currentUser) {
+      sellerInput.value = `${currentUser.name} (${currentUser.studentId})`;
+    }
     postModal.classList.remove('hidden');
+    postModal.scrollTop = 0;
     document.body.classList.add('overflow-hidden');
   }
 }
@@ -2907,10 +4260,14 @@ function handleNewListingSubmit(e) {
   const transaction = document.querySelector('input[name="postTransaction"]:checked')?.value || 'Sell';
   const location = document.getElementById('postLocation').value.trim() || 'NUB Central Library (Ashkona)';
   const description = document.getElementById('postDescription').value.trim();
-  const imageUrl = document.getElementById('postImageUrl').value.trim() || PRESET_IMAGES[0].url;
+  const imageUrl = currentUploadedImageDataUrl || document.getElementById('postImageUrl')?.value.trim() || PRESET_IMAGES[0].url;
 
   if (!title || !category || !description) {
-    showToast('Please fill out the required title, category, and description fields.', 'warning');
+    showToast({
+      title: 'Missing Fields',
+      message: 'Please fill out the required title, category, and description fields.',
+      type: 'warning'
+    });
     return;
   }
 
@@ -2970,24 +4327,12 @@ function handleNewListingSubmit(e) {
   items.unshift(newItem);
   saveItemsToStorage();
 
-  // Cloud persistence: Insert directly into Supabase PostgreSQL 'items' table
-  if (typeof SupabaseService !== 'undefined' && typeof isSupabaseConfigured === 'function' && isSupabaseConfigured()) {
-    SupabaseService.insertItem(newItem).then(res => {
-      if (res && res.success) {
-        showToast('🎉 Your listing is live on Supabase PostgreSQL & CampusKart!', 'success');
-      } else {
-        console.warn('Supabase insert note:', res?.error);
-        showToast(`Saved to local cache (${res?.error || 'Cloud sync note'}).`, 'warning');
-      }
-    }).catch(err => {
-      console.error('Supabase insert failed:', err);
-      showToast('Saved to local storage (Offline fallback mode).', 'info');
-    });
-  } else {
-    showToast('🎉 Your listing is live on CampusKart NUB!', 'success');
-  }
-
   e.target.reset();
+  currentUploadedImageDataUrl = null;
+  const uploadStatus = document.getElementById('uploadedFileStatus');
+  if (uploadStatus) uploadStatus.classList.add('hidden');
+  updatePostImagePreview(PRESET_IMAGES[0].url, 'Textbook Preset', 'Default Photo');
+
   closePostModal();
 
   activeFilters.searchQuery = '';
@@ -3003,7 +4348,13 @@ function handleNewListingSubmit(e) {
   renderItems();
   updateNotificationBadges();
 
-  showToast('🎉 Your listing is live on CampusKart NUB!', 'success');
+  showToast({
+    title: 'Item Posted Successfully',
+    message: `"${newItem.title}" (${newItem.courseCode}) is now live on CampusKart NUB!`,
+    type: 'success',
+    actionType: 'item_posted',
+    icon: 'fa-solid fa-cloud-arrow-up'
+  });
 
   const grid = document.getElementById('itemsGrid');
   if (grid) {
@@ -3012,988 +4363,133 @@ function handleNewListingSubmit(e) {
 }
 
 /**
- * Toast Notification Helper
+ * =========================================================================
+ * MODERN TOAST NOTIFICATION SYSTEM
+ * =========================================================================
+ * Renders floating, animated, glassmorphic toast notifications with action badges,
+ * progress timer bars, and category styling.
+ * 
+ * Supports both:
+ * - showToast('Message string', 'success')
+ * - showToast({ title, message, type, actionType, icon, duration })
  */
-function showToast(message, type = 'info') {
+function showToast(msgOrConfig, type = 'info', title = null, actionType = null) {
+  let config = {};
+  if (typeof msgOrConfig === 'object' && msgOrConfig !== null) {
+    config = msgOrConfig;
+  } else {
+    config = {
+      message: msgOrConfig || '',
+      type: type || 'info',
+      title: title,
+      actionType: actionType
+    };
+  }
+
+  const {
+    message = '',
+    type: toastType = 'info',
+    title: customTitle = null,
+    actionType: explicitAction = null,
+    icon: customIcon = null,
+    duration = 3800
+  } = config;
+
   let toastContainer = document.getElementById('toastContainer');
   if (!toastContainer) {
     toastContainer = document.createElement('div');
     toastContainer.id = 'toastContainer';
-    toastContainer.className = 'fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none';
+    toastContainer.className = 'fixed top-4 right-4 sm:top-5 sm:right-5 z-[3000] flex flex-col gap-2.5 max-w-sm sm:max-w-md w-full px-3 sm:px-0 pointer-events-none';
     document.body.appendChild(toastContainer);
   }
 
-  const toast = document.createElement('div');
-  let iconClass = 'fa-solid fa-circle-info text-blue-500';
-  let borderClass = 'border-blue-200';
+  // Derive action category, icon, and title if not explicitly provided
+  let categoryLabel = 'CAMPUS NOTICE';
+  let toastTitle = customTitle;
+  let toastIcon = customIcon;
+  let themeClass = 'toast-info';
 
-  if (type === 'success') {
-    iconClass = 'fa-solid fa-circle-check text-emerald-500';
-    borderClass = 'border-emerald-200';
-  } else if (type === 'warning') {
-    iconClass = 'fa-solid fa-triangle-exclamation text-amber-500';
-    borderClass = 'border-amber-200';
+  const fullText = ((message || '') + ' ' + (toastTitle || '')).toLowerCase();
+
+  if (explicitAction === 'item_posted' || fullText.includes('item posted') || fullText.includes('listing is live') || fullText.includes('listing live')) {
+    categoryLabel = 'ITEM POSTED';
+    toastTitle = toastTitle || 'Item Posted Successfully';
+    toastIcon = toastIcon || 'fa-solid fa-cloud-arrow-up';
+    themeClass = 'toast-success';
+  } else if (explicitAction === 'offer_made' || fullText.includes('offer made') || fullText.includes('price offer') || fullText.includes('trade offer') || fullText.includes('exchange proposal')) {
+    categoryLabel = 'OFFER MADE';
+    toastTitle = toastTitle || 'Offer Submitted';
+    toastIcon = toastIcon || 'fa-solid fa-handshake';
+    themeClass = 'toast-accent';
+  } else if (explicitAction === 'request_sent' || fullText.includes('request sent') || fullText.includes('awaiting their approval')) {
+    categoryLabel = 'REQUEST SENT';
+    toastTitle = toastTitle || 'Borrow Request Sent';
+    toastIcon = toastIcon || 'fa-solid fa-paper-plane';
+    themeClass = 'toast-primary';
+  } else if (explicitAction === 'status_updated' || fullText.includes('borrow status updated') || fullText.includes('status changed') || fullText.includes('marked as returned') || fullText.includes('request declined') || fullText.includes('relisted as available')) {
+    categoryLabel = 'BORROW STATUS UPDATED';
+    toastTitle = toastTitle || 'Borrow Status Updated';
+    toastIcon = toastIcon || 'fa-solid fa-arrows-rotate';
+    themeClass = 'toast-status';
+  } else if (toastType === 'success') {
+    categoryLabel = 'ACTION SUCCESSFUL';
+    toastTitle = toastTitle || 'Action Confirmed';
+    toastIcon = toastIcon || 'fa-solid fa-circle-check';
+    themeClass = 'toast-success';
+  } else if (toastType === 'warning') {
+    categoryLabel = 'ATTENTION';
+    toastTitle = toastTitle || 'Campus Notice';
+    toastIcon = toastIcon || 'fa-solid fa-triangle-exclamation';
+    themeClass = 'toast-warning';
+  } else if (toastType === 'error') {
+    categoryLabel = 'ACTION FAILED';
+    toastTitle = toastTitle || 'Error Occurred';
+    toastIcon = toastIcon || 'fa-solid fa-circle-xmark';
+    themeClass = 'toast-warning';
+  } else {
+    categoryLabel = 'CAMPUSKART';
+    toastTitle = toastTitle || 'Notification';
+    toastIcon = toastIcon || 'fa-solid fa-circle-info';
+    themeClass = 'toast-info';
   }
 
-  toast.className = `flex items-center space-x-3 bg-white px-4 py-3 rounded-xl shadow-lg border ${borderClass} text-slate-800 text-xs font-semibold animate-pop pointer-events-auto`;
+  const toast = document.createElement('div');
+  toast.className = `campuskart-toast ${themeClass} flex flex-col pointer-events-auto rounded-2xl backdrop-blur-md border shadow-xl p-3.5 relative overflow-hidden transition-all duration-300`;
+  
   toast.innerHTML = `
-    <i class="${iconClass} text-base shrink-0"></i>
-    <span class="flex-1">${message}</span>
+    <div class="toast-progress-bar absolute top-0 left-0 right-0 h-1" style="animation-duration: ${duration}ms;"></div>
+    <div class="flex items-start space-x-3 pt-0.5">
+      <div class="toast-icon-box w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-sm shadow-xs">
+        <i class="${toastIcon}"></i>
+      </div>
+      <div class="flex-1 min-w-0 pr-4">
+        <div class="flex items-center gap-1.5 mb-0.5">
+          <span class="toast-badge text-[9px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded font-mono">
+            ${categoryLabel}
+          </span>
+          <span class="text-[10px] text-slate-400 font-medium">&bull; Just now</span>
+        </div>
+        <h5 class="text-xs font-bold text-slate-900 leading-tight mb-0.5 truncate">${toastTitle}</h5>
+        <p class="text-[11px] text-slate-600 leading-snug">${message}</p>
+      </div>
+      <button type="button" class="toast-close-btn w-6 h-6 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center transition absolute top-2.5 right-2.5" title="Dismiss notification">
+        <i class="fa-solid fa-xmark text-xs"></i>
+      </button>
+    </div>
   `;
 
-  toastContainer.appendChild(toast);
-
-  setTimeout(() => {
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateY(10px)';
-    toast.style.transition = 'all 0.3s ease';
-    setTimeout(() => toast.remove(), 300);
-  }, 3200);
-}
-
-/**
- * =========================================================================
- * CHAT WITH SELLER & MAKE OFFER SYSTEM (PEER MESSAGING ENGINE)
- * =========================================================================
- */
-
-function getUnreadMessagesCount() {
-  if (!currentUser) return 0;
-  return chatMessages.filter(msg => 
-    msg.receiverId === currentUser.studentId && 
-    (!msg.readBy || !msg.readBy.includes(currentUser.studentId))
-  ).length;
-}
-
-function openChatModal(itemId, initialMode = 'message', targetBuyerId = null) {
-  if (!currentUser) {
-    closeDetailsModal();
-    openAuthModal('login', 'Please sign in with your official @nub.ac.bd account to chat with the seller or make an offer.');
-    return;
-  }
-
-  const item = items.find(i => i.id === itemId);
-  if (!item) {
-    openNavbarMessages();
-    return;
-  }
-
-  const isOwner = currentUser.studentId === item.seller.studentId;
-  let peerId, peerName, peerAvatar, peerSub;
-  let buyerId, buyerName;
-
-  if (isOwner) {
-    const itemMessages = chatMessages.filter(m => m.itemId === itemId);
-    if (targetBuyerId) {
-      buyerId = targetBuyerId;
-      const refMsg = itemMessages.find(m => m.buyerId === targetBuyerId || m.senderId === targetBuyerId);
-      buyerName = refMsg ? (refMsg.buyerId === targetBuyerId ? refMsg.buyerName : refMsg.senderName) : 'Interested Buyer';
-    } else if (itemMessages.length > 0) {
-      const latestMsg = itemMessages[itemMessages.length - 1];
-      buyerId = latestMsg.buyerId || latestMsg.senderId;
-      buyerName = latestMsg.buyerName || (latestMsg.senderId !== item.seller.studentId ? latestMsg.senderName : latestMsg.receiverName);
-    } else {
-      showToast('You own this listing. No buyer messages have been received yet.', 'info');
-      return;
-    }
-
-    peerId = buyerId;
-    peerName = buyerName;
-    const peerUser = registeredUsers.find(u => u.studentId === peerId);
-    peerAvatar = peerUser?.avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80';
-    peerSub = `Buyer &bull; ID: ${peerId}`;
-  } else {
-    buyerId = currentUser.studentId;
-    buyerName = currentUser.name;
-    peerId = item.seller.studentId;
-    peerName = item.seller.name;
-    peerAvatar = item.seller.avatar;
-    peerSub = `${item.seller.major || 'Seller'} &bull; ID: ${peerId}`;
-  }
-
-  activeChatContext = {
-    itemId: item.id,
-    itemTitle: item.title,
-    itemImage: item.image,
-    itemPrice: item.priceLabel,
-    itemNumericPrice: typeof item.price === 'number' ? item.price : 500,
-    itemCondition: item.condition,
-    itemLocation: item.location,
-    sellerId: item.seller.studentId,
-    sellerName: item.seller.name,
-    buyerId: buyerId,
-    buyerName: buyerName,
-    peerId: peerId,
-    peerName: peerName,
-    isOwner: isOwner
+  const closeBtn = toast.querySelector('.toast-close-btn');
+  let removed = false;
+  const dismiss = () => {
+    if (removed) return;
+    removed = true;
+    toast.classList.add('toast-hiding');
+    setTimeout(() => toast.remove(), 280);
   };
 
-  const peerAvatarEl = document.getElementById('chatPeerAvatar');
-  const peerNameEl = document.getElementById('chatPeerName');
-  const peerSubEl = document.getElementById('chatPeerSub');
-  const itemThumbEl = document.getElementById('chatItemThumb');
-  const itemTitleEl = document.getElementById('chatItemTitle');
-  const itemPriceEl = document.getElementById('chatItemPrice');
-  const itemConditionEl = document.getElementById('chatItemCondition');
-  const offerAmountInput = document.getElementById('chatOfferAmountInput');
-  const quickOfferPills = document.getElementById('chatQuickOfferPills');
+  if (closeBtn) closeBtn.addEventListener('click', dismiss);
 
-  if (peerAvatarEl) peerAvatarEl.src = peerAvatar;
-  if (peerNameEl) peerNameEl.textContent = peerName;
-  if (peerSubEl) peerSubEl.innerHTML = peerSub;
-  if (itemThumbEl) itemThumbEl.src = item.image;
-  if (itemTitleEl) itemTitleEl.textContent = item.title;
-  if (itemPriceEl) itemPriceEl.textContent = item.priceLabel;
-  if (itemConditionEl) itemConditionEl.textContent = item.condition;
+  toastContainer.prepend(toast);
 
-  const basePrice = typeof item.price === 'number' && item.price > 0 ? item.price : 500;
-  if (offerAmountInput) {
-    offerAmountInput.value = Math.round(basePrice * 0.9);
-    offerAmountInput.placeholder = `e.g. ${Math.round(basePrice * 0.85)}`;
-  }
-
-  if (quickOfferPills) {
-    const p10 = Math.round(basePrice * 0.9);
-    const p15 = Math.round(basePrice * 0.85);
-    const p20 = Math.round(basePrice * 0.8);
-    quickOfferPills.innerHTML = `
-      <button type="button" onclick="setOfferAmount(${p10})" class="px-2 py-0.5 rounded bg-white hover:bg-amber-100 border border-amber-300 font-bold transition">৳${p10} (-10%)</button>
-      <button type="button" onclick="setOfferAmount(${p15})" class="px-2 py-0.5 rounded bg-white hover:bg-amber-100 border border-amber-300 font-bold transition">৳${p15} (-15%)</button>
-      <button type="button" onclick="setOfferAmount(${p20})" class="px-2 py-0.5 rounded bg-white hover:bg-amber-100 border border-amber-300 font-bold transition">৳${p20} (-20%)</button>
-    `;
-  }
-
-  const toggleOfferBtn = document.getElementById('chatToggleOfferBtn');
-  const quickOfferToggle = document.getElementById('chatQuickOfferToggleBtn');
-  if (toggleOfferBtn) toggleOfferBtn.style.display = isOwner ? 'none' : 'flex';
-  if (quickOfferToggle) quickOfferToggle.style.display = isOwner ? 'none' : 'block';
-
-  document.getElementById('chatThreadView')?.classList.remove('hidden');
-  document.getElementById('chatConversationsListView')?.classList.add('hidden');
-  document.getElementById('chatBackToListBtn')?.classList.add('hidden');
-  document.getElementById('chatItemStrip')?.classList.remove('hidden');
-
-  const drawer = document.getElementById('chatOfferDrawer');
-  if (drawer) {
-    if (initialMode === 'offer' && !isOwner) {
-      drawer.classList.remove('hidden');
-    } else {
-      drawer.classList.add('hidden');
-    }
-  }
-
-  renderCurrentChatThread();
-
-  const modal = document.getElementById('chatModal');
-  if (modal) {
-    modal.classList.remove('hidden');
-    document.body.classList.add('overflow-hidden');
-  }
+  setTimeout(dismiss, duration);
 }
-
-function renderCurrentChatThread() {
-  if (!activeChatContext) return;
-  const listContainer = document.getElementById('chatMessagesList');
-  if (!listContainer) return;
-
-  const thread = chatMessages.filter(m => 
-    m.itemId === activeChatContext.itemId && 
-    (m.buyerId === activeChatContext.buyerId || (!m.buyerId && (m.senderId === activeChatContext.buyerId || m.receiverId === activeChatContext.buyerId)))
-  );
-
-  let markedAny = false;
-  thread.forEach(msg => {
-    if (msg.receiverId === currentUser.studentId) {
-      if (!msg.readBy) msg.readBy = [];
-      if (!msg.readBy.includes(currentUser.studentId)) {
-        msg.readBy.push(currentUser.studentId);
-        markedAny = true;
-      }
-    }
-  });
-
-  if (markedAny) {
-    saveChatMessagesToStorage();
-    updateNotificationBadges();
-  }
-
-  const icebreakersBar = document.getElementById('chatIcebreakersBar');
-  if (icebreakersBar) {
-    icebreakersBar.style.display = thread.length <= 2 ? 'flex' : 'none';
-  }
-
-  if (thread.length === 0) {
-    listContainer.innerHTML = `
-      <div class="h-full flex flex-col items-center justify-center text-center p-6 text-slate-500">
-        <div class="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 text-xl mb-3 shadow-xs">
-          <i class="fa-solid fa-comments"></i>
-        </div>
-        <h4 class="text-xs font-bold text-slate-800 mb-1">Start chatting with ${activeChatContext.peerName}</h4>
-        <p class="text-[11px] text-slate-500 max-w-xs mb-4">
-          Ask questions about the ${activeChatContext.itemTitle}, coordinate a meetup on NUB campus, or propose a discounted offer price.
-        </p>
-      </div>
-    `;
-    return;
-  }
-
-  listContainer.innerHTML = thread.map(msg => {
-    const isMe = msg.senderId === currentUser.studentId;
-    const timeFormatted = formatRelativeTime(msg.timestamp);
-
-    if (msg.offerPrice) {
-      let statusPill = '';
-      let actionButtons = '';
-
-      if (msg.offerStatus === 'accepted') {
-        statusPill = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200"><i class="fa-solid fa-check text-[9px]"></i> Offer Accepted</span>`;
-      } else if (msg.offerStatus === 'declined') {
-        statusPill = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-200 text-slate-700"><i class="fa-solid fa-xmark text-[9px]"></i> Offer Declined</span>`;
-      } else {
-        statusPill = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200 chat-offer-badge-pulse"><i class="fa-solid fa-hourglass-half text-[9px]"></i> Offer Pending</span>`;
-        if (msg.receiverId === currentUser.studentId) {
-          actionButtons = `
-            <div class="mt-2.5 pt-2 border-t border-amber-200/80 flex items-center gap-2">
-              <button type="button" onclick="handleAcceptOffer('${msg.id}')" class="flex-1 py-1 px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition shadow-xs flex items-center justify-center gap-1 active:scale-95">
-                <i class="fa-solid fa-check text-[10px]"></i> Accept ৳${msg.offerPrice}
-              </button>
-              <button type="button" onclick="handleDeclineOffer('${msg.id}')" class="py-1 px-2.5 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-xs font-semibold transition active:scale-95">
-                Decline
-              </button>
-            </div>
-          `;
-        }
-      }
-
-      return `
-        <div class="flex ${isMe ? 'justify-end' : 'justify-start'} w-full">
-          <div class="chat-offer-card ${msg.offerStatus === 'accepted' ? 'accepted' : (msg.offerStatus === 'declined' ? 'declined' : '')} max-w-[85%] sm:max-w-[75%] rounded-2xl p-3 shadow-xs border">
-            <div class="flex items-center justify-between gap-2 mb-1.5">
-              <span class="text-[11px] font-bold text-amber-900 flex items-center gap-1">
-                <i class="fa-solid fa-hand-holding-dollar text-amber-600"></i> Propose Offer
-              </span>
-              ${statusPill}
-            </div>
-            <div class="my-1 flex items-baseline gap-2">
-              <span class="text-xl font-black text-amber-950">৳${msg.offerPrice}</span>
-              <span class="text-[10px] text-slate-500 font-medium">List: ${msg.itemPrice || activeChatContext.itemPrice}</span>
-            </div>
-            ${msg.text ? `<p class="text-xs text-slate-700 mt-1 leading-snug">${escapeHtml(msg.text)}</p>` : ''}
-            ${actionButtons}
-            <div class="mt-1 text-[10px] text-slate-400 text-right">${timeFormatted} &bull; ${msg.senderName}</div>
-          </div>
-        </div>
-      `;
-    }
-
-    if (isMe) {
-      return `
-        <div class="flex justify-end w-full">
-          <div class="chat-bubble-outgoing max-w-[80%] px-3.5 py-2.5 text-xs shadow-xs leading-relaxed">
-            <p>${escapeHtml(msg.text)}</p>
-            <div class="mt-1 text-[9px] text-indigo-200 text-right flex items-center justify-end gap-1">
-              <span>${timeFormatted}</span>
-              <i class="fa-solid fa-check-double text-[8px] opacity-80"></i>
-            </div>
-          </div>
-        </div>
-      `;
-    } else {
-      return `
-        <div class="flex justify-start items-start gap-2 max-w-[85%]">
-          <div class="chat-bubble-incoming px-3.5 py-2.5 text-xs shadow-xs leading-relaxed border border-slate-200/90">
-            <p class="font-bold text-[10px] text-indigo-700 mb-0.5">${msg.senderName}</p>
-            <p class="text-slate-800">${escapeHtml(msg.text)}</p>
-            <div class="mt-1 text-[9px] text-slate-400">${timeFormatted}</div>
-          </div>
-        </div>
-      `;
-    }
-  }).join('');
-
-  listContainer.scrollTop = listContainer.scrollHeight;
-}
-
-function handleSendChatMessage(customText = null, offerPrice = null) {
-  if (!currentUser) return;
-  if (!activeChatContext) return;
-
-  const inputEl = document.getElementById('chatInputText');
-  const text = customText !== null ? customText : (inputEl ? inputEl.value.trim() : '');
-
-  if (!text && !offerPrice) {
-    showToast('Please type a message or enter an offer amount.', 'warning');
-    return;
-  }
-
-  const newMsg = {
-    id: 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
-    itemId: activeChatContext.itemId,
-    itemTitle: activeChatContext.itemTitle,
-    itemImage: activeChatContext.itemImage,
-    itemPrice: activeChatContext.itemPrice,
-    itemCondition: activeChatContext.itemCondition,
-    sellerId: activeChatContext.sellerId,
-    sellerName: activeChatContext.sellerName,
-    buyerId: activeChatContext.buyerId,
-    buyerName: activeChatContext.buyerName,
-    senderId: currentUser.studentId,
-    senderName: currentUser.name,
-    receiverId: activeChatContext.peerId,
-    receiverName: activeChatContext.peerName,
-    text: text,
-    offerPrice: offerPrice ? Number(offerPrice) : null,
-    offerStatus: offerPrice ? 'pending' : null,
-    timestamp: Date.now(),
-    readBy: [currentUser.studentId]
-  };
-
-  chatMessages.push(newMsg);
-  saveChatMessagesToStorage();
-
-  if (inputEl && customText === null) inputEl.value = '';
-
-  document.getElementById('chatOfferDrawer')?.classList.add('hidden');
-
-  renderCurrentChatThread();
-  updateNotificationBadges();
-
-  if (offerPrice) {
-    showToast(`Proposed offer of ৳${offerPrice} sent to ${activeChatContext.peerName}! 🏷️`, 'success');
-  } else {
-    showToast('Message sent! 💬', 'info');
-  }
-}
-
-function handleAcceptOffer(messageId) {
-  const msg = chatMessages.find(m => m.id === messageId);
-  if (!msg) return;
-
-  msg.offerStatus = 'accepted';
-
-  const replyMsg = {
-    id: 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
-    itemId: msg.itemId,
-    itemTitle: msg.itemTitle,
-    itemImage: msg.itemImage,
-    itemPrice: msg.itemPrice,
-    itemCondition: msg.itemCondition,
-    sellerId: msg.sellerId,
-    sellerName: msg.sellerName,
-    buyerId: msg.buyerId,
-    buyerName: msg.buyerName,
-    senderId: currentUser.studentId,
-    senderName: currentUser.name,
-    receiverId: msg.senderId,
-    receiverName: msg.senderName,
-    text: `✓ Offer of ৳${msg.offerPrice} accepted! Let's arrange a meetup at the campus library or student cafeteria to complete the exchange.`,
-    offerPrice: null,
-    offerStatus: null,
-    timestamp: Date.now(),
-    readBy: [currentUser.studentId]
-  };
-
-  chatMessages.push(replyMsg);
-  saveChatMessagesToStorage();
-  renderCurrentChatThread();
-  showToast(`Accepted offer of ৳${msg.offerPrice}! 🤝`, 'success');
-}
-
-function handleDeclineOffer(messageId) {
-  const msg = chatMessages.find(m => m.id === messageId);
-  if (!msg) return;
-
-  msg.offerStatus = 'declined';
-
-  const replyMsg = {
-    id: 'msg-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
-    itemId: msg.itemId,
-    itemTitle: msg.itemTitle,
-    itemImage: msg.itemImage,
-    itemPrice: msg.itemPrice,
-    itemCondition: msg.itemCondition,
-    sellerId: msg.sellerId,
-    sellerName: msg.sellerName,
-    buyerId: msg.buyerId,
-    buyerName: msg.buyerName,
-    senderId: currentUser.studentId,
-    senderName: currentUser.name,
-    receiverId: msg.senderId,
-    receiverName: msg.senderName,
-    text: `Offer of ৳${msg.offerPrice} declined. Feel free to propose another offer or message to discuss terms.`,
-    offerPrice: null,
-    offerStatus: null,
-    timestamp: Date.now(),
-    readBy: [currentUser.studentId]
-  };
-
-  chatMessages.push(replyMsg);
-  saveChatMessagesToStorage();
-  renderCurrentChatThread();
-  showToast('Offer declined.', 'info');
-}
-
-function openConversationsList() {
-  if (!currentUser) {
-    openAuthModal('login', 'Please sign in to view your messages.');
-    return;
-  }
-
-  const threadView = document.getElementById('chatThreadView');
-  const listView = document.getElementById('chatConversationsListView');
-  const backBtn = document.getElementById('chatBackToListBtn');
-  const itemStrip = document.getElementById('chatItemStrip');
-  const peerNameEl = document.getElementById('chatPeerName');
-  const peerSubEl = document.getElementById('chatPeerSub');
-  const drawer = document.getElementById('chatOfferDrawer');
-
-  if (threadView) threadView.classList.add('hidden');
-  if (listView) listView.classList.remove('hidden');
-  if (backBtn) backBtn.classList.add('hidden');
-  if (itemStrip) itemStrip.classList.add('hidden');
-  if (drawer) drawer.classList.add('hidden');
-  if (peerNameEl) peerNameEl.textContent = 'My Messages & Offers';
-  if (peerSubEl) peerSubEl.innerHTML = `${currentUser.name} &bull; ID: ${currentUser.studentId}`;
-
-  const threadMap = new Map();
-  chatMessages.forEach(msg => {
-    const isParticipant = msg.sellerId === currentUser.studentId || 
-                          msg.buyerId === currentUser.studentId || 
-                          msg.senderId === currentUser.studentId || 
-                          msg.receiverId === currentUser.studentId;
-    if (!isParticipant) return;
-
-    const bId = msg.buyerId || (msg.senderId !== msg.sellerId ? msg.senderId : msg.receiverId);
-    const key = `${msg.itemId}_${bId}`;
-
-    if (!threadMap.has(key)) {
-      threadMap.set(key, []);
-    }
-    threadMap.get(key).push(msg);
-  });
-
-  if (threadMap.size === 0) {
-    listView.innerHTML = `
-      <div class="h-full flex flex-col items-center justify-center text-center p-8 text-slate-500">
-        <div class="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-500 text-2xl mb-3 shadow-xs">
-          <i class="fa-regular fa-comments"></i>
-        </div>
-        <h4 class="text-sm font-bold text-slate-800 mb-1">No messages yet</h4>
-        <p class="text-xs text-slate-500 max-w-xs mb-4">
-          Browse the marketplace, click on any item, and click "Chat with Seller" or "Make an Offer" to start a peer conversation!
-        </p>
-        <button type="button" onclick="closeChatModal();" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition shadow-sm">
-          Browse Campus Listings
-        </button>
-      </div>
-    `;
-    return;
-  }
-
-  const threadsArray = Array.from(threadMap.entries()).map(([key, msgs]) => {
-    const latest = msgs[msgs.length - 1];
-    const unread = msgs.filter(m => m.receiverId === currentUser.studentId && (!m.readBy || !m.readBy.includes(currentUser.studentId))).length;
-    const isOwner = currentUser.studentId === latest.sellerId;
-    const peerName = isOwner ? (latest.buyerName || 'Buyer') : latest.sellerName;
-    const bId = latest.buyerId || (latest.senderId !== latest.sellerId ? latest.senderId : latest.receiverId);
-    return {
-      key,
-      itemId: latest.itemId,
-      buyerId: bId,
-      peerName,
-      latestMsg: latest,
-      unreadCount: unread,
-      timestamp: latest.timestamp
-    };
-  });
-
-  threadsArray.sort((a, b) => b.timestamp - a.timestamp);
-
-  listView.innerHTML = threadsArray.map(t => {
-    const item = items.find(i => i.id === t.itemId) || { title: t.latestMsg.itemTitle, image: t.latestMsg.itemImage, priceLabel: t.latestMsg.itemPrice };
-    return `
-      <div onclick="openChatModal('${t.itemId}', 'message', '${t.buyerId}')" 
-           class="p-3 bg-white hover:bg-indigo-50/50 border border-slate-200/90 rounded-2xl transition cursor-pointer shadow-xs flex items-center justify-between gap-3 group">
-        <div class="flex items-center space-x-3 min-w-0">
-          <img src="${item.image}" alt="${item.title}" class="w-12 h-12 rounded-xl object-cover shrink-0 ring-1 ring-slate-200" />
-          <div class="min-w-0">
-            <div class="flex items-center gap-1.5 mb-0.5">
-              <span class="text-xs font-bold text-slate-900 group-hover:text-indigo-600 transition truncate">${t.peerName}</span>
-              ${t.unreadCount > 0 ? `<span class="w-2 h-2 rounded-full bg-orange-500 shrink-0"></span>` : ''}
-            </div>
-            <p class="text-[11px] font-medium text-slate-600 truncate">${item.title}</p>
-            <p class="text-[11px] text-slate-400 truncate mt-0.5">
-              ${t.latestMsg.offerPrice ? `<span class="text-amber-600 font-bold">🏷️ Offer: ৳${t.latestMsg.offerPrice}</span> &bull; ` : ''}${escapeHtml(t.latestMsg.text || 'Offer proposed')}
-            </p>
-          </div>
-        </div>
-        <div class="text-right shrink-0">
-          <span class="text-[10px] text-slate-400 block mb-1">${formatRelativeTime(t.timestamp)}</span>
-          ${t.unreadCount > 0 ? `
-            <span class="inline-flex px-1.5 py-0.5 rounded-full bg-orange-500 text-white text-[9px] font-bold">
-              ${t.unreadCount} new
-            </span>
-          ` : `
-            <span class="text-xs text-indigo-600 opacity-0 group-hover:opacity-100 transition"><i class="fa-solid fa-chevron-right"></i></span>
-          `}
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-function openNavbarMessages() {
-  if (!currentUser) {
-    openAuthModal('login', 'Please sign in with your @nub.ac.bd account to view messages and offers.');
-    return;
-  }
-
-  const modal = document.getElementById('chatModal');
-  if (modal) {
-    modal.classList.remove('hidden');
-    document.body.classList.add('overflow-hidden');
-  }
-
-  openConversationsList();
-}
-
-function setOfferAmount(val) {
-  const input = document.getElementById('chatOfferAmountInput');
-  if (input) input.value = val;
-}
-
-function formatRelativeTime(ts) {
-  if (!ts) return 'Just now';
-  const diff = Date.now() - ts;
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return 'Just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
-
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-function closeChatModal() {
-  const modal = document.getElementById('chatModal');
-  if (modal) {
-    modal.classList.add('hidden');
-    document.body.classList.remove('overflow-hidden');
-  }
-}
-
-function bindChatEvents() {
-  document.getElementById('navMessagesBtn')?.addEventListener('click', openNavbarMessages);
-  document.getElementById('closeChatModal')?.addEventListener('click', closeChatModal);
-
-  document.getElementById('chatToggleOfferBtn')?.addEventListener('click', () => {
-    document.getElementById('chatOfferDrawer')?.classList.toggle('hidden');
-  });
-
-  document.getElementById('chatQuickOfferToggleBtn')?.addEventListener('click', () => {
-    document.getElementById('chatOfferDrawer')?.classList.toggle('hidden');
-  });
-
-  document.getElementById('closeOfferDrawerBtn')?.addEventListener('click', () => {
-    document.getElementById('chatOfferDrawer')?.classList.add('hidden');
-  });
-
-  document.getElementById('chatSendOfferBtn')?.addEventListener('click', () => {
-    const input = document.getElementById('chatOfferAmountInput');
-    const amount = input ? input.value : null;
-    if (!amount || Number(amount) <= 0) {
-      showToast('Please enter a valid offer amount in ৳.', 'warning');
-      return;
-    }
-    handleSendChatMessage(`I would like to propose an offer of ৳${amount} for this item.`, Number(amount));
-  });
-
-  document.getElementById('chatToggleAllConversationsBtn')?.addEventListener('click', () => {
-    const listView = document.getElementById('chatConversationsListView');
-    if (listView && !listView.classList.contains('hidden')) {
-      if (activeChatContext) {
-        document.getElementById('chatThreadView')?.classList.remove('hidden');
-        listView.classList.add('hidden');
-        document.getElementById('chatItemStrip')?.classList.remove('hidden');
-        document.getElementById('chatPeerName').textContent = activeChatContext.peerName;
-        document.getElementById('chatPeerSub').innerHTML = activeChatContext.isOwner ? `Buyer &bull; ID: ${activeChatContext.peerId}` : `${activeChatContext.peerName} &bull; ID: ${activeChatContext.peerId}`;
-        renderCurrentChatThread();
-      }
-    } else {
-      openConversationsList();
-    }
-  });
-
-  document.getElementById('chatBackToListBtn')?.addEventListener('click', openConversationsList);
-
-  document.querySelectorAll('.chat-quick-reply').forEach(btn => {
-    btn.addEventListener('click', function() {
-      const text = this.textContent.trim();
-      const input = document.getElementById('chatInputText');
-      if (input) {
-        input.value = text;
-        input.focus();
-      }
-    });
-  });
-
-  document.getElementById('chatModal')?.addEventListener('click', (e) => {
-    if (e.target.id === 'chatModal') {
-      closeChatModal();
-    }
-  });
-}
-
-/**
- * =========================================================================
- * SUPABASE POSTGRESQL CLOUD BACKEND INTEGRATION
- * =========================================================================
- */
-
-function openSupabaseModal() {
-  const modal = document.getElementById('supabaseConfigModal');
-  if (!modal) return;
-
-  const urlInput = document.getElementById('supabaseProjectUrlInput');
-  const keyInput = document.getElementById('supabaseAnonKeyInput');
-  const alertEl = document.getElementById('supabaseFeedbackAlert');
-
-  if (alertEl) {
-    alertEl.classList.add('hidden');
-    alertEl.innerHTML = '';
-  }
-
-  if (typeof getSupabaseConfig === 'function') {
-    const config = getSupabaseConfig();
-    if (urlInput) urlInput.value = config.url || '';
-    if (keyInput) keyInput.value = config.anonKey || '';
-  }
-
-  updateSupabaseStatusUI();
-  modal.classList.remove('hidden');
-  document.body.classList.add('overflow-hidden');
-}
-
-function closeSupabaseModal() {
-  const modal = document.getElementById('supabaseConfigModal');
-  if (modal) {
-    modal.classList.add('hidden');
-    document.body.classList.remove('overflow-hidden');
-  }
-}
-
-function updateSupabaseStatusUI() {
-  const isCfg = typeof isSupabaseConfigured === 'function' && isSupabaseConfigured();
-  const isConn = Boolean(window.supabaseBackendState?.isConnected);
-
-  let state = 'fallback';
-  let label = 'Cloud DB';
-
-  if (isCfg && isConn) {
-    state = 'live';
-    label = 'Supabase Live';
-  } else if (isCfg) {
-    state = 'connecting';
-    label = 'Supabase Configured';
-  } else {
-    state = 'fallback';
-    label = 'Local Fallback';
-  }
-
-  updateSupabaseStatusBadge(state, label);
-}
-
-function updateSupabaseStatusBadge(status, text) {
-  const dot = document.getElementById('supabaseStatusDot');
-  const label = document.getElementById('supabaseStatusText');
-  const modalDot = document.getElementById('modalStatusDot');
-  const modalTitle = document.getElementById('modalStatusTitle');
-  const modalDesc = document.getElementById('modalStatusDesc');
-
-  if (dot) {
-    dot.className = 'w-2 h-2 rounded-full shrink-0 transition-colors';
-    if (status === 'live') {
-      dot.className = 'w-2 h-2 rounded-full shrink-0 supabase-dot-live';
-    } else if (status === 'connecting') {
-      dot.className = 'w-2 h-2 rounded-full shrink-0 supabase-dot-connecting';
-    } else if (status === 'error') {
-      dot.className = 'w-2 h-2 rounded-full shrink-0 supabase-dot-error';
-    } else {
-      dot.className = 'w-2 h-2 rounded-full shrink-0 supabase-dot-fallback';
-    }
-  }
-
-  if (label) {
-    label.textContent = text || (status === 'live' ? 'Supabase Live' : 'Local Fallback');
-  }
-
-  if (modalDot && modalTitle && modalDesc) {
-    modalDot.className = 'w-3 h-3 rounded-full shrink-0';
-    if (status === 'live') {
-      modalDot.className = 'w-3 h-3 rounded-full shrink-0 supabase-dot-live';
-      modalTitle.textContent = '🟢 Connected to Supabase Cloud PostgreSQL';
-      const cfg = typeof getSupabaseConfig === 'function' ? getSupabaseConfig() : { url: '' };
-      modalDesc.textContent = `Live database active: ${cfg.url || 'Supabase'}`;
-    } else if (status === 'connecting') {
-      modalDot.className = 'w-3 h-3 rounded-full shrink-0 supabase-dot-connecting';
-      modalTitle.textContent = 'Connecting to Supabase...';
-      modalDesc.textContent = 'Testing connection and querying PostgreSQL tables...';
-    } else if (status === 'error') {
-      modalDot.className = 'w-3 h-3 rounded-full shrink-0 supabase-dot-error';
-      modalTitle.textContent = '❌ Supabase Connection Issue';
-      modalDesc.textContent = window.supabaseBackendState?.lastError || 'Could not connect. Check your credentials and RLS policies.';
-    } else {
-      modalDot.className = 'w-3 h-3 rounded-full shrink-0 supabase-dot-fallback';
-      modalTitle.textContent = '⚡ Local Fallback Mode';
-      modalDesc.textContent = 'Operating offline with localStorage & 10 authentic NUB sample items.';
-    }
-  }
-}
-
-function mapDbItemToFrontend(row, dbTransactions = []) {
-  const itemTx = dbTransactions.filter(t => t.item_id === row.id);
-  const activeReqTx = itemTx.find(t => t.status === 'requested');
-  const approvedTx = itemTx.find(t => t.status === 'approved');
-
-  const sellerId = row.seller_id;
-  const knownUser = registeredUsers.find(u => u.studentId === sellerId);
-
-  const sellerName = row.seller_name || knownUser?.name || 'Verified Student';
-  const sellerAvatar = row.seller_avatar || knownUser?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80';
-  const sellerMajor = row.seller_major || knownUser?.department || 'Computer Science & Engineering (CSE)';
-
-  let status = 'Available';
-  const rawStatus = (row.status || '').toLowerCase();
-  if (rawStatus === 'borrowed') status = 'Borrowed';
-  else if (rawStatus === 'in exchange') status = 'In Exchange';
-  else if (rawStatus === 'requested') status = 'Requested';
-  else if (rawStatus === 'sold') status = 'Sold';
-  else status = 'Available';
-
-  let activeRequest = null;
-  if (activeReqTx) {
-    status = 'Requested';
-    activeRequest = {
-      transactionId: activeReqTx.id,
-      requesterId: activeReqTx.borrower_id,
-      requesterName: activeReqTx.borrower_name || `Student #${activeReqTx.borrower_id}`,
-      requesterEmail: activeReqTx.borrower_email || `${activeReqTx.borrower_id}@nub.ac.bd`,
-      requesterDept: activeReqTx.borrower_dept || 'Computer Science & Engineering (CSE)',
-      requestDate: activeReqTx.created_at,
-      durationRequested: activeReqTx.duration_requested,
-      offeredItem: activeReqTx.offered_item,
-      note: activeReqTx.note
-    };
-  }
-
-  let borrowDetails = null;
-  if (approvedTx) {
-    status = row.transaction_type === 'Exchange' ? 'In Exchange' : 'Borrowed';
-    borrowDetails = {
-      transactionId: approvedTx.id,
-      borrowerId: approvedTx.borrower_id,
-      borrowerName: approvedTx.borrower_name || `Student #${approvedTx.borrower_id}`,
-      borrowerEmail: approvedTx.borrower_email || `${approvedTx.borrower_id}@nub.ac.bd`,
-      borrowerDept: approvedTx.borrower_dept || 'Computer Science & Engineering (CSE)',
-      approvedDate: approvedTx.created_at,
-      dueDate: approvedTx.return_due_date,
-      meetupNote: approvedTx.note,
-      returnStatus: 'Active',
-      isReviewed: Boolean(approvedTx.rating)
-    };
-  }
-
-  return {
-    id: row.id,
-    title: row.title,
-    category: row.category,
-    courseCode: row.course_code || 'General',
-    condition: row.condition,
-    transaction: row.transaction_type,
-    status: status,
-    price: Number(row.price) || 0,
-    priceLabel: row.price_label || (row.transaction_type === 'Sell' ? `৳${row.price}` : (row.transaction_type === 'Exchange' ? 'Trade Only' : '৳50 / week')),
-    originalPrice: null,
-    exchangeFor: row.exchange_for || null,
-    borrowTerms: row.borrow_terms || null,
-    image: row.image_url || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80',
-    description: row.description || '',
-    location: row.location || 'NUB Central Library 2nd Fl (Ashkona)',
-    seller: {
-      name: sellerName,
-      studentId: sellerId,
-      avatar: sellerAvatar,
-      major: sellerMajor,
-      badge: 'NUB Verified Student',
-      rating: 5.0,
-      reviewsCount: 1,
-      responseTime: '< 5 mins'
-    },
-    postedAt: formatRelativeTime(new Date(row.created_at).getTime()),
-    featured: Boolean(row.featured !== false),
-    views: row.views || 1,
-    activeRequest: activeRequest,
-    borrowDetails: borrowDetails
-  };
-}
-
-async function initSupabaseSync() {
-  updateSupabaseStatusUI();
-
-  if (typeof isSupabaseConfigured === 'function' && isSupabaseConfigured()) {
-    updateSupabaseStatusBadge('connecting', 'Connecting...');
-    try {
-      const result = await SupabaseService.fetchItemsAndTransactions();
-      if (result && result.items) {
-        if (result.items.length > 0) {
-          items = result.items.map(row => mapDbItemToFrontend(row, result.transactions || []));
-          saveItemsToStorage();
-          populateDropdowns();
-          renderItems();
-          renderHeroSlider();
-          updateNotificationBadges();
-          updateSupabaseStatusBadge('live', 'Supabase Live');
-          console.log(`✅ Loaded ${items.length} items directly from Supabase Cloud PostgreSQL.`);
-        } else {
-          updateSupabaseStatusBadge('live', 'Supabase (Empty)');
-        }
-      } else {
-        updateSupabaseStatusBadge('fallback', 'Local Fallback');
-      }
-    } catch (err) {
-      console.warn('Supabase fetch failed, keeping local fallback:', err);
-      updateSupabaseStatusBadge('error', 'Supabase Error');
-    }
-  } else {
-    updateSupabaseStatusBadge('fallback', 'Local Fallback');
-  }
-}
-
-function bindSupabaseEvents() {
-  document.getElementById('navSupabaseStatusBtn')?.addEventListener('click', openSupabaseModal);
-  document.getElementById('closeSupabaseModal')?.addEventListener('click', closeSupabaseModal);
-  document.getElementById('supabaseCancelBtn')?.addEventListener('click', closeSupabaseModal);
-
-  document.getElementById('supabaseConfigModal')?.addEventListener('click', (e) => {
-    if (e.target.id === 'supabaseConfigModal') {
-      closeSupabaseModal();
-    }
-  });
-
-  // Test Ping Button
-  document.getElementById('supabaseQuickTestBtn')?.addEventListener('click', async () => {
-    const url = document.getElementById('supabaseProjectUrlInput')?.value.trim();
-    const key = document.getElementById('supabaseAnonKeyInput')?.value.trim();
-    const alertEl = document.getElementById('supabaseFeedbackAlert');
-
-    if (!url || !key) {
-      if (alertEl) {
-        alertEl.className = 'p-3 rounded-xl text-[11px] bg-amber-50 text-amber-800 border border-amber-200';
-        alertEl.textContent = 'Please fill out both Project URL and Public Anon Key before testing.';
-        alertEl.classList.remove('hidden');
-      }
-      return;
-    }
-
-    if (alertEl) {
-      alertEl.className = 'p-3 rounded-xl text-[11px] bg-blue-50 text-blue-800 border border-blue-200';
-      alertEl.textContent = 'Testing connection to Supabase PostgreSQL...';
-      alertEl.classList.remove('hidden');
-    }
-
-    saveSupabaseCredentials(url, key);
-    const res = await testSupabaseConnection();
-
-    if (alertEl) {
-      if (res.success) {
-        alertEl.className = 'p-3 rounded-xl text-[11px] bg-emerald-50 text-emerald-800 border border-emerald-200';
-        alertEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600"></i> ${res.message}`;
-        updateSupabaseStatusBadge('live', 'Supabase Live');
-      } else {
-        alertEl.className = 'p-3 rounded-xl text-[11px] bg-rose-50 text-rose-800 border border-rose-200';
-        alertEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-600"></i> ${res.message}`;
-        updateSupabaseStatusBadge('error', 'Supabase Error');
-      }
-    }
-  });
-
-  // Save Credentials Button
-  document.getElementById('supabaseSaveCredentialsBtn')?.addEventListener('click', async () => {
-    const url = document.getElementById('supabaseProjectUrlInput')?.value.trim();
-    const key = document.getElementById('supabaseAnonKeyInput')?.value.trim();
-
-    if (!url || !key) {
-      showToast('Please provide both Supabase URL and Anon Public Key.', 'warning');
-      return;
-    }
-
-    saveSupabaseCredentials(url, key);
-    showToast('Saved Supabase credentials! Connecting...', 'info');
-
-    await initSupabaseSync();
-    showToast('Connected to Supabase PostgreSQL backend!', 'success');
-    closeSupabaseModal();
-  });
-
-  // Reset to Local Fallback
-  document.getElementById('supabaseResetFallbackBtn')?.addEventListener('click', () => {
-    resetSupabaseCredentials();
-    const urlInput = document.getElementById('supabaseProjectUrlInput');
-    const keyInput = document.getElementById('supabaseAnonKeyInput');
-    if (urlInput) urlInput.value = '';
-    if (keyInput) keyInput.value = '';
-
-    const alertEl = document.getElementById('supabaseFeedbackAlert');
-    if (alertEl) alertEl.classList.add('hidden');
-
-    items = [...INITIAL_ITEMS];
-    saveItemsToStorage();
-    populateDropdowns();
-    renderItems();
-    updateNotificationBadges();
-    updateSupabaseStatusBadge('fallback', 'Local Fallback');
-    showToast('Reverted to Local Storage & Mock Data Fallback.', 'info');
-  });
-
-  // 1-Click Seed Sample Data to Cloud
-  document.getElementById('supabaseSeedDataBtn')?.addEventListener('click', async () => {
-    if (!isSupabaseConfigured()) {
-      showToast('Please configure your Supabase URL & Anon Key first.', 'warning');
-      return;
-    }
-
-    showToast('🚀 Seeding 10 university study items to Supabase PostgreSQL...', 'info');
-    try {
-      const res = await SupabaseService.seedSampleDataToCloud(INITIAL_ITEMS);
-      if (res.success) {
-        showToast(`🎉 Successfully seeded ${res.count} items into Supabase!`, 'success');
-        await initSupabaseSync();
-      }
-    } catch (err) {
-      console.error('Seed error:', err);
-      showToast(`Seed failed: ${err.message}. Did you run schema.sql first?`, 'error');
-    }
-  });
-
-  // Copy SQL Schema Notice Button
-  document.getElementById('supabaseCopySchemaBtn')?.addEventListener('click', () => {
-    const sqlNotice = `-- CampusKart schema.sql is located in the root repository.
--- Copy the contents of schema.sql and run it in the Supabase SQL Editor.`;
-    navigator.clipboard?.writeText(sqlNotice).then(() => {
-      showToast('📋 Notice copied! Open schema.sql in your editor to copy full SQL.', 'success');
-    }).catch(() => {
-      showToast('schema.sql file is ready in project root directory.', 'info');
-    });
-  });
-}
-
