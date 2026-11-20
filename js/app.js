@@ -2729,7 +2729,49 @@ function setupImageUploadAndPreview() {
   const uploadContainer = document.getElementById('imageUploadContainer');
   const errorOverlay = document.getElementById('previewErrorOverlay');
 
-  // Mode switching tabs
+  const valStatus = document.getElementById('urlValidationStatus');
+  let urlValidationDebounce = null;
+
+  function validateUrlAndPreview(rawUrl) {
+    const trimmed = (rawUrl || '').trim();
+    if (!trimmed) {
+      if (valStatus) {
+        valStatus.innerHTML = '<span class="text-slate-400 flex items-center gap-1"><i class="fa-solid fa-circle-info text-[10px]"></i>Direct URLs will auto-validate for image preview before posting</span>';
+      }
+      return;
+    }
+
+    if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://') && !trimmed.startsWith('data:image/')) {
+      if (valStatus) {
+        valStatus.innerHTML = '<span class="text-amber-600 font-semibold flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> Link must start with http:// or https://</span>';
+      }
+      return;
+    }
+
+    if (valStatus) {
+      valStatus.innerHTML = '<span class="text-indigo-600 font-semibold flex items-center gap-1"><i class="fa-solid fa-spinner fa-spin"></i> Validating image link...</span>';
+    }
+
+    const testImg = new Image();
+    testImg.onload = function() {
+      if (valStatus) {
+        valStatus.innerHTML = `<span class="text-emerald-600 font-semibold flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Valid Image Link (${this.naturalWidth || 800}×${this.naturalHeight || 600})</span>`;
+      }
+      currentUploadedImageDataUrl = null;
+      const uploadStatus = document.getElementById('uploadedFileStatus');
+      if (uploadStatus) uploadStatus.classList.add('hidden');
+      updatePostImagePreview(trimmed, 'Web URL Linked', document.getElementById('postTitle')?.value || 'Photo Preview');
+    };
+    testImg.onerror = function() {
+      if (valStatus) {
+        valStatus.innerHTML = '<span class="text-rose-500 font-semibold flex items-center gap-1"><i class="fa-solid fa-circle-exclamation"></i> Image link could not be loaded. Please check link or upload file.</span>';
+      }
+      updatePostImagePreview(trimmed, 'Invalid URL', 'Preview load failed');
+    };
+    testImg.src = trimmed;
+  }
+
+  // Mode switching tabs: Upload Device Photo (Primary) vs URL Fallback
   if (modeUrlBtn && modeUploadBtn && urlContainer && uploadContainer) {
     modeUrlBtn.addEventListener('click', () => {
       modeUrlBtn.classList.add('bg-white', 'text-indigo-600', 'shadow-xs');
@@ -2738,6 +2780,9 @@ function setupImageUploadAndPreview() {
       modeUploadBtn.classList.add('text-slate-600');
       urlContainer.classList.remove('hidden');
       uploadContainer.classList.add('hidden');
+      if (urlInput && urlInput.value.trim()) {
+        validateUrlAndPreview(urlInput.value);
+      }
     });
 
     modeUploadBtn.addEventListener('click', () => {
@@ -2747,20 +2792,20 @@ function setupImageUploadAndPreview() {
       modeUrlBtn.classList.add('text-slate-600');
       uploadContainer.classList.remove('hidden');
       urlContainer.classList.add('hidden');
+      if (currentUploadedImageDataUrl) {
+        updatePostImagePreview(currentUploadedImageDataUrl, 'Device Photo', 'Local File Ready');
+      }
     });
   }
 
-  // Instant live URL input preview
+  // Instant live URL input preview with auto-validation
   if (urlInput) {
     ['input', 'paste', 'change', 'keyup'].forEach(evt => {
       urlInput.addEventListener(evt, () => {
-        setTimeout(() => {
-          const val = urlInput.value.trim();
-          currentUploadedImageDataUrl = null;
-          const uploadStatus = document.getElementById('uploadedFileStatus');
-          if (uploadStatus) uploadStatus.classList.add('hidden');
-          updatePostImagePreview(val, 'Web URL Linked', document.getElementById('postTitle')?.value || 'Photo Preview');
-        }, 15);
+        clearTimeout(urlValidationDebounce);
+        urlValidationDebounce = setTimeout(() => {
+          validateUrlAndPreview(urlInput.value);
+        }, 220);
       });
     });
   }
@@ -2769,6 +2814,9 @@ function setupImageUploadAndPreview() {
     clearUrlBtn.addEventListener('click', () => {
       urlInput.value = '';
       clearUrlBtn.classList.add('hidden');
+      if (valStatus) {
+        valStatus.innerHTML = '<span class="text-slate-400 flex items-center gap-1"><i class="fa-solid fa-circle-info text-[10px]"></i>Direct URLs will auto-validate for image preview before posting</span>';
+      }
       updatePostImagePreview('', 'No Photo Selected', 'Paste URL or select preset');
     });
   }
@@ -3721,8 +3769,9 @@ function generateCardHtml(item) {
       <button type="button" 
               data-id="${item.id}" 
               data-action="view"
-              class="card-action-btn px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 text-xs font-bold rounded-xl transition-all shadow-xs shrink-0 flex items-center gap-1">
-        <span>Requested</span>
+              class="card-action-btn px-2.5 py-1.5 bg-white hover:bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold rounded-xl transition-all shadow-2xs shrink-0 flex items-center gap-1 active:scale-95">
+        <i class="fa-solid fa-eye text-[10px] text-amber-600"></i>
+        <span>View Item</span>
       </button>
     `;
   } else if (item.status === 'Borrowed' || item.status === 'In Exchange') {
@@ -3736,8 +3785,9 @@ function generateCardHtml(item) {
       <button type="button" 
               data-id="${item.id}" 
               data-action="view"
-              class="card-action-btn px-2.5 py-1.5 bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 text-[11px] font-bold rounded-xl transition-all shadow-xs shrink-0 flex items-center gap-1">
-        <span>${remaining.label}</span>
+              class="card-action-btn px-2.5 py-1.5 bg-white hover:bg-purple-50 text-purple-700 border border-purple-200 text-xs font-bold rounded-xl transition-all shadow-2xs shrink-0 flex items-center gap-1 active:scale-95">
+        <i class="fa-solid fa-eye text-[10px] text-purple-600"></i>
+        <span>View Item</span>
       </button>
     `;
   } else {
@@ -3750,41 +3800,62 @@ function generateCardHtml(item) {
 
     if (item.transaction === 'Borrow') {
       actionButtonHtml = `
-        <button type="button" 
-                data-id="${item.id}" 
-                data-action="request"
-                class="card-action-btn px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all shadow-xs shrink-0 flex items-center gap-1">
-          <i class="fa-solid fa-clock text-[10px]"></i>
-          <span>Borrow</span>
-        </button>
-      `;
-    } else if (item.transaction === 'Exchange') {
-      actionButtonHtml = `
-        <button type="button" 
-                data-id="${item.id}" 
-                data-action="request"
-                class="card-action-btn px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl transition-all shadow-xs shrink-0 flex items-center gap-1">
-          <i class="fa-solid fa-arrows-rotate text-[10px]"></i>
-          <span>Exchange</span>
-        </button>
-      `;
-    } else {
-      actionButtonHtml = `
-        <div class="flex items-center gap-1">
-          <button type="button" 
-                  data-id="${item.id}" 
-                  data-action="offer"
-                  class="card-action-btn px-2.5 py-1.5 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 text-xs font-bold rounded-xl transition-all shadow-xs shrink-0 flex items-center gap-1"
-                  title="Make a Price Offer">
-            <i class="fa-solid fa-tag text-[10px]"></i>
-            <span>Offer</span>
-          </button>
+        <div class="flex items-center gap-1.5">
           <button type="button" 
                   data-id="${item.id}" 
                   data-action="view"
-                  class="card-action-btn px-2.5 py-1.5 bg-white hover:bg-indigo-600 hover:text-white border border-slate-200 hover:border-indigo-600 text-slate-700 text-xs font-semibold rounded-xl transition-all shadow-xs shrink-0 flex items-center gap-1">
-            <span>View</span>
-            <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                  class="card-action-btn px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold rounded-xl transition flex items-center gap-1 shrink-0 active:scale-95 shadow-2xs" 
+                  title="View Item Details">
+            <i class="fa-solid fa-eye text-[11px] text-indigo-500"></i>
+            <span>View Item</span>
+          </button>
+          <button type="button" 
+                  data-id="${item.id}" 
+                  data-action="request"
+                  class="card-action-btn px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition-all shadow-xs shrink-0 flex items-center gap-1 active:scale-95">
+            <i class="fa-solid fa-clock text-[10px]"></i>
+            <span>Borrow</span>
+          </button>
+        </div>
+      `;
+    } else if (item.transaction === 'Exchange') {
+      actionButtonHtml = `
+        <div class="flex items-center gap-1.5">
+          <button type="button" 
+                  data-id="${item.id}" 
+                  data-action="view"
+                  class="card-action-btn px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold rounded-xl transition flex items-center gap-1 shrink-0 active:scale-95 shadow-2xs" 
+                  title="View Item Details">
+            <i class="fa-solid fa-eye text-[11px] text-indigo-500"></i>
+            <span>View Item</span>
+          </button>
+          <button type="button" 
+                  data-id="${item.id}" 
+                  data-action="request"
+                  class="card-action-btn px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl transition-all shadow-xs shrink-0 flex items-center gap-1 active:scale-95">
+            <i class="fa-solid fa-arrows-rotate text-[10px]"></i>
+            <span>Exchange</span>
+          </button>
+        </div>
+      `;
+    } else {
+      actionButtonHtml = `
+        <div class="flex items-center gap-1.5">
+          <button type="button" 
+                  data-id="${item.id}" 
+                  data-action="view"
+                  class="card-action-btn px-2.5 py-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold rounded-xl transition flex items-center gap-1 shrink-0 active:scale-95 shadow-2xs" 
+                  title="View Item Details">
+            <i class="fa-solid fa-eye text-[11px] text-indigo-500"></i>
+            <span>View Item</span>
+          </button>
+          <button type="button" 
+                  data-id="${item.id}" 
+                  data-action="offer"
+                  class="card-action-btn px-2.5 py-1.5 bg-orange-50 hover:bg-orange-100 border border-orange-200 text-orange-700 text-xs font-bold rounded-xl transition-all shadow-xs shrink-0 flex items-center gap-1 active:scale-95"
+                  title="Make a Price Offer">
+            <i class="fa-solid fa-tag text-[10px]"></i>
+            <span>Offer</span>
           </button>
         </div>
       `;
@@ -3795,7 +3866,7 @@ function generateCardHtml(item) {
     <article class="item-card bg-white rounded-2xl border border-slate-200/90 shadow-sm overflow-hidden flex flex-col justify-between group hover:border-indigo-300">
       <div>
         <!-- Card Top: Media + Absolute Badges -->
-        <div class="relative w-full h-48 bg-slate-100 overflow-hidden">
+        <div class="relative w-full h-48 bg-slate-100 overflow-hidden cursor-pointer" onclick="openDetailsModal('${item.id}')">
           <img src="${item.image}" 
                alt="${item.title}" 
                class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
@@ -3816,6 +3887,7 @@ function generateCardHtml(item) {
           <!-- Top-Right: Wishlist Heart -->
           <button type="button" 
                   data-id="${item.id}" 
+                  onclick="event.stopPropagation(); toggleWishlist('${item.id}', this)"
                   class="wishlist-toggle-btn absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-slate-600 shadow-sm flex items-center justify-center transition-all ${isWishlisted ? 'text-rose-500' : 'text-slate-600'}"
                   title="${isWishlisted ? 'Remove from saved' : 'Save item'}">
             <i class="${isWishlisted ? 'fa-solid fa-heart text-rose-500' : 'fa-regular fa-heart'} text-sm transition-transform active:scale-125"></i>
@@ -3845,7 +3917,7 @@ function generateCardHtml(item) {
           </div>
 
           <!-- Title -->
-          <h3 class="font-bold text-slate-900 text-base leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors mb-2" title="${item.title}">
+          <h3 class="font-bold text-slate-900 text-base leading-snug line-clamp-2 group-hover:text-indigo-600 transition-colors mb-2 cursor-pointer" onclick="openDetailsModal('${item.id}')" title="${item.title}">
             ${item.title}
           </h3>
 
@@ -3934,207 +4006,367 @@ function updateWishlistCount() {
 }
 
 /**
- * Item Details Modal with dynamic state machine controls & reviews
+ * Helper to mask student ID for privacy while confirming genuine NUB student identity
+ * e.g., 202110045 -> 20211****
+ */
+function maskStudentId(id) {
+  if (!id) return '20211****';
+  const str = String(id).trim();
+  if (str.length <= 4) return str;
+  const visible = Math.min(5, Math.floor(str.length / 2) + 1);
+  return str.substring(0, visible) + '*'.repeat(str.length - visible);
+}
+
+/**
+ * Helper to render 1-5 star icons
+ */
+function renderStarRating(rating = 5.0) {
+  const numeric = typeof rating === 'number' ? rating : parseFloat(rating) || 5.0;
+  const fullStars = Math.floor(numeric);
+  const hasHalf = (numeric - fullStars) >= 0.5;
+  let html = '';
+  for (let i = 1; i <= 5; i++) {
+    if (i <= fullStars) {
+      html += '<i class="fa-solid fa-star text-amber-400"></i>';
+    } else if (i === fullStars + 1 && hasHalf) {
+      html += '<i class="fa-solid fa-star-half-stroke text-amber-400"></i>';
+    } else {
+      html += '<i class="fa-regular fa-star text-slate-300"></i>';
+    }
+  }
+  return html;
+}
+
+/**
+ * Handler for Primary "Chat / Make Offer" button inside Details Modal
+ */
+function handleDetailsChatOfferAction(itemId) {
+  const item = items.find(i => i.id === itemId);
+  if (!item) return;
+
+  if (!currentUser) {
+    closeDetailsModal();
+    openAuthModal('login', `Please sign in with your @nub.ac.bd account to make an offer or message ${item.seller.name}.`);
+    return;
+  }
+
+  if (item.seller.studentId === currentUser.studentId) {
+    showToast({
+      title: 'Action Not Allowed',
+      message: 'You cannot make an offer on your own listing!',
+      type: 'warning'
+    });
+    return;
+  }
+
+  if (item.transaction === 'Sell') {
+    closeDetailsModal();
+    openMakeOfferModal(itemId);
+  } else {
+    // Focus the direct in-modal chat input
+    const chatInput = document.getElementById('studentChatInput');
+    if (chatInput) {
+      chatInput.focus();
+      chatInput.classList.add('ring-2', 'ring-amber-400');
+      setTimeout(() => chatInput.classList.remove('ring-2', 'ring-amber-400'), 1500);
+      showToast({
+        title: 'Direct Chat Ready',
+        message: `Type your message below to negotiate or arrange pickup with ${item.seller.name}!`,
+        type: 'info',
+        icon: 'fa-solid fa-comments'
+      });
+    }
+  }
+}
+
+/**
+ * Handler for Secondary "Request to Borrow" button inside Details Modal
+ */
+function handleDetailsBorrowAction(itemId) {
+  const item = items.find(i => i.id === itemId);
+  if (!item) return;
+
+  if (!currentUser) {
+    closeDetailsModal();
+    openAuthModal('login', `Please sign in with your @nub.ac.bd account to request to borrow from ${item.seller.name}.`);
+    return;
+  }
+
+  if (item.seller.studentId === currentUser.studentId) {
+    showToast({
+      title: 'Action Not Allowed',
+      message: 'You cannot borrow your own listing!',
+      type: 'warning'
+    });
+    return;
+  }
+
+  closeDetailsModal();
+  openRequestModal(itemId);
+}
+
+/**
+ * Modern High-Conversion Item Details Modal
  */
 function openDetailsModal(itemId) {
-  const item = items.find(i => i.id === itemId);
+  let item = items.find(i => i.id === itemId);
+  if (!item) {
+    // Resilient fallback for banner links
+    if (itemId === 'ck-101') item = items.find(i => i.id === 'item-1');
+    else if (itemId === 'ck-102') item = items.find(i => i.id === 'item-2');
+    else if (itemId === 'ck-103') item = items.find(i => i.id === 'item-3');
+    else if (itemId === 'ck-104') item = items.find(i => i.id === 'item-4');
+    else if (itemId === 'ck-105') item = items.find(i => i.id === 'item-5');
+    else if (typeof itemId === 'string' && itemId.startsWith('ck-')) {
+      const idx = parseInt(itemId.replace(/\D/g, '')) - 101;
+      item = items[idx] || items[0];
+    }
+  }
+  if (!item) item = items[0];
   if (!item) return;
 
   const modal = document.getElementById('itemDetailsModal');
   const content = document.getElementById('itemDetailsContent');
   if (!modal || !content) return;
 
-  let conditionClass = 'condition-good';
-  if (item.condition === 'Brand New') conditionClass = 'condition-brand-new';
-  if (item.condition === 'Like New') conditionClass = 'condition-like-new';
-  if (item.condition === 'Fair') conditionClass = 'condition-fair';
+  const isWishlisted = wishlist.has(item.id);
+  const isOwner = currentUser && item.seller.studentId === currentUser.studentId;
 
+  // Condition Badge Styling
+  let conditionClass = 'condition-good';
+  let conditionIcon = 'fa-check-circle';
+  if (item.condition === 'Brand New') {
+    conditionClass = 'condition-brand-new';
+    conditionIcon = 'fa-certificate';
+  } else if (item.condition === 'Like New') {
+    conditionClass = 'condition-like-new';
+    conditionIcon = 'fa-sparkles';
+  } else if (item.condition === 'Fair') {
+    conditionClass = 'condition-fair';
+    conditionIcon = 'fa-tag';
+  }
+
+  // Transaction Badge Styling
   let transactionClass = 'transaction-sell';
+  let transactionIcon = 'fa-tag';
   let transactionLabel = 'FOR SALE';
   if (item.transaction === 'Borrow') {
     transactionClass = 'transaction-borrow';
-    transactionLabel = 'AVAILABLE FOR BORROW';
+    transactionIcon = 'fa-clock';
+    transactionLabel = 'AVAILABLE TO BORROW';
   } else if (item.transaction === 'Exchange') {
     transactionClass = 'transaction-exchange';
+    transactionIcon = 'fa-right-left';
     transactionLabel = 'OPEN TO EXCHANGE';
   }
 
-  // Seller reviews list
-  const sellerReviews = reviews.filter(r => r.sellerId === item.seller.studentId).slice(0, 3);
-
-  // Status Action Buttons inside modal
-  let primaryActionBtn = ``;
-  const isOwner = currentUser && item.seller.studentId === currentUser.studentId;
-
-  if (isOwner) {
-    primaryActionBtn = `
-      <div class="p-3 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center justify-between text-xs">
-        <span class="text-indigo-900 font-semibold"><i class="fa-solid fa-user-shield text-indigo-600 mr-1.5"></i>You own this listing</span>
-        <button type="button" onclick="closeDetailsModal(); openDashboard('listings');" class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700">Manage in Dashboard</button>
-      </div>
-    `;
-  } else if (item.status === 'Requested') {
-    primaryActionBtn = `
-      <div class="p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-center justify-between">
-        <span class="font-semibold"><i class="fa-solid fa-clock text-amber-600 mr-1.5"></i>Request is currently pending owner review</span>
+  // Status Machine Message Banner
+  let statusBannerHtml = '';
+  if (item.status === 'Requested') {
+    statusBannerHtml = `
+      <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center justify-between">
+        <span class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-clock text-amber-600"></i> Request currently pending owner review</span>
+        <span class="text-[10px] bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded-full font-bold">Pending</span>
       </div>
     `;
   } else if (item.status === 'Borrowed' || item.status === 'In Exchange') {
-    const remaining = item.borrowDetails ? getDaysRemaining(item.borrowDetails.dueDate) : { label: 'Borrowed' };
-    primaryActionBtn = `
-      <div class="p-3 bg-purple-50 border border-purple-200 rounded-xl text-xs text-purple-800 flex items-center justify-between">
-        <span><i class="fa-solid fa-arrows-spin text-purple-600 mr-1.5"></i>Currently borrowed by a classmate (${remaining.label})</span>
+    const remaining = item.borrowDetails ? getDaysRemaining(item.borrowDetails.dueDate) : { label: 'Borrowed', isUrgent: false };
+    statusBannerHtml = `
+      <div class="p-3 rounded-xl bg-purple-50 border border-purple-200 text-xs text-purple-900 flex items-center justify-between">
+        <span class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-arrows-spin text-purple-600"></i> Currently borrowed by a classmate (${remaining.label})</span>
+        <span class="text-[10px] bg-purple-200/80 text-purple-900 px-2 py-0.5 rounded-full font-bold">On Loan</span>
+      </div>
+    `;
+  }
+
+  // Action Buttons Group: Primary "Chat / Make Offer" & Secondary "Request to Borrow"
+  let actionButtonsHtml = '';
+  if (isOwner) {
+    actionButtonsHtml = `
+      <div class="p-3.5 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center justify-between text-xs w-full shadow-2xs">
+        <span class="text-indigo-900 font-bold flex items-center gap-1.5">
+          <i class="fa-solid fa-user-shield text-indigo-600 text-sm"></i>
+          <span>You own this listing</span>
+        </span>
+        <button type="button" 
+                onclick="closeDetailsModal(); openDashboard('listings');" 
+                class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold text-xs shadow-xs transition active:scale-95">
+          Manage in Dashboard
+        </button>
       </div>
     `;
   } else {
-    // Available
-    if (item.transaction === 'Borrow') {
-      primaryActionBtn = `
-        <button type="button" onclick="closeDetailsModal(); openRequestModal('${item.id}');" class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold shadow-md shadow-purple-600/30 transition flex items-center justify-center gap-1.5 active:scale-95">
-          <i class="fa-solid fa-clock text-xs"></i>
-          <span>Request to Borrow (${item.priceLabel})</span>
+    actionButtonsHtml = `
+      <div class="flex flex-col sm:flex-row gap-2.5 w-full details-action-group">
+        <!-- Primary Button: Chat / Make Offer -->
+        <button type="button" 
+                id="modalPrimaryOfferBtn" 
+                onclick="handleDetailsChatOfferAction('${item.id}')" 
+                class="flex-1 py-3 px-4 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-orange-500/25 transition-all flex items-center justify-center gap-2 active:scale-95">
+          <i class="fa-solid fa-comments"></i>
+          <span>Chat / Make Offer</span>
         </button>
-      `;
-    } else if (item.transaction === 'Exchange') {
-      primaryActionBtn = `
-        <button type="button" onclick="closeDetailsModal(); openRequestModal('${item.id}');" class="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl text-xs font-bold shadow-md shadow-sky-600/30 transition flex items-center justify-center gap-1.5 active:scale-95">
-          <i class="fa-solid fa-arrows-rotate text-xs"></i>
-          <span>Propose an Exchange</span>
+
+        <!-- Secondary Button: Request to Borrow -->
+        <button type="button" 
+                id="modalSecondaryBorrowBtn" 
+                onclick="handleDetailsBorrowAction('${item.id}')" 
+                class="flex-1 py-3 px-4 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-purple-600/25 transition-all flex items-center justify-center gap-2 active:scale-95">
+          <i class="fa-solid fa-clock"></i>
+          <span>Request to Borrow</span>
         </button>
-      `;
-    } else {
-      primaryActionBtn = `
-        <div class="grid grid-cols-2 gap-2">
-          <button type="button" onclick="openMakeOfferModal('${item.id}');" class="w-full py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl text-xs font-bold shadow-md shadow-orange-500/25 transition flex items-center justify-center gap-1.5 active:scale-95">
-            <i class="fa-solid fa-tags text-xs"></i>
-            <span>Make an Offer</span>
-          </button>
-          <button type="button" onclick="document.getElementById('studentChatInput')?.focus();" class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 active:scale-95">
-            <i class="fa-solid fa-comments text-xs"></i>
-            <span>Message Seller</span>
-          </button>
-        </div>
-      `;
-    }
+      </div>
+    `;
   }
 
+  // Seller recent peer reviews
+  const sellerReviews = reviews.filter(r => r.sellerId === item.seller.studentId).slice(0, 2);
+
   content.innerHTML = `
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <!-- Left Column: Media & Specs -->
-      <div>
-        <div class="relative rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 h-72 sm:h-80">
-          <img src="${item.image}" alt="${item.title}" class="w-full h-full object-cover" />
-          <div class="absolute top-3 left-3 flex flex-col gap-1 items-start">
-            <span class="${transactionClass} px-3 py-1 rounded-lg text-xs font-bold uppercase tracking-wider shadow">
+    <div class="space-y-5">
+      <!-- 1. FULL-WIDTH ITEM IMAGE WITH CLEAN ROUNDED CORNERS -->
+      <div class="relative w-full rounded-2xl sm:rounded-3xl overflow-hidden bg-slate-900 border border-slate-200/90 shadow-md group item-details-image-container">
+        <div class="relative w-full h-56 sm:h-72 md:h-84 overflow-hidden bg-slate-950">
+          <img src="${item.image}" 
+               alt="${item.title}" 
+               class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
+               onerror="this.src='https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80'" />
+          
+          <div class="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-transparent to-black/25 pointer-events-none"></div>
+
+          <!-- Top-Left Floating Badges -->
+          <div class="absolute top-3 left-3 sm:top-4 sm:left-4 flex flex-wrap gap-2 items-center">
+            <span class="${transactionClass} px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider shadow-md flex items-center gap-1.5">
+              <i class="fa-solid ${transactionIcon}"></i>
               ${transactionLabel}
             </span>
-            <span class="status-pill ${item.status === 'Requested' ? 'status-requested' : (item.status === 'Borrowed' ? 'status-borrowed' : 'status-available')}">
+            <span class="status-pill ${item.status === 'Requested' ? 'status-requested' : (item.status === 'Borrowed' ? 'status-borrowed' : 'status-available')} shadow-md">
+              <i class="fa-solid ${item.status === 'Requested' ? 'fa-clock' : (item.status === 'Borrowed' ? 'fa-arrows-spin' : 'fa-circle-check')} text-[10px]"></i>
               ${item.status || 'Available'}
             </span>
           </div>
-          <div class="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-            <span class="${conditionClass} px-2.5 py-1 rounded-lg font-semibold text-xs shadow-xs">
-              Condition: ${item.condition}
-            </span>
-            <span class="course-badge px-2.5 py-1 rounded-lg text-xs font-bold bg-white text-slate-800 shadow-xs">
-              Course: ${item.courseCode}
-            </span>
-          </div>
-        </div>
 
-        <!-- Campus Safety Guarantee Banner -->
-        <div class="mt-4 p-3.5 bg-blue-50/70 border border-blue-200 rounded-xl flex items-start space-x-3 text-xs text-blue-900">
-          <i class="fa-solid fa-shield-halved text-blue-600 text-base mt-0.5"></i>
-          <div>
-            <p class="font-bold">NUB Campus Safe Exchange Policy</p>
-            <p class="text-blue-800 text-[11px] mt-0.5">Meet at designated campus spots (Ashkona Central Library, Student Cafeteria). Inspect item condition before closing transactions.</p>
+          <!-- Top-Right Wishlist Button -->
+          <div class="absolute top-3 right-12 sm:top-4 sm:right-16">
+            <button type="button" 
+                    onclick="event.stopPropagation(); toggleWishlist('${item.id}', this);" 
+                    class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/90 hover:bg-white text-slate-700 shadow-md flex items-center justify-center transition active:scale-95" 
+                    title="${isWishlisted ? 'Remove from saved' : 'Save to wishlist'}">
+              <i class="${isWishlisted ? 'fa-solid fa-heart text-rose-500' : 'fa-regular fa-heart text-slate-600'} text-sm sm:text-base"></i>
+            </button>
+          </div>
+
+          <!-- Bottom Floating Bar on Image -->
+          <div class="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex flex-wrap items-center gap-2">
+              <!-- Condition Badge -->
+              <span class="${conditionClass} px-2.5 sm:px-3 py-1 rounded-xl text-xs font-bold shadow-md flex items-center gap-1">
+                <i class="fa-solid ${conditionIcon} text-[10px]"></i>
+                Condition: ${item.condition}
+              </span>
+
+              <!-- Course Code Badge -->
+              <span class="course-badge px-2.5 sm:px-3 py-1 rounded-xl text-xs font-black bg-white/95 text-slate-900 shadow-md flex items-center gap-1">
+                <i class="fa-solid fa-book-open text-indigo-600 text-[10px]"></i>
+                ${item.courseCode}
+              </span>
+            </div>
+
+            <div class="text-[11px] text-white/90 font-medium bg-black/50 backdrop-blur-md px-2.5 py-1 rounded-lg border border-white/10 shadow-xs">
+              <i class="fa-regular fa-clock mr-1 text-slate-300"></i>Posted ${item.postedAt || item.datePosted || 'Just now'}
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Right Column: Details, Seller & Reviews -->
-      <div class="flex flex-col justify-between">
-        <div>
-          <div class="flex items-center justify-between text-xs text-slate-400 font-medium mb-1">
+      <!-- 2. TITLE, CATEGORY & PRICING HEADER -->
+      <div class="flex flex-col md:flex-row md:items-start justify-between gap-4 pb-4 border-b border-slate-100">
+        <div class="space-y-1.5 flex-1 min-w-0">
+          <div class="flex items-center gap-2 text-xs font-semibold text-indigo-600 uppercase tracking-wider">
             <span>${item.category}</span>
-            <span>Posted ${item.postedAt || item.datePosted || 'Just now'} &bull; ${item.views || 45} views</span>
+            <span>&bull;</span>
+            <span>Course Code: ${item.courseCode}</span>
           </div>
+          <h2 class="text-xl sm:text-2xl md:text-3xl font-black text-slate-900 tracking-tight leading-snug break-words">
+            ${item.title}
+          </h2>
+        </div>
 
-          <h2 class="text-xl font-bold text-slate-900 leading-snug mb-3">${item.title}</h2>
-
-          <!-- Price & Terms Highlight -->
-          <div class="p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl mb-3">
-            <div class="flex items-baseline justify-between mb-1">
-              <span class="text-2xl font-extrabold text-indigo-700">${item.priceLabel}</span>
-              ${item.originalPrice ? `<span class="text-xs text-slate-400">Campus MSRP: ${item.originalPrice}</span>` : ''}
-            </div>
-
-            ${item.borrowTerms ? `
-              <div class="mt-2 text-xs bg-purple-50 text-purple-800 p-2 rounded-lg border border-purple-200">
-                <i class="fa-solid fa-clock mr-1"></i><strong>Borrow Terms:</strong> ${item.borrowTerms}
-              </div>
-            ` : ''}
-
-            ${item.exchangeFor ? `
-              <div class="mt-2 text-xs bg-sky-50 text-sky-800 p-2 rounded-lg border border-sky-200">
-                <i class="fa-solid fa-arrows-rotate mr-1"></i><strong>Exchange Preference:</strong> ${item.exchangeFor}
-              </div>
-            ` : ''}
+        <!-- Pricing Tag -->
+        <div class="p-3 sm:p-4 rounded-2xl bg-indigo-50/90 border border-indigo-100 shrink-0 self-start md:self-auto text-left md:text-right min-w-[150px]">
+          <span class="text-[10px] text-indigo-500 font-extrabold uppercase tracking-wider block">Price / Borrow Fee</span>
+          <div class="flex items-baseline gap-2 mt-0.5">
+            <span class="text-2xl sm:text-3xl font-black text-indigo-700">${item.priceLabel}</span>
+            ${item.originalPrice ? `<span class="text-xs text-slate-400 line-through">${item.originalPrice}</span>` : ''}
           </div>
+          ${item.borrowRate ? `<span class="text-[11px] text-purple-700 font-semibold block mt-0.5"><i class="fa-solid fa-clock mr-1"></i>${item.borrowRate}</span>` : ''}
+        </div>
+      </div>
 
-          <!-- Description -->
-          <div class="mb-3">
-            <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Description</h4>
-            <p class="text-xs text-slate-700 leading-relaxed">${item.description}</p>
-          </div>
+      <!-- Optional Status Warning / Active Borrow Banner -->
+      ${statusBannerHtml}
 
-          <!-- Pickup Location -->
-          <div class="flex items-center text-xs text-slate-600 bg-white p-2.5 rounded-lg border border-slate-200 mb-3">
-            <i class="fa-solid fa-location-dot text-indigo-600 text-sm mr-2.5"></i>
-            <div>
-              <span class="font-bold text-slate-800">NUB Meetup Spot:</span>
-              <p class="text-slate-500">${item.location}</p>
+      <!-- 3. TWO-COLUMN RESPONSIVE SPLIT (7 cols Description & Safety / 5 cols Seller & Actions) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6">
+        
+        <!-- Left Column: Description & Course Terms (7 cols) -->
+        <div class="lg:col-span-7 space-y-4">
+          <div>
+            <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <i class="fa-solid fa-align-left text-indigo-500"></i>
+              <span>Item & Syllabus Details</span>
+            </h4>
+            <div class="text-xs sm:text-sm text-slate-700 leading-relaxed bg-slate-50/70 p-4 rounded-2xl border border-slate-100 whitespace-pre-line shadow-2xs">
+              ${item.description}
             </div>
           </div>
 
-          <!-- Seller Profile Card with Star Rating -->
-          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between mb-3">
-            <div class="flex items-center space-x-3">
-              <img src="${item.seller.avatar}" class="w-10 h-10 rounded-full object-cover ring-2 ring-indigo-200" alt="${item.seller.name}" />
-              <div>
-                <div class="flex items-center gap-1.5">
-                  <h4 class="text-xs font-bold text-slate-900">${item.seller.name}</h4>
-                  <span class="bg-blue-100 text-blue-800 text-[10px] px-1.5 py-0.2 rounded font-semibold flex items-center gap-0.5">
-                    <i class="fa-solid fa-check text-[8px]"></i>NUB Verified
-                  </span>
-                </div>
-                <p class="text-[11px] text-slate-500">${item.seller.major}</p>
+          <!-- Borrow Terms Banner if available -->
+          ${item.borrowTerms ? `
+            <div class="p-3.5 bg-purple-50/80 border border-purple-200/80 rounded-2xl text-xs text-purple-900 space-y-1 shadow-2xs">
+              <div class="font-bold flex items-center gap-1.5 text-purple-800">
+                <i class="fa-solid fa-calendar-check text-purple-600"></i>
+                <span>Borrow & Return Guidelines</span>
               </div>
+              <p class="text-[11px] text-purple-700 pl-4 leading-relaxed">${item.borrowTerms}</p>
             </div>
-            <div class="text-right text-[11px]">
-              <div class="text-amber-500 font-bold flex items-center justify-end">
-                <i class="fa-solid fa-star text-xs mr-1"></i>${item.seller.rating || 5.0}
-                <span class="text-slate-400 font-normal ml-1">(${item.seller.reviewsCount || 1} reviews)</span>
+          ` : ''}
+
+          <!-- Exchange Preference if available -->
+          ${item.exchangeFor ? `
+            <div class="p-3.5 bg-sky-50/80 border border-sky-200/80 rounded-2xl text-xs text-sky-900 space-y-1 shadow-2xs">
+              <div class="font-bold flex items-center gap-1.5 text-sky-800">
+                <i class="fa-solid fa-arrows-rotate text-sky-600"></i>
+                <span>Open for Peer Exchange</span>
               </div>
-              <span class="text-slate-400">${item.seller.responseTime || '< 15 mins'}</span>
+              <p class="text-[11px] text-sky-700 pl-4 leading-relaxed">${item.exchangeFor}</p>
+            </div>
+          ` : ''}
+
+          <!-- Campus Safety Policy -->
+          <div class="p-3.5 bg-amber-50/70 border border-amber-200/80 rounded-2xl flex items-start space-x-3 text-xs text-amber-900 shadow-2xs">
+            <i class="fa-solid fa-shield-halved text-amber-600 text-base mt-0.5 shrink-0"></i>
+            <div class="space-y-0.5">
+              <p class="font-bold">NUB Campus Handover Guarantee</p>
+              <p class="text-amber-800 text-[11px] leading-relaxed">Meet only at designated NUB campus zones (Central Library, Student Cafeteria, CSE Department). Inspect items before concluding trades.</p>
             </div>
           </div>
 
-          <!-- Recent Reviews Snippet -->
+          <!-- Peer Reviews Snippet -->
           ${sellerReviews.length > 0 ? `
-            <div class="mb-3">
-              <h4 class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+            <div class="pt-2">
+              <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
                 <span>Recent Peer Reviews</span>
                 <span class="text-amber-500 font-semibold">${item.seller.rating || 5.0} ★</span>
               </h4>
-              <div class="space-y-1.5">
+              <div class="space-y-2">
                 ${sellerReviews.map(r => `
-                  <div class="text-[11px] p-2 bg-slate-50 rounded-lg border border-slate-100">
-                    <div class="flex items-center justify-between text-slate-600 font-medium">
+                  <div class="text-xs p-2.5 bg-slate-50/90 rounded-xl border border-slate-100 shadow-2xs">
+                    <div class="flex items-center justify-between font-semibold text-slate-700">
                       <span>${r.reviewerName}</span>
-                      <span class="text-amber-500 font-bold">${'★'.repeat(r.rating)}</span>
+                      <span class="text-amber-500">${'★'.repeat(r.rating)}</span>
                     </div>
-                    <p class="text-slate-500 italic mt-0.5">"${r.comment}"</p>
+                    <p class="text-slate-500 italic text-[11px] mt-0.5">"${r.comment}"</p>
                   </div>
                 `).join('')}
               </div>
@@ -4142,29 +4374,95 @@ function openDetailsModal(itemId) {
           ` : ''}
         </div>
 
-        <div class="pt-2 border-t border-slate-200 space-y-2">
-          ${primaryActionBtn}
+        <!-- Right Column: Seller Info & Conversion Action Buttons (5 cols) -->
+        <div class="lg:col-span-5 space-y-4">
+          
+          <!-- SELLER INFO CARD (Name, Masked ID, Dept, Rating, Pickup Point) -->
+          <div class="p-4 sm:p-5 bg-slate-50/90 rounded-2xl border border-slate-200 space-y-3.5 shadow-2xs">
+            <div class="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+              Verified Student Listing
+            </div>
 
-          <!-- Direct Chat Box -->
-          <div class="flex gap-2">
-            <input type="text" 
-                   id="studentChatInput" 
-                   placeholder="Hi ${item.seller.name.split(' ')[0]}, can we meet at ${item.location}?" 
-                   value="Hi ${item.seller.name.split(' ')[0]}, is this item still available?" 
-                   class="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:border-indigo-500" />
-            <button type="button" 
-                    id="sendCampusMessageBtn" 
-                    class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold transition shrink-0 flex items-center gap-1">
-              <i class="fa-solid fa-paper-plane text-[10px]"></i>
-              <span>Send</span>
-            </button>
+            <div class="flex items-center space-x-3.5">
+              <img src="${item.seller.avatar}" 
+                   alt="${item.seller.name}" 
+                   class="w-12 h-12 rounded-full object-cover ring-2 ring-indigo-300 shrink-0 shadow-xs" 
+                   onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'" />
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-1.5">
+                  <h4 class="text-sm font-extrabold text-slate-900 truncate">${item.seller.name}</h4>
+                  <span class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded bg-blue-100 text-blue-800 text-[10px] font-bold shrink-0">
+                    <i class="fa-solid fa-circle-check text-[9px]"></i>Verified
+                  </span>
+                </div>
+                
+                <!-- Masked Student ID for Privacy -->
+                <p class="text-[11px] text-slate-500 font-mono mt-0.5">
+                  <i class="fa-solid fa-id-card text-indigo-500 mr-1 text-[10px]"></i>ID: ${maskStudentId(item.seller.studentId)}
+                </p>
+
+                <!-- Department -->
+                <p class="text-[11px] text-slate-600 font-medium truncate mt-0.5">
+                  <i class="fa-solid fa-graduation-cap text-indigo-500 mr-1 text-[10px]"></i>${item.seller.department || item.seller.major || 'Computer Science & Engineering (CSE)'}
+                </p>
+              </div>
+            </div>
+
+            <!-- Rating (1-5 Stars) & Response Time -->
+            <div class="pt-2.5 border-t border-slate-200/80 flex items-center justify-between text-xs">
+              <div class="flex items-center gap-1">
+                <div class="flex text-xs">${renderStarRating(item.seller.rating || 5.0)}</div>
+                <span class="font-bold text-slate-800 ml-1">${item.seller.rating || 5.0}</span>
+                <span class="text-slate-400 text-[11px]">(${item.seller.reviewsCount || 1} reviews)</span>
+              </div>
+              <span class="text-[11px] font-semibold text-slate-500">
+                <i class="fa-regular fa-clock mr-1 text-indigo-500"></i>${item.seller.responseTime || '< 10 mins'}
+              </span>
+            </div>
+
+            <!-- Campus Pickup Point -->
+            <div class="pt-2.5 border-t border-slate-200/80 flex items-start gap-2 text-xs">
+              <i class="fa-solid fa-location-dot text-rose-500 mt-0.5 shrink-0"></i>
+              <div>
+                <span class="font-bold text-slate-800 block text-[11px]">Campus Pickup Point:</span>
+                <span class="text-slate-600 text-xs">${item.location}</span>
+              </div>
+            </div>
           </div>
-          <p class="text-[10px] text-slate-400 text-center">Messages are routed to the student's official @nub.ac.bd address.</p>
+
+          <!-- ACTION BUTTONS: PRIMARY "CHAT / MAKE OFFER" & SECONDARY "REQUEST TO BORROW" -->
+          <div class="space-y-2 pt-1">
+            ${actionButtonsHtml}
+          </div>
+
+          <!-- DIRECT INLINE CHAT MESSAGE BOX -->
+          <div class="p-3.5 bg-white rounded-2xl border border-slate-200 shadow-2xs space-y-2">
+            <label for="studentChatInput" class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider flex items-center justify-between">
+              <span><i class="fa-solid fa-paper-plane text-indigo-600 mr-1"></i>Direct Message to ${item.seller.name.split(' ')[0]}</span>
+              <span class="text-[10px] text-slate-400 font-normal">@nub.ac.bd</span>
+            </label>
+            <div class="flex gap-1.5">
+              <input type="text" 
+                     id="studentChatInput" 
+                     placeholder="Type message to ${item.seller.name.split(' ')[0]}..." 
+                     value="Hi ${item.seller.name.split(' ')[0]}, I am interested in '${item.title.substring(0, 30)}...'. Can we meet at ${item.location.split(',')[0]}?" 
+                     class="w-full text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              <button type="button" 
+                      id="sendCampusMessageBtn" 
+                      class="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition flex items-center gap-1 shrink-0 active:scale-95 shadow-sm">
+                <span>Send</span>
+                <i class="fa-solid fa-arrow-right text-[10px]"></i>
+              </button>
+            </div>
+            <p class="text-[10px] text-slate-400">Direct notifications are securely routed to the student's campus email.</p>
+          </div>
+
         </div>
       </div>
     </div>
   `;
 
+  // Attach direct message event listener
   document.getElementById('sendCampusMessageBtn')?.addEventListener('click', () => {
     if (!currentUser) {
       closeDetailsModal();
@@ -4179,7 +4477,12 @@ function openDetailsModal(itemId) {
       return;
     }
 
-    showToast(`Message sent from ${currentUser.email} to ${item.seller.name}!`, 'success');
+    showToast({
+      title: 'Message Sent Successfully',
+      message: `Message sent from ${currentUser.email} to ${item.seller.name}!`,
+      type: 'success',
+      icon: 'fa-solid fa-paper-plane'
+    });
     setTimeout(closeDetailsModal, 1200);
   });
 

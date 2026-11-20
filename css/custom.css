@@ -764,6 +764,55 @@ html, body {
   background: linear-gradient(90deg, #64748b, #475569);
 }
 
+/* ==========================================================================
+   MOBILE & RESPONSIVE MODAL STYLING (Item Details & Form Previews)
+   ========================================================================== */
+@media (max-width: 640px) {
+  .modal-backdrop {
+    padding: 0.5rem 0.5rem 2.5rem 0.5rem !important;
+    align-items: flex-start !important;
+    overflow-x: hidden !important;
+  }
+
+  .modal-backdrop > div {
+    margin-top: 0.5rem !important;
+    margin-bottom: 2rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 1rem !important;
+    border-radius: 1.25rem !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  #itemDetailsModal .item-details-image-container {
+    border-radius: 1rem !important;
+  }
+
+  #itemDetailsModal .item-details-image-container > div {
+    height: 14rem !important;
+  }
+
+  #itemDetailsModal .details-action-group {
+    flex-direction: column !important;
+  }
+
+  #itemDetailsModal .details-action-group button {
+    width: 100% !important;
+  }
+
+  #postItemModal > div {
+    padding: 1rem !important;
+    border-radius: 1.25rem !important;
+  }
+
+  /* Prevent any text or badge overflow on extra narrow phones */
+  .item-card {
+    max-width: 100% !important;
+  }
+}
+
+
 
 
 
