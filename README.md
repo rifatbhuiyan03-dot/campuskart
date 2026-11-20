@@ -302,6 +302,32 @@ CampusKart connects directly to a **Supabase PostgreSQL** cloud database using c
 
 ---
 
+## 🔔 Real-Time Action Notifications (Toast Alerts)
+
+CampusKart replaces intrusive browser `alert()` popups with animated glassmorphic toast notifications:
+- **Responsive Positioning**:
+  - **Desktop (sm+)**: Docks elegantly at **top-right** with smooth slide-in/out animations.
+  - **Mobile (< sm)**: Horizontally centered at **top-center** with drop-down animations to avoid obscuring mobile content.
+- **Dedicated Action Alerts**:
+  - 🚀 **Item Published**: `"Listing published successfully! 🎉"`
+  - ⏳ **Borrow Requested**: `"Borrow request sent to owner! ⏳"`
+  - 💬 **Offer Submitted**: `"Offer submitted to seller! 💬"`
+  - ⭐ **Return Completed**: `"Status updated to Returned! ⭐"`
+- **Native Alert Replacement**: `window.alert()` is automatically intercepted so any notification is rendered through the sleek toast engine.
+
+---
+
+## ✨ Academic Viva Defense: Auto-Fill Demo CSE Gear
+
+Inside the **"+ Post an Item"** modal, students and examiners can click the **"✨ Fill Demo CSE Gear"** button to instantly auto-fill realistic study items for viva demonstrations:
+1. **Casio fx-991MS Scientific Calculator** (Condition: Like New, Type: Sell, ৳650, MATH 101)
+2. **Digital Logic Design Breadboard with IC 7408, 7432, 7404 Kit** (Condition: Like New, Type: Borrow, ৳50 / week, CSE 123)
+3. **CSE 3373 Operating Systems Notes & Solved Midterm Kit** (Condition: Like New, Type: Exchange, CSE 3373)
+4. **Microprocessor 8086 Manual & CSE 3rd Semester Lecture Notes** (Condition: Fair, Type: Exchange, CSE 221)
+5. **Discrete Mathematics and Its Applications (Kenneth H. Rosen 7th Ed)** (Condition: Good, Type: Borrow, ৳30 / week, CSE 103)
+
+---
+
 ## 📁 Project Structure
 
 ```

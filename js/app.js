@@ -8,6 +8,49 @@
  * 4. Seller and Peer Rating System with dynamic star averages.
  */
 
+// ============================================================================
+// SUPABASE CLIENT CONFIGURATION & CLOUD PERSISTENCE
+// ============================================================================
+// Central Supabase configuration (fill credentials to enable real-time PostgreSQL persistence)
+const SUPABASE_URL = ""; // e.g. "https://your-project.supabase.co"
+const SUPABASE_ANON_KEY = ""; // e.g. "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+let supabase = null;
+let isSupabaseActive = false;
+
+/**
+ * Initializes the Supabase client safely with graceful fallback to localStorage.
+ * If credentials are not filled or invalid, it runs without throwing any runtime errors.
+ */
+function initSupabase() {
+  try {
+    const hasValidUrl = typeof SUPABASE_URL === 'string' && 
+                        SUPABASE_URL.trim().startsWith('https://') && 
+                        SUPABASE_URL.trim().includes('.supabase.co');
+    const hasValidKey = typeof SUPABASE_ANON_KEY === 'string' && 
+                        SUPABASE_ANON_KEY.trim().length > 20;
+
+    if (typeof window.supabase !== 'undefined' && hasValidUrl && hasValidKey) {
+      supabase = window.supabase.createClient(SUPABASE_URL.trim(), SUPABASE_ANON_KEY.trim(), {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false
+        }
+      });
+      isSupabaseActive = true;
+      console.log('✅ Supabase PostgreSQL connected via central app.js configuration.');
+    } else {
+      supabase = null;
+      isSupabaseActive = false;
+      console.log('⚡ Supabase credentials not configured. Gracefully operating with localStorage persistence.');
+    }
+  } catch (err) {
+    console.warn('⚠️ Supabase client initialization warning (falling back to localStorage):', err);
+    supabase = null;
+    isSupabaseActive = false;
+  }
+}
+
 // Storage keys (v2 with authentic NUB student listings & peer workflow switch)
 const STORAGE_ITEMS_KEY = 'campuskart_listings_v2';
 const STORAGE_WISHLIST_KEY = 'campuskart_wishlist_v2';
@@ -72,72 +115,21 @@ const PRESET_IMAGES = [
 // Academic Presentation & Viva Defense Demo Items Dataset (Tailored for NUB CSE)
 const CSE_DEMO_ITEMS = [
   {
-    title: 'CSE 3373 Operating Systems Notes & Solved Midterm Kit',
-    category: 'Notes & Study Kits',
-    courseCode: 'CSE 3373',
-    condition: 'Like New',
-    transaction: 'Exchange',
-    exchangeFor: 'CSE 3375 Compiler Design Notes or Algorithms Book',
-    price: 0,
-    priceLabel: 'Trade Only',
-    borrowRate: null,
-    borrowTerms: null,
-    location: 'NUB Ashkona Campus - CSE Dept 4th Floor Lounge',
-    description: 'Comprehensive spiral-bound handwritten lecture notes for CSE 3373 Operating Systems. Covers Process Synchronization, Semaphores, Deadlock Avoidance (Banker\'s Algorithm), CPU Scheduling algorithms (SJF, Round Robin), and Virtual Memory Paging. Includes past 4 semesters of solved NUB midterm & final exams with faculty answer keys.',
-    image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=800&q=80',
-    previewType: 'Lecture Notes',
-    badge: 'CSE 3373 Notes'
-  },
-  {
-    title: 'CSE 4279 VLSI Lab Manual & CMOS Circuit Schematics',
-    category: 'Lab & Engineering',
-    courseCode: 'CSE 4279',
-    condition: 'Brand New',
-    transaction: 'Borrow',
-    borrowRate: '৳30 / week',
-    borrowTerms: 'NUB Student ID Card deposit; keep lab report simulation worksheets clean',
-    price: 30,
-    priceLabel: '৳30 / week',
-    exchangeFor: null,
-    location: 'NUB Hardware & VLSI Lab 304 (Ashkona)',
-    description: 'Official Northern University Bangladesh CSE 4279 VLSI Design Lab Manual. Complete with Microwind and DSCH CMOS inverter layout diagrams, stick diagrams, transmission gate simulation guides, spice netlists, and sample viva defense questions for lab evaluations.',
-    image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
-    previewType: 'VLSI Lab Manual',
-    badge: 'CSE 4279 VLSI'
-  },
-  {
-    title: 'Casio fx-991EX ClassWiz Scientific Calculator',
+    title: 'Casio fx-991MS Scientific Calculator (2-Line Display)',
     category: 'Tech & Electronics',
-    courseCode: 'MATH 201',
+    courseCode: 'MATH 101',
     condition: 'Like New',
     transaction: 'Sell',
-    price: 1100,
-    priceLabel: '৳1100',
+    price: 650,
+    priceLabel: '৳650',
     borrowRate: null,
     borrowTerms: null,
     exchangeFor: null,
-    location: 'NUB Central Library, 2nd Floor Study Area',
-    description: 'Authentic Casio fx-991EX ClassWiz high-resolution scientific calculator with 552 functions. High-res LCD screen displaying textbook formulas, 4x4 matrix inversions, vector dot/cross products, polynomial root solvers, integration, and spreadsheet mode. Includes original hard slide case and battery. Allowed in all NUB engineering midterms and finals.',
+    location: 'NUB Central Library 2nd Fl (Ashkona)',
+    description: 'Original Casio fx-991MS scientific calculator in pristine condition. Features 401 functions including matrix calculation, complex numbers, standard deviation, and differential integration. Slide-on hard protective cover and fresh battery included. Perfect for MATH 101, CSE 103, and EEE 101 semester exams.',
     image: 'https://images.unsplash.com/photo-1587145820266-a5951ee6f620?auto=format&fit=crop&w=800&q=80',
     previewType: 'Scientific Calculator',
-    badge: 'Casio Calculator'
-  },
-  {
-    title: 'Discrete Mathematics and Its Applications (Kenneth H. Rosen)',
-    category: 'Textbooks',
-    courseCode: 'CSE 103',
-    condition: 'Good',
-    transaction: 'Borrow',
-    borrowRate: '৳20 / week',
-    borrowTerms: '৳150 refundable deposit upon midterm exam completion',
-    price: 20,
-    priceLabel: '৳20 / week',
-    exchangeFor: null,
-    location: 'Building A, Ground Floor Student Lounge',
-    description: '7th Global Edition in great condition with no torn pages. Helpful pencil markings for key chapter problems in graph theory, logic propositions, set theory, and recurrence relations. Ideal for CSE 103 exam preparation.',
-    image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80',
-    previewType: 'Textbook',
-    badge: 'CSE 103 Textbook'
+    badge: 'Casio fx-991MS'
   },
   {
     title: 'Digital Logic Design Breadboard with IC 7408, 7432, 7404 Kit',
@@ -145,16 +137,67 @@ const CSE_DEMO_ITEMS = [
     courseCode: 'CSE 123',
     condition: 'Like New',
     transaction: 'Borrow',
-    borrowRate: '৳40 / week',
-    borrowTerms: 'Return all 12 IC chips, breadboard, and 65 jumper wires intact',
-    price: 40,
-    priceLabel: '৳40 / week',
+    borrowRate: '৳50 / week',
+    borrowTerms: 'Complete TTL logic kit. Return all 4 ICs in foam protector with 65-pc jumper wire bundle.',
+    price: 50,
+    priceLabel: '৳50 / week',
     exchangeFor: null,
-    location: 'NUB Digital Electronics Lab, 4th Floor',
-    description: 'Complete DLD hardware kit: Full-size solderless breadboard, 5V regulator module, LED indicators, switches, plus AND (7408), OR (7432), NOT (7404), NAND (7400), and XOR (7486) logic ICs with rainbow jumper wire bundle. Pre-tested in hardware lab.',
-    image: 'https://images.unsplash.com/photo-1517077304055-6e89abbf09b0?auto=format&fit=crop&w=800&q=80',
+    location: 'NUB Hardware Lab 304, CSE Building (Ashkona)',
+    description: 'Complete electronics kit for Digital Logic Design (CSE 123). Standard 830-point solderless breadboard with logic gates: IC 7408 (Quad 2-input AND), IC 7432 (Quad 2-input OR), IC 7404 (Hex Inverter NOT), and IC 7400 (Quad 2-input NAND). Includes 5mm red/green indicator LEDs, 330Ω resistors, and male-to-male jumper wire bundle.',
+    image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
     previewType: 'DLD Hardware Kit',
-    badge: 'CSE 123 Kit'
+    badge: 'CSE 123 DLD Kit'
+  },
+  {
+    title: 'CSE 3373 Operating Systems Notes & Solved Midterm Kit',
+    category: 'Notes & Study Kits',
+    courseCode: 'CSE 3373',
+    condition: 'Like New',
+    transaction: 'Exchange',
+    exchangeFor: 'Looking to trade for CSE 311 (Database Systems) complete notes or lab manual',
+    price: 0,
+    priceLabel: 'Trade Only',
+    borrowRate: null,
+    borrowTerms: null,
+    location: 'Ashkona Campus Study Zone / Library Ground Floor',
+    description: 'Comprehensive spiral-bound handwritten lecture notes for CSE 3373 Operating Systems. Covers Process Synchronization, Semaphores, Deadlock Avoidance (Banker\'s Algorithm), CPU Scheduling algorithms (SJF, Round Robin), and Virtual Memory Paging. Includes past 4 semesters of solved NUB midterm & final exams with faculty answer keys.',
+    image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=800&q=80',
+    previewType: 'OS Lecture Notes',
+    badge: 'CSE 3373 OS Notes'
+  },
+  {
+    title: 'Microprocessor 8086 Manual & CSE 3rd Semester Lecture Notes',
+    category: 'Notes & Study Kits',
+    courseCode: 'CSE 221',
+    condition: 'Fair',
+    transaction: 'Exchange',
+    exchangeFor: 'Looking for Data Communications & Networking notes or textbook',
+    price: 0,
+    priceLabel: 'Trade Only',
+    borrowRate: null,
+    borrowTerms: null,
+    location: 'NUB Ashkona Cafeteria & Student Lounge',
+    description: 'Comprehensive handwritten and typed lecture notes for CSE 221 (Microprocessors & Assembly Language). Contains complete pin diagrams of Intel 8086, memory segmentation charts, addressing modes, and working MASM/EMU8086 assembly code routines.',
+    image: 'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&w=800&q=80',
+    previewType: 'Assembly Manual',
+    badge: 'CSE 221 Microprocessor'
+  },
+  {
+    title: 'Discrete Mathematics and Its Applications (Kenneth H. Rosen 7th Ed)',
+    category: 'Textbooks',
+    courseCode: 'CSE 103',
+    condition: 'Good',
+    transaction: 'Borrow',
+    borrowRate: '৳30 / week',
+    borrowTerms: 'Deposit ৳200 refundable upon clean return. Available for 1 to 4 weeks.',
+    price: 30,
+    priceLabel: '৳30 / week',
+    exchangeFor: null,
+    location: 'NUB Ashkona Cafeteria & Student Lounge',
+    description: 'The core textbook for CSE 103 (Discrete Mathematics). Complete international edition covering propositional logic, set theory, predicate calculus, graph theory, trees, and Boolean algebra. Very clean text with pencil annotations on important solved problem sets.',
+    image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80',
+    previewType: 'Textbook',
+    badge: 'CSE 103 Discrete Math'
   }
 ];
 
@@ -163,6 +206,7 @@ let currentUploadedImageDataUrl = null;
 
 // Initialize application on DOM loaded
 document.addEventListener('DOMContentLoaded', () => {
+  initSupabase();
   loadAuthData();
   loadData();
   initUI();
@@ -941,7 +985,7 @@ function handleRequestFormSubmit(e) {
 
   if (item.transaction === 'Exchange') {
     showToast({
-      title: 'Offer Made',
+      title: 'Offer submitted to seller! 💬',
       message: `Exchange proposal offering "${offeredItem}" submitted to ${item.seller.name}!`,
       type: 'success',
       actionType: 'offer_made',
@@ -949,11 +993,11 @@ function handleRequestFormSubmit(e) {
     });
   } else {
     showToast({
-      title: 'Request Sent',
+      title: 'Borrow request sent to owner! ⏳',
       message: `Borrow request (${duration}) for "${item.title}" sent to ${item.seller.name}! Awaiting approval.`,
       type: 'success',
       actionType: 'request_sent',
-      icon: 'fa-solid fa-paper-plane'
+      icon: 'fa-solid fa-hourglass-half'
     });
   }
 }
@@ -1063,11 +1107,11 @@ function handleMakeOfferFormSubmit(e) {
   closeMakeOfferModal();
 
   showToast({
-    title: 'Offer Made',
+    title: 'Offer submitted to seller! 💬',
     message: `Price offer of ৳${offeredPrice} submitted to ${item.seller.name} for "${item.title}"!`,
     type: 'success',
     actionType: 'offer_made',
-    icon: 'fa-solid fa-tags'
+    icon: 'fa-solid fa-comment-dollar'
   });
 }
 
@@ -1238,7 +1282,7 @@ function handleMarkAsReturned(itemId) {
   updateNotificationBadges();
 
   showToast({
-    title: 'Borrow Status Updated',
+    title: 'Status updated to Returned! ⭐',
     message: `Item "${item.title}" successfully marked as returned! Now available again on CampusKart.`,
     type: 'success',
     actionType: 'status_updated',
@@ -2166,7 +2210,7 @@ function handleMarkAsReturnedByBorrower(itemId) {
     renderDashboard();
 
     showToast({
-      title: 'Borrow Status Updated',
+      title: 'Status updated to Returned! ⭐',
       message: `Item "${item.title}" successfully returned! Marked as completed on CampusKart.`,
       type: 'success',
       actionType: 'status_updated',
@@ -2982,8 +3026,8 @@ function populateListingFormWithDemo(demo, index = 0) {
 
   // Show clean notification
   showToast({
-    title: 'Demo Item Auto-Filled',
-    message: `Populated "${demo.title}" (${demo.courseCode}) for presentation demo!`,
+    title: '✨ Demo CSE Gear Auto-Filled',
+    message: `Populated "${demo.title}" (${demo.courseCode}) for quick viva demonstration!`,
     type: 'info',
     actionType: 'notification',
     icon: 'fa-solid fa-wand-magic-sparkles'
@@ -2995,9 +3039,12 @@ function populateListingFormWithDemo(demo, index = 0) {
  */
 function bindDemoAndOfferEvents() {
   const autoFillBtn = document.getElementById('autoFillDemoBtn');
-  if (autoFillBtn) {
-    autoFillBtn.addEventListener('click', autoFillNextDemoItem);
-  }
+  const fillCseBtn = document.getElementById('fillDemoCseGearBtn');
+  [autoFillBtn, fillCseBtn].forEach(btn => {
+    if (btn) {
+      btn.addEventListener('click', autoFillNextDemoItem);
+    }
+  });
 
   // Close Make Offer Modal
   const closeOfferBtn = document.getElementById('closeMakeOfferModal');
@@ -4349,12 +4396,36 @@ function handleNewListingSubmit(e) {
   updateNotificationBadges();
 
   showToast({
-    title: 'Item Posted Successfully',
+    title: 'Listing published successfully! 🎉',
     message: `"${newItem.title}" (${newItem.courseCode}) is now live on CampusKart NUB!`,
     type: 'success',
     actionType: 'item_posted',
     icon: 'fa-solid fa-cloud-arrow-up'
   });
+
+  // If Supabase is active, persist directly to Supabase cloud
+  if (typeof isSupabaseActive !== 'undefined' && isSupabaseActive && supabase) {
+    try {
+      supabase.from('items').insert([{
+        id: newItem.id,
+        title: newItem.title,
+        description: newItem.description,
+        category: newItem.category,
+        course_code: newItem.courseCode,
+        price: newItem.price,
+        transaction_type: newItem.transaction,
+        condition: newItem.condition,
+        image_url: newItem.image,
+        seller_id: currentUser.studentId,
+        status: 'available',
+        created_at: new Date().toISOString()
+      }]).then(({ error }) => {
+        if (error) console.warn('Supabase cloud insert note:', error);
+      }).catch(err => console.warn('Supabase offline fallback:', err));
+    } catch (e) {
+      console.warn('Supabase insert skipped:', e);
+    }
+  }
 
   const grid = document.getElementById('itemsGrid');
   if (grid) {
@@ -4368,6 +4439,7 @@ function handleNewListingSubmit(e) {
  * =========================================================================
  * Renders floating, animated, glassmorphic toast notifications with action badges,
  * progress timer bars, and category styling.
+ * Positioned: Top-center on mobile (< sm), Top-right on desktop (sm+)
  * 
  * Supports both:
  * - showToast('Message string', 'success')
@@ -4399,7 +4471,7 @@ function showToast(msgOrConfig, type = 'info', title = null, actionType = null) 
   if (!toastContainer) {
     toastContainer = document.createElement('div');
     toastContainer.id = 'toastContainer';
-    toastContainer.className = 'fixed top-4 right-4 sm:top-5 sm:right-5 z-[3000] flex flex-col gap-2.5 max-w-sm sm:max-w-md w-full px-3 sm:px-0 pointer-events-none';
+    toastContainer.className = 'fixed top-3 sm:top-5 left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-5 z-[3000] flex flex-col items-center sm:items-end gap-2.5 w-[92vw] max-w-sm sm:max-w-md pointer-events-none';
     document.body.appendChild(toastContainer);
   }
 
@@ -4411,25 +4483,25 @@ function showToast(msgOrConfig, type = 'info', title = null, actionType = null) 
 
   const fullText = ((message || '') + ' ' + (toastTitle || '')).toLowerCase();
 
-  if (explicitAction === 'item_posted' || fullText.includes('item posted') || fullText.includes('listing is live') || fullText.includes('listing live')) {
-    categoryLabel = 'ITEM POSTED';
-    toastTitle = toastTitle || 'Item Posted Successfully';
+  if (explicitAction === 'item_posted' || fullText.includes('listing published') || fullText.includes('item posted') || fullText.includes('listing is live') || fullText.includes('listing live')) {
+    categoryLabel = 'LISTING PUBLISHED';
+    toastTitle = toastTitle || 'Listing published successfully! 🎉';
     toastIcon = toastIcon || 'fa-solid fa-cloud-arrow-up';
     themeClass = 'toast-success';
-  } else if (explicitAction === 'offer_made' || fullText.includes('offer made') || fullText.includes('price offer') || fullText.includes('trade offer') || fullText.includes('exchange proposal')) {
-    categoryLabel = 'OFFER MADE';
-    toastTitle = toastTitle || 'Offer Submitted';
-    toastIcon = toastIcon || 'fa-solid fa-handshake';
+  } else if (explicitAction === 'offer_made' || fullText.includes('offer submitted') || fullText.includes('offer made') || fullText.includes('price offer') || fullText.includes('trade offer') || fullText.includes('exchange proposal')) {
+    categoryLabel = 'OFFER SUBMITTED';
+    toastTitle = toastTitle || 'Offer submitted to seller! 💬';
+    toastIcon = toastIcon || 'fa-solid fa-comment-dollar';
     themeClass = 'toast-accent';
-  } else if (explicitAction === 'request_sent' || fullText.includes('request sent') || fullText.includes('awaiting their approval')) {
-    categoryLabel = 'REQUEST SENT';
-    toastTitle = toastTitle || 'Borrow Request Sent';
-    toastIcon = toastIcon || 'fa-solid fa-paper-plane';
+  } else if (explicitAction === 'request_sent' || fullText.includes('borrow request sent') || fullText.includes('borrow request') || fullText.includes('request sent') || fullText.includes('awaiting their approval')) {
+    categoryLabel = 'BORROW REQUEST';
+    toastTitle = toastTitle || 'Borrow request sent to owner! ⏳';
+    toastIcon = toastIcon || 'fa-solid fa-hourglass-half';
     themeClass = 'toast-primary';
-  } else if (explicitAction === 'status_updated' || fullText.includes('borrow status updated') || fullText.includes('status changed') || fullText.includes('marked as returned') || fullText.includes('request declined') || fullText.includes('relisted as available')) {
-    categoryLabel = 'BORROW STATUS UPDATED';
-    toastTitle = toastTitle || 'Borrow Status Updated';
-    toastIcon = toastIcon || 'fa-solid fa-arrows-rotate';
+  } else if (explicitAction === 'status_updated' || fullText.includes('status updated to returned') || fullText.includes('marked as returned') || fullText.includes('borrow status updated') || fullText.includes('returned') || fullText.includes('request declined') || fullText.includes('relisted as available')) {
+    categoryLabel = 'STATUS UPDATED';
+    toastTitle = toastTitle || 'Status updated to Returned! ⭐';
+    toastIcon = toastIcon || 'fa-solid fa-circle-check';
     themeClass = 'toast-status';
   } else if (toastType === 'success') {
     categoryLabel = 'ACTION SUCCESSFUL';
@@ -4454,7 +4526,7 @@ function showToast(msgOrConfig, type = 'info', title = null, actionType = null) 
   }
 
   const toast = document.createElement('div');
-  toast.className = `campuskart-toast ${themeClass} flex flex-col pointer-events-auto rounded-2xl backdrop-blur-md border shadow-xl p-3.5 relative overflow-hidden transition-all duration-300`;
+  toast.className = `campuskart-toast ${themeClass} flex flex-col pointer-events-auto rounded-2xl backdrop-blur-md border shadow-xl p-3.5 relative overflow-hidden transition-all duration-300 w-full`;
   
   toast.innerHTML = `
     <div class="toast-progress-bar absolute top-0 left-0 right-0 h-1" style="animation-duration: ${duration}ms;"></div>
@@ -4492,4 +4564,16 @@ function showToast(msgOrConfig, type = 'info', title = null, actionType = null) 
   toastContainer.prepend(toast);
 
   setTimeout(dismiss, duration);
+}
+
+// Replace native browser alert() popups with sleek animated toast notifications
+if (typeof window !== 'undefined') {
+  window.alert = function(msg) {
+    showToast({
+      title: 'Campus Notice',
+      message: String(msg),
+      type: 'info',
+      icon: 'fa-solid fa-circle-info'
+    });
+  };
 }

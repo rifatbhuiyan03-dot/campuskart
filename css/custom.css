@@ -630,6 +630,48 @@ html, body {
   animation: toastSlideOut 0.28s cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
+@media (max-width: 639px) {
+  #toastContainer {
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    right: auto !important;
+    top: 0.75rem !important;
+    width: 92vw !important;
+    max-width: 390px !important;
+    align-items: center !important;
+  }
+
+  .campuskart-toast {
+    animation: toastSlideInMobile 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+
+  .campuskart-toast.toast-hiding {
+    animation: toastSlideOutMobile 0.25s cubic-bezier(0.4, 0, 1, 1) forwards;
+  }
+}
+
+@keyframes toastSlideInMobile {
+  0% {
+    opacity: 0;
+    transform: translateY(-40px) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toastSlideOutMobile {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-40px) scale(0.9);
+  }
+}
+
 @keyframes toastSlideIn {
   0% {
     opacity: 0;
