@@ -518,7 +518,7 @@ function updateAuthUI() {
           </button>
           <button type="button" 
                   id="navRegisterBtn" 
-                  onclick="openAuthModal('register')"
+                  onclick="openAuthModal('signup')"
                   class="px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 transition flex items-center gap-1 active:scale-95 shadow-xs cursor-pointer">
             <i class="fa-solid fa-user-plus text-xs text-orange-400"></i>
             <span>Sign Up</span>
@@ -527,7 +527,7 @@ function updateAuthUI() {
       `;
 
       document.getElementById('navLoginBtn')?.addEventListener('click', () => openAuthModal('login'));
-      document.getElementById('navRegisterBtn')?.addEventListener('click', () => openAuthModal('register'));
+      document.getElementById('navRegisterBtn')?.addEventListener('click', () => openAuthModal('signup'));
     }
   }
 
@@ -577,7 +577,7 @@ function updateAuthUI() {
             <button type="button" onclick="openAuthModal('login')" class="py-2 bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 rounded-xl text-xs font-bold shadow-xs">
               Login
             </button>
-            <button type="button" onclick="openAuthModal('register')" class="py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-sm">
+            <button type="button" onclick="openAuthModal('signup')" class="py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-sm">
               Sign Up
             </button>
           </div>
@@ -4432,8 +4432,6 @@ function renderStarRating(rating = 5.0) {
  * Handler for Primary "Chat / Make Offer" button inside Details Modal
  */
 function handleDetailsChatOfferAction(itemId) {
-  const item = items.find(i => i.id === itemId);
-function openDetailsModal(itemId) {
   let item = items.find(i => i.id === itemId);
   if (!item) {
     if (itemId === 'ck-101' || itemId === 'item-1') {
@@ -5233,14 +5231,15 @@ function showToast(msgOrConfig, type = 'info', title = null, actionType = null) 
 
 // Global exports for accessibility from inline handlers & window scope
 if (typeof window !== 'undefined') {
-  window.closePostModal = closePostModal;
   window.openPostModal = openPostModal;
-  window.closeDashboardModal = closeDashboardModal;
-  window.openDashboard = openDashboard;
+  window.closePostModal = closePostModal;
+  window.openDetailsModal = openDetailsModal;
   window.closeDetailsModal = closeDetailsModal;
   window.openAuthModal = openAuthModal;
   window.closeAuthModal = closeAuthModal;
   window.handleLogout = handleLogout;
+  window.openDashboard = openDashboard;
+  window.closeDashboardModal = closeDashboardModal;
   window.showToast = showToast;
   window.resetDemoData = resetDemoData;
   window.alert = function(msg) {
@@ -5251,5 +5250,4 @@ if (typeof window !== 'undefined') {
       icon: 'fa-solid fa-circle-info'
     });
   };
-}
 }
