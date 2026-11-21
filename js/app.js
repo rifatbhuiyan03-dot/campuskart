@@ -177,8 +177,14 @@ document.addEventListener('DOMContentLoaded', () => {
   updateAuthUI();
   updateNotificationBadges();
   // Real-Time Live Clock & Date initialization
-  updateCampusClock();
-  setInterval(updateCampusClock, 1000);
+  if (typeof updateCampusClock === 'function') {
+    try {
+      updateCampusClock();
+      setInterval(updateCampusClock, 1000);
+    } catch (e) {
+      console.warn('Campus clock initialization skipped:', e);
+    }
+  }
   setInterval(updateBorrowedCountdowns, 1000);
 
   // Initialize Featured Items Hero Carousel
@@ -437,41 +443,58 @@ function updateAuthUI() {
  */
 
 function updateCampusClock() {
-  const now = new Date();
+  try {
+    const navClockTime = document.getElementById('campusClockTime');
+    const navClockDate = document.getElementById('campusClockDate');
+    const topTickerClockTime = document.getElementById('topTickerClockTime');
+    const topTickerClockDate = document.getElementById('topTickerClockDate');
+    const mobileClockTime = document.getElementById('mobileClockTime');
+    const mobileClockDate = document.getElementById('mobileClockDate');
 
-  // 12-Hour format with AM/PM and seconds: e.g. "10:58:30 PM"
-  let hours = now.getHours();
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12;
-  hours = hours ? hours : 12; // 0 hour should be 12
-  const formattedHours = String(hours).padStart(2, '0');
-  const timeString = `${formattedHours}:${minutes}:${seconds} ${ampm}`;
+    // If no clock display elements exist in the DOM, safely return
+    if (!navClockTime && !navClockDate && !topTickerClockTime && !topTickerClockDate && !mobileClockTime && !mobileClockDate) {
+      return;
+    }
 
-  // Date format: e.g. "Tuesday, 17 Nov 2026"
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const dayName = days[now.getDay()];
-  const dayNum = now.getDate();
-  const monthName = months[now.getMonth()];
-  const year = now.getFullYear();
-  const dateString = `${dayName}, ${dayNum} ${monthName} ${year}`;
+    const now = new Date();
 
-  const navClockTime = document.getElementById('campusClockTime');
-  const navClockDate = document.getElementById('campusClockDate');
-  if (navClockTime) navClockTime.textContent = timeString;
-  if (navClockDate) navClockDate.textContent = dateString;
+    // 12-Hour format with AM/PM and seconds: e.g. "10:58:30 PM"
+    let hours = now.getHours();
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12;
+    hours = hours ? hours : 12; // 0 hour should be 12
+    const formattedHours = String(hours).padStart(2, '0');
+    const timeString = `${formattedHours}:${minutes}:${seconds} ${ampm}`;
 
-  const topTickerClockTime = document.getElementById('topTickerClockTime');
-  const topTickerClockDate = document.getElementById('topTickerClockDate');
-  if (topTickerClockTime) topTickerClockTime.textContent = timeString;
-  if (topTickerClockDate) topTickerClockDate.textContent = dateString;
+    // Date format: e.g. "Tuesday, 17 Nov 2026"
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const dayName = days[now.getDay()];
+    const dayNum = now.getDate();
+    const monthName = months[now.getMonth()];
+    const year = now.getFullYear();
+    const dateString = `${dayName}, ${dayNum} ${monthName} ${year}`;
 
-  const mobileClockTime = document.getElementById('mobileClockTime');
-  const mobileClockDate = document.getElementById('mobileClockDate');
-  if (mobileClockTime) mobileClockTime.textContent = timeString;
-  if (mobileClockDate) mobileClockDate.textContent = dateString;
+    if (navClockTime) navClockTime.textContent = timeString;
+    if (navClockDate) navClockDate.textContent = dateString;
+
+    if (topTickerClockTime) topTickerClockTime.textContent = timeString;
+    if (topTickerClockDate) topTickerClockDate.textContent = dateString;
+
+    if (mobileClockTime) mobileClockTime.textContent = timeString;
+    if (mobileClockDate) mobileClockDate.textContent = dateString;
+  } catch (err) {
+    console.warn('Campus clock update safely skipped:', err);
+  }
+}
+
+// Aliases for compatibility
+const updateClock = updateCampusClock;
+if (typeof window !== 'undefined') {
+  window.updateCampusClock = updateCampusClock;
+  window.updateClock = updateCampusClock;
 }
 
 /**

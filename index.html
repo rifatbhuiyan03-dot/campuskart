@@ -46,39 +46,13 @@
 </head>
 <body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
 
-  <!-- ================= TOP ANNOUNCEMENT TICKER ================= -->
-  <div class="bg-indigo-950 text-indigo-100 text-xs py-2 px-3 sm:px-4 border-b border-indigo-900/60 overflow-hidden">
-    <div class="max-w-7xl mx-auto flex items-center justify-between gap-2 min-w-0">
-      <div class="flex items-center space-x-2 min-w-0">
-        <span class="bg-blue-600 text-white text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full flex items-center gap-1 shrink-0">
-          <i class="fa-solid fa-shield-halved"></i> NUB Verified
-        </span>
-        <span class="truncate text-[11px] sm:text-xs">Northern University Bangladesh Marketplace &bull; Strict <strong>@nub.ac.bd</strong> verified access</span>
-      </div>
-      <div class="hidden sm:flex items-center space-x-3 text-[11px] text-indigo-200">
-        <span class="flex items-center gap-1"><i class="fa-solid fa-graduation-cap"></i> Ashkona Permanent Campus</span>
-        <span>&bull;</span>
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-900/80 border border-indigo-700/60 text-indigo-100 shadow-2xs">
-          <span class="relative flex h-2 w-2">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
-          </span>
-          <i class="fa-regular fa-clock text-indigo-300 text-[10px]"></i>
-          <span id="topTickerClockTime" class="font-mono font-bold tracking-tight text-white">--:--:-- --</span>
-          <span class="text-indigo-400">&bull;</span>
-          <span id="topTickerClockDate" class="text-indigo-200">--</span>
-        </span>
-      </div>
-    </div>
-  </div>
-
   <!-- ================= NAVBAR & STICKY HEADER ================= -->
   <header id="mainHeader" class="sticky-header">
     <div class="max-w-7xl mx-auto px-2.5 sm:px-6 lg:px-8 py-2 md:py-2.5">
-      <div class="flex flex-wrap md:flex-nowrap items-center justify-between gap-y-2 md:gap-x-4">
+      <div class="flex flex-wrap md:flex-nowrap items-center justify-between gap-y-2 md:gap-x-3 lg:gap-x-4">
         
-        <!-- Row 1 (Mobile Left) / Left (Desktop): Logo & Campus Badge -->
-        <div class="order-1 flex items-center space-x-1.5 sm:space-x-3 shrink-0">
+        <!-- Row 1 (Mobile Left) / Left (Desktop): Logo -->
+        <div class="order-1 flex items-center shrink-0">
           <a href="#" class="flex items-center space-x-1.5 sm:space-x-2.5 group">
             <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-orange-500 via-amber-500 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform">
               <i class="fa-solid fa-basket-shopping text-sm sm:text-lg"></i>
@@ -91,17 +65,10 @@
               <p class="hidden sm:block text-[10px] text-slate-400 font-medium leading-none">Northern University Bangladesh</p>
             </div>
           </a>
-
-          <!-- Campus Selector Pill (Desktop xl+) -->
-          <div class="hidden 2xl:flex items-center text-xs bg-slate-100/90 hover:bg-slate-200/80 px-2.5 py-1 rounded-lg text-slate-600 transition cursor-pointer" title="Northern University Bangladesh Ashkona Campus">
-            <i class="fa-solid fa-building-columns text-indigo-600 mr-1.5 text-[11px]"></i>
-            <span class="font-bold text-slate-700">NUB Campus</span>
-            <span class="text-[10px] text-indigo-600 font-semibold ml-1 bg-indigo-50 px-1 rounded">Ashkona</span>
-          </div>
         </div>
 
         <!-- Center / Row 2 (Mobile full-width): Prominent Daraz-Style Quick Search Bar -->
-        <div class="order-3 md:order-2 w-full md:flex-1 md:max-w-xl lg:max-w-2xl md:mx-4 pt-1 sm:pt-0">
+        <div class="order-3 md:order-2 w-full md:flex-1 min-w-0 pt-1 sm:pt-0">
           <form id="headerSearchForm" onsubmit="event.preventDefault(); handleHeaderSearch();" class="relative w-full">
             <div class="relative flex items-center w-full daraz-search-wrapper rounded-xl border border-slate-300 bg-slate-50/90 focus-within:bg-white focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-500/20 transition-all shadow-xs overflow-hidden">
               <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
