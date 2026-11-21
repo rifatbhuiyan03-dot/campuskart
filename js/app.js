@@ -352,32 +352,51 @@ function saveSessionToStorage(user) {
   }
 }
 
+function getStudentInitials(name) {
+  if (!name || typeof name !== 'string') return 'NUB';
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'NB';
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 function updateAuthUI() {
   const navContainer = document.getElementById('navAuthContainer');
   const mobileContainer = document.getElementById('mobileAuthContainer');
 
   if (navContainer) {
     if (currentUser) {
+      const initials = getStudentInitials(currentUser.name);
       navContainer.innerHTML = `
         <div class="relative">
           <button type="button" 
                   id="userDropdownBtn" 
-                  class="flex items-center space-x-2 py-1 px-2 rounded-xl hover:bg-slate-100 transition border border-transparent hover:border-slate-200 group">
-            <div class="relative">
-              <img src="${currentUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}" 
-                   alt="${currentUser.name}" 
-                   class="w-8 h-8 rounded-full object-cover ring-2 ring-indigo-500 shadow-xs" 
-                   onerror="this.src='https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'" />
+                  class="flex items-center space-x-1.5 sm:space-x-2 py-1 px-1.5 sm:px-2.5 rounded-xl hover:bg-slate-100 transition border border-slate-200/90 bg-white shadow-2xs group cursor-pointer"
+                  title="${currentUser.name} (${currentUser.studentId})">
+            <div class="relative w-8 h-8 rounded-full shrink-0">
+              ${currentUser.avatar ? `
+                <img src="${currentUser.avatar}" 
+                     alt="${currentUser.name}" 
+                     class="w-8 h-8 rounded-full object-cover ring-2 ring-indigo-500 shadow-xs" 
+                     onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');" />
+                <div class="hidden w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-600 via-indigo-700 to-purple-600 text-white font-extrabold text-xs flex items-center justify-center ring-2 ring-indigo-500 shadow-xs select-none">
+                  ${initials}
+                </div>
+              ` : `
+                <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-600 via-indigo-700 to-purple-600 text-white font-extrabold text-xs flex items-center justify-center ring-2 ring-indigo-500 shadow-xs select-none">
+                  ${initials}
+                </div>
+              `}
               <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white"></span>
             </div>
-            <div class="text-left hidden xl:block">
+            <div class="text-left hidden sm:block">
               <div class="flex items-center gap-1">
-                <span class="text-xs font-bold text-slate-800 leading-none group-hover:text-indigo-600 transition-colors">${currentUser.name.split(' ')[0]}</span>
+                <span class="text-xs font-bold text-slate-800 leading-none group-hover:text-indigo-600 transition-colors">${currentUser.name}</span>
                 <i class="fa-solid fa-circle-check text-blue-600 text-[10px]" title="Verified @nub.ac.bd student"></i>
               </div>
               <span class="text-[10px] text-slate-500 font-mono">ID: ${currentUser.studentId}</span>
             </div>
-            <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 group-hover:text-indigo-600 transition-colors hidden sm:inline-block"></i>
+            <i class="fa-solid fa-chevron-down text-[10px] text-slate-400 group-hover:text-indigo-600 transition-colors"></i>
           </button>
 
           <!-- Dropdown Profile Menu -->
@@ -396,16 +415,33 @@ function updateAuthUI() {
             </div>
 
             <div class="py-1">
+              <!-- My Profile -->
               <button type="button" 
-                      id="menuDashboardBtn" 
-                      class="w-full text-left px-4 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50 flex items-center justify-between transition">
-                <span class="flex items-center gap-2"><i class="fa-solid fa-id-badge text-xs"></i> Profile & Dashboard</span>
+                      id="menuProfileBtn" 
+                      class="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:text-indigo-600 hover:bg-indigo-50/70 flex items-center justify-between transition group cursor-pointer">
+                <span class="flex items-center gap-2.5">
+                  <i class="fa-solid fa-id-badge text-indigo-500 text-xs group-hover:scale-110 transition-transform"></i>
+                  <span>My Profile</span>
+                </span>
+                <span class="text-[10px] text-slate-400 font-mono">${currentUser.studentId}</span>
+              </button>
+
+              <!-- My Transactions -->
+              <button type="button" 
+                      id="menuTransactionsBtn" 
+                      class="w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:text-indigo-600 hover:bg-indigo-50/70 flex items-center justify-between transition group cursor-pointer">
+                <span class="flex items-center gap-2.5">
+                  <i class="fa-solid fa-arrows-rotate text-indigo-500 text-xs group-hover:rotate-180 transition-transform"></i>
+                  <span>My Transactions</span>
+                </span>
                 <span id="menuRequestBadge" class="hidden bg-amber-500 text-white text-[9px] px-1.5 py-0.2 rounded-full font-bold">0</span>
               </button>
+
+              <!-- My Saved Items -->
               <button type="button" 
                       id="menuSavedItemsBtn" 
-                      class="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-indigo-50 hover:text-indigo-700 flex items-center gap-2.5">
-                <i class="fa-solid fa-heart text-slate-400 text-xs"></i>
+                      class="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-indigo-50/70 hover:text-indigo-700 flex items-center gap-2.5 transition cursor-pointer">
+                <i class="fa-solid fa-heart text-rose-400 text-xs"></i>
                 <span>My Saved Items</span>
               </button>
             </div>
@@ -414,14 +450,14 @@ function updateAuthUI() {
               <button type="button" 
                       id="menuResetDemoBtn" 
                       onclick="resetDemoData()" 
-                      class="reset-demo-btn w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:text-orange-600 hover:bg-orange-50 flex items-center gap-2.5 transition"
+                      class="reset-demo-btn w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:text-orange-600 hover:bg-orange-50/70 flex items-center gap-2.5 transition cursor-pointer"
                       title="Reset demo data to 10 factory default items">
                 <i class="fa-solid fa-arrows-rotate text-xs text-orange-500"></i>
                 <span>🔄 Reset Demo Data</span>
               </button>
               <button type="button" 
                       id="menuLogoutBtn" 
-                      class="w-full text-left px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2.5 transition">
+                      class="w-full text-left px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2.5 transition cursor-pointer">
                 <i class="fa-solid fa-arrow-right-from-bracket text-xs"></i>
                 <span>Sign Out</span>
               </button>
@@ -440,6 +476,17 @@ function updateAuthUI() {
         });
       }
 
+      document.getElementById('menuProfileBtn')?.addEventListener('click', () => {
+        menu?.classList.add('hidden');
+        openDashboard('listings');
+      });
+
+      document.getElementById('menuTransactionsBtn')?.addEventListener('click', () => {
+        menu?.classList.add('hidden');
+        openDashboard('borrowed');
+      });
+
+      // Alias for backwards compatibility
       document.getElementById('menuDashboardBtn')?.addEventListener('click', () => {
         menu?.classList.add('hidden');
         openDashboard('listings');
@@ -459,18 +506,20 @@ function updateAuthUI() {
       });
 
     } else {
-      // Guest state: Show Login & Sign Up buttons (clean Daraz-style, minimal on mobile)
+      // Guest state: Prominently display Login and Sign Up buttons
       navContainer.innerHTML = `
         <div class="flex items-center space-x-1 sm:space-x-1.5">
           <button type="button" 
                   id="navLoginBtn" 
-                  class="px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 hover:text-orange-600 hover:bg-orange-50/50 transition flex items-center gap-1 border border-slate-200">
+                  onclick="openAuthModal('login')"
+                  class="px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 hover:text-orange-600 hover:bg-orange-50/70 bg-white border border-slate-200 transition flex items-center gap-1 shadow-2xs active:scale-95 cursor-pointer">
             <i class="fa-solid fa-arrow-right-to-bracket text-xs text-orange-500"></i>
             <span>Login</span>
           </button>
           <button type="button" 
                   id="navRegisterBtn" 
-                  class="hidden sm:flex px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 transition items-center gap-1.5 active:scale-95 shadow-xs">
+                  onclick="openAuthModal('register')"
+                  class="px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 transition flex items-center gap-1 active:scale-95 shadow-xs cursor-pointer">
             <i class="fa-solid fa-user-plus text-xs text-orange-400"></i>
             <span>Sign Up</span>
           </button>
@@ -485,10 +534,18 @@ function updateAuthUI() {
   // Mobile Drawer Auth Container
   if (mobileContainer) {
     if (currentUser) {
+      const initials = getStudentInitials(currentUser.name);
       mobileContainer.innerHTML = `
         <div class="p-3 bg-slate-50 border border-slate-200 rounded-2xl">
           <div class="flex items-center space-x-3 mb-2.5">
-            <img src="${currentUser.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}" class="w-10 h-10 rounded-full object-cover ring-2 ring-indigo-500" alt="${currentUser.name}" />
+            <div class="relative w-10 h-10 rounded-full shrink-0">
+              ${currentUser.avatar ? `
+                <img src="${currentUser.avatar}" class="w-10 h-10 rounded-full object-cover ring-2 ring-indigo-500" alt="${currentUser.name}" onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');" />
+                <div class="hidden w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-extrabold text-sm flex items-center justify-center ring-2 ring-indigo-500 select-none">${initials}</div>
+              ` : `
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-600 to-purple-600 text-white font-extrabold text-sm flex items-center justify-center ring-2 ring-indigo-500 select-none">${initials}</div>
+              `}
+            </div>
             <div>
               <div class="flex items-center gap-1">
                 <p class="text-xs font-bold text-slate-900">${currentUser.name}</p>
@@ -498,11 +555,14 @@ function updateAuthUI() {
               <p class="text-[10px] text-indigo-600 font-medium truncate">${currentUser.department || 'NUB Student'}</p>
             </div>
           </div>
-          <div class="grid grid-cols-2 gap-2 mb-2">
-            <button type="button" onclick="openDashboard('listings')" class="py-1.5 px-2 bg-indigo-600 text-white rounded-xl text-xs font-bold text-center">
-              Dashboard
+          <div class="grid grid-cols-3 gap-1.5 mb-2">
+            <button type="button" onclick="openDashboard('listings')" class="py-1.5 px-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[11px] font-bold text-center">
+              Profile
             </button>
-            <button type="button" onclick="handleLogout()" class="py-1.5 px-2 bg-white border border-rose-200 text-rose-600 rounded-xl text-xs font-semibold text-center">
+            <button type="button" onclick="openDashboard('borrowed')" class="py-1.5 px-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-[11px] font-bold text-center">
+              Transactions
+            </button>
+            <button type="button" onclick="handleLogout()" class="py-1.5 px-2 bg-white border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-xl text-[11px] font-semibold text-center">
               Sign Out
             </button>
           </div>
@@ -514,10 +574,10 @@ function updateAuthUI() {
           <p class="text-xs font-bold text-indigo-950 mb-0.5">Northern University Bangladesh</p>
           <p class="text-[11px] text-indigo-700 mb-2.5">Access verified marketplace with your @nub.ac.bd ID</p>
           <div class="grid grid-cols-2 gap-2">
-            <button type="button" onclick="openAuthModal('login')" class="py-1.5 bg-white border border-indigo-200 text-indigo-700 rounded-xl text-xs font-bold shadow-xs">
+            <button type="button" onclick="openAuthModal('login')" class="py-2 bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50 rounded-xl text-xs font-bold shadow-xs">
               Login
             </button>
-            <button type="button" onclick="openAuthModal('register')" class="py-1.5 bg-orange-600 text-white rounded-xl text-xs font-bold shadow-sm">
+            <button type="button" onclick="openAuthModal('register')" class="py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold shadow-sm">
               Sign Up
             </button>
           </div>
@@ -3703,28 +3763,25 @@ function bindEvents() {
   const cancelPostModalBtn = document.getElementById('cancelPostModal');
 
   openPostModalBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      if (!currentUser) {
-        pendingAuthAction = () => {
-          if (postModal) {
-            postModal.classList.remove('hidden');
-            document.body.classList.add('overflow-hidden');
-          }
-        };
-        openAuthModal('login', 'Please sign in with your official @nub.ac.bd account to post an item.');
-        return;
-      }
-
-      if (postModal) {
-        updateAuthUI();
-        postModal.classList.remove('hidden');
-        document.body.classList.add('overflow-hidden');
-      }
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      openPostModal();
     });
   });
 
-  if (closePostModalBtn) closePostModalBtn.addEventListener('click', closePostModal);
-  if (cancelPostModalBtn) cancelPostModalBtn.addEventListener('click', closePostModal);
+  if (closePostModalBtn) {
+    closePostModalBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      closePostModal();
+    });
+  }
+
+  if (cancelPostModalBtn) {
+    cancelPostModalBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      closePostModal();
+    });
+  }
 
   const postTransactionInputs = document.querySelectorAll('input[name="postTransaction"]');
   postTransactionInputs.forEach(radio => {
@@ -3741,7 +3798,7 @@ function bindEvents() {
   document.getElementById('postItemForm')?.addEventListener('submit', handleNewListingSubmit);
 
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
+    if (e.key === 'Escape' || e.keyCode === 27) {
       closePostModal();
       closeDetailsModal();
       closeAuthModal();
@@ -3750,6 +3807,7 @@ function bindEvents() {
       closeRequestModal();
       closeApprovalModal();
       closeReviewModal();
+      document.getElementById('userDropdownMenu')?.classList.add('hidden');
     }
   });
 
@@ -3997,12 +4055,7 @@ function renderItems() {
 
     container.querySelectorAll('.open-post-modal-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        if (!currentUser) {
-          openAuthModal('login', 'Please sign in with your official @nub.ac.bd account to post an item.');
-          return;
-        }
-        const postModal = document.getElementById('postItemModal');
-        if (postModal) postModal.classList.remove('hidden');
+        openPostModal();
       });
     });
     return;
@@ -5178,8 +5231,18 @@ function showToast(msgOrConfig, type = 'info', title = null, actionType = null) 
   setTimeout(dismiss, duration);
 }
 
-// Replace native browser alert() popups with sleek animated toast notifications
+// Global exports for accessibility from inline handlers & window scope
 if (typeof window !== 'undefined') {
+  window.closePostModal = closePostModal;
+  window.openPostModal = openPostModal;
+  window.closeDashboardModal = closeDashboardModal;
+  window.openDashboard = openDashboard;
+  window.closeDetailsModal = closeDetailsModal;
+  window.openAuthModal = openAuthModal;
+  window.closeAuthModal = closeAuthModal;
+  window.handleLogout = handleLogout;
+  window.showToast = showToast;
+  window.resetDemoData = resetDemoData;
   window.alert = function(msg) {
     showToast({
       title: 'Campus Notice',
@@ -5188,5 +5251,4 @@ if (typeof window !== 'undefined') {
       icon: 'fa-solid fa-circle-info'
     });
   };
-}
 }

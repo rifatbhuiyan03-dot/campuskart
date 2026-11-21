@@ -113,6 +113,10 @@
             <span id="campusClockDate" class="hidden"></span>
           </div>
 
+          <!-- Dynamic Auth Container (Right side next to the live clock: Login & Sign Up OR Student Profile Dropdown) -->
+          <div id="navAuthContainer" class="flex items-center space-x-1 sm:space-x-1.5 relative shrink-0">
+          </div>
+
           <!-- Wishlist / Saved Toggle Button -->
           <button type="button" 
                   id="navWishlistBtn" 
@@ -142,10 +146,6 @@
             <span class="hidden sm:inline">Post an Item</span>
             <span class="sm:hidden">Post</span>
           </button>
-
-          <!-- Dynamic Auth Container (Populated dynamically by app.js: Sign In/Register buttons OR Student Profile Dropdown) -->
-          <div id="navAuthContainer" class="flex items-center space-x-1 sm:space-x-2 pl-1 sm:pl-2 border-l border-slate-200 relative shrink-0">
-          </div>
 
           <!-- Mobile Hamburger Toggle -->
           <button type="button" 
@@ -753,7 +753,9 @@
   </main>
 
   <!-- ================= POST AN ITEM MODAL ================= -->
-  <div id="postItemModal" class="hidden fixed inset-0 z-[2000] overflow-y-auto modal-backdrop flex items-center justify-center p-4">
+  <div id="postItemModal" 
+       onclick="if(event.target === this) closePostModal();" 
+       class="hidden fixed inset-0 z-[2000] overflow-y-auto modal-backdrop flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl border border-slate-200 animate-pop my-8">
       
       <!-- Modal Header -->
@@ -776,8 +778,12 @@
             <i class="fa-solid fa-wand-magic-sparkles text-amber-600"></i>
             <span>✨ Fill Demo CSE Gear</span>
           </button>
-          <button type="button" id="closePostModal" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center transition">
-            <i class="fa-solid fa-xmark"></i>
+          <button type="button" 
+                  id="closePostModal" 
+                  onclick="closePostModal()" 
+                  class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition cursor-pointer" 
+                  title="Close modal (Esc)">
+            <i class="fa-solid fa-xmark text-sm"></i>
           </button>
         </div>
       </div>
@@ -1195,7 +1201,8 @@
         <div class="pt-4 border-t border-slate-100 flex items-center justify-end space-x-3">
           <button type="button" 
                   id="cancelPostModal" 
-                  class="px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition">
+                  onclick="closePostModal()" 
+                  class="px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition cursor-pointer">
             Cancel
           </button>
           <button type="submit" 
