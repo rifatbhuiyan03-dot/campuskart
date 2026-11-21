@@ -83,13 +83,13 @@ const INITIAL_ITEMS = [
     condition: 'Good',
     transaction: 'Borrow',
     transactionType: 'Borrow',
-    price: 0,
-    priceLabel: '৳20 / week',
+    price: 30,
+    priceLabel: '৳30 / week',
     currency: '৳',
-    borrowRate: '৳20 / week',
+    borrowRate: '৳30 / week',
     borrowTerms: '৳150 refundable deposit upon exam completion',
     exchangeFor: null,
-    status: 'Borrowed',
+    status: 'Available',
     location: 'Building A, Ground Floor Student Lounge',
     seller: {
       name: 'Ruma Akter',
@@ -108,31 +108,23 @@ const INITIAL_ITEMS = [
     views: 84,
     isFeatured: true,
     activeRequest: null,
-    borrowDetails: {
-      borrowerId: '202110045',
-      borrowerName: 'Rifat Hasan',
-      borrowerEmail: 'rifat.cse@nub.ac.bd',
-      borrowDate: '2026-11-15T10:00:00.000Z',
-      dueDate: new Date(Date.now() + 4 * 86400000 + 4 * 3600000).toISOString(),
-      returnStatus: 'Active',
-      isReviewed: false
-    }
+    borrowDetails: null
   },
   {
     id: 'item-3',
     title: 'Digital Logic Design Breadboard with IC 7408, 7432, 7404 Kit',
     category: 'Lab & Engineering',
-    courseCode: 'CSE 211',
+    courseCode: 'CSE 123',
     condition: 'Like New',
     transaction: 'Borrow',
     transactionType: 'Borrow',
-    price: 0,
-    priceLabel: '৳30 / week',
+    price: 50,
+    priceLabel: '৳50 / week',
     currency: '৳',
-    borrowRate: '৳30 / week',
+    borrowRate: '৳50 / week',
     borrowTerms: 'Return all 12 IC chips and jumper wires intact',
     exchangeFor: null,
-    status: 'Borrowed',
+    status: 'Available',
     location: 'NUB Digital Electronics Lab, 4th Floor',
     seller: {
       name: 'Rifat Hasan',
@@ -151,22 +143,14 @@ const INITIAL_ITEMS = [
     views: 62,
     isFeatured: true,
     activeRequest: null,
-    borrowDetails: {
-      borrowerId: '202220015',
-      borrowerName: 'Ruma Akter',
-      borrowerEmail: 'ruma.cse@nub.ac.bd',
-      borrowDate: '2026-11-14T09:00:00.000Z',
-      dueDate: new Date(Date.now() + 6 * 86400000 + 2 * 3600000).toISOString(),
-      returnStatus: 'Active',
-      isReviewed: false
-    }
+    borrowDetails: null
   },
   {
     id: 'item-4',
-    title: 'Microprocessor 8086 Manual & CSE 3rd Semester Lecture Notes',
+    title: 'CSE 3373 Operating Systems Notes & Solved Midterm Kit',
     category: 'Notes & Study Kits',
-    courseCode: 'CSE 311',
-    condition: 'Fair',
+    courseCode: 'CSE 3373',
+    condition: 'Like New',
     transaction: 'Exchange',
     transactionType: 'Exchange',
     price: 0,
@@ -174,9 +158,9 @@ const INITIAL_ITEMS = [
     currency: '৳',
     borrowRate: null,
     borrowTerms: null,
-    exchangeFor: 'CSE 315 Data Communication handwritten lecture notes or past papers',
+    exchangeFor: 'CSE 311 (Database Systems) complete notes or lab manual',
     status: 'Available',
-    location: 'Student Cafeteria (South Campus Annex)',
+    location: 'Ashkona Campus Study Zone / Library Ground Floor',
     seller: {
       name: 'Farhan Ahmed',
       studentId: '42240101512',
@@ -188,11 +172,11 @@ const INITIAL_ITEMS = [
       reviewsCount: 2,
       responseTime: '< 20 mins'
     },
-    image: 'https://images.unsplash.com/photo-1588072432836-e10032774350?auto=format&fit=crop&w=800&q=80',
-    description: 'Spiral-bound assembly language instruction manual for Intel 8086 with full EMU8086 lab simulation code snippets and pinout diagrams. Includes past mid/final solution sheets. Will exchange for CSE 315 notes.',
-    datePosted: '2 days ago',
-    views: 110,
-    isFeatured: false,
+    image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=800&q=80',
+    description: 'Comprehensive spiral-bound handwritten lecture notes for CSE 3373 Operating Systems. Covers Process Synchronization, Semaphores, Deadlock Avoidance (Banker\'s Algorithm), CPU Scheduling algorithms (SJF, Round Robin), and Virtual Memory Paging. Includes past 4 semesters of solved NUB midterm & final exams with faculty answer keys.',
+    datePosted: 'Today, 11:00 AM',
+    views: 65,
+    isFeatured: true,
     activeRequest: null,
     borrowDetails: null
   },
@@ -227,7 +211,7 @@ const INITIAL_ITEMS = [
     description: '24-inch clear acrylic drafting T-Square, 30/60 and 45 degree set squares, circle template stencil, and Rotring-compatible compass box. Everything needed for first-year Engineering Drawing courses.',
     datePosted: '4 hours ago',
     views: 39,
-    isFeatured: false,
+    isFeatured: true,
     activeRequest: null,
     borrowDetails: null
   },
@@ -522,11 +506,14 @@ const POPULAR_COURSES = [
   'All Courses',
   'CSE 103',
   'CSE 111',
+  'CSE 123',
   'CSE 211',
   'CSE 311',
   'CSE 315',
   'CSE 323',
+  'CSE 3373',
   'CSE 412',
+  'MATH 101',
   'MATH 201',
   'EEE 163',
   'ENG 101'
@@ -534,8 +521,8 @@ const POPULAR_COURSES = [
 
 const COURSE_CODES = [
   'All Courses',
-  'CSE 101', 'CSE 103', 'CSE 111', 'CSE 211', 'CSE 213',
-  'CSE 311', 'CSE 315', 'CSE 323', 'CSE 412', 'MATH 101',
+  'CSE 101', 'CSE 103', 'CSE 111', 'CSE 123', 'CSE 211', 'CSE 213',
+  'CSE 311', 'CSE 315', 'CSE 323', 'CSE 3373', 'CSE 412', 'MATH 101',
   'MATH 201', 'EEE 101', 'EEE 163', 'ENG 101', 'BBA 101',
   'BBA 202', 'CHEM 121', 'PHY 101', 'General'
 ];
