@@ -193,13 +193,7 @@ body {
   border: 1px solid rgba(226, 232, 240, 0.8);
 }
 
-/* Authentication System & NUB Verification Styles */
-.nub-badge {
-  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
-  color: #ffffff;
-  border: 1px solid #3b82f6;
-  box-shadow: 0 2px 4px rgba(30, 58, 138, 0.25);
-}
+/* Authentication System & Tab Navigation Styles */
 
 .auth-tab {
   transition: all 0.2s ease;
@@ -349,26 +343,6 @@ body {
   50% { opacity: 0.75; }
 }
 
-/* Real-Time Live Campus Clock Styling */
-.campus-clock-pill {
-  font-feature-settings: "tnum" 1, "ss01" 1;
-  letter-spacing: -0.01em;
-}
-
-.campus-clock-pulse {
-  animation: clockPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes clockPulse {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.5;
-    transform: scale(0.92);
-  }
-}
 
 /* ==========================================================================
    STICKY HEADER & MODERN FROSTED GLASS (GLASSMORPHISM)
@@ -805,6 +779,55 @@ html, body {
 .toast-info .toast-progress-bar {
   background: linear-gradient(90deg, #64748b, #475569);
 }
+
+/* ==========================================================================
+   MOBILE & RESPONSIVE MODAL STYLING (Item Details & Form Previews)
+   ========================================================================== */
+@media (max-width: 640px) {
+  .modal-backdrop {
+    padding: 0.5rem 0.5rem 2.5rem 0.5rem !important;
+    align-items: flex-start !important;
+    overflow-x: hidden !important;
+  }
+
+  .modal-backdrop > div {
+    margin-top: 0.5rem !important;
+    margin-bottom: 2rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 1rem !important;
+    border-radius: 1.25rem !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  #itemDetailsModal .item-details-image-container {
+    border-radius: 1rem !important;
+  }
+
+  #itemDetailsModal .item-details-image-container > div {
+    height: 14rem !important;
+  }
+
+  #itemDetailsModal .details-action-group {
+    flex-direction: column !important;
+  }
+
+  #itemDetailsModal .details-action-group button {
+    width: 100% !important;
+  }
+
+  #postItemModal > div {
+    padding: 1rem !important;
+    border-radius: 1.25rem !important;
+  }
+
+  /* Prevent any text or badge overflow on extra narrow phones */
+  .item-card {
+    max-width: 100% !important;
+  }
+}
+
 
 
 
