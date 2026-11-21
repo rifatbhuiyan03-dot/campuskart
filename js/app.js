@@ -208,33 +208,85 @@ let currentUploadedImageDataUrl = null;
 
 // Initialize application on DOM loaded
 document.addEventListener('DOMContentLoaded', () => {
-  initSupabase();
-  loadAuthData();
-  loadData();
-  initUI();
-  setupImageUploadAndPreview();
-  bindDemoAndOfferEvents();
-  populateDropdowns();
-  bindEvents();
-  bindAuthEvents();
-  bindStateMachineEvents();
-  renderItems();
-  updateWishlistCount();
-  updateAuthUI();
-  updateNotificationBadges();
-  // Real-Time Live Clock & Date initialization
-  if (typeof updateCampusClock === 'function') {
-    try {
-      updateCampusClock();
-      setInterval(updateCampusClock, 1000);
-    } catch (e) {
-      console.warn('Campus clock initialization skipped:', e);
+  // 1. Core synchronous data initialization with immediate fallback to INITIAL_ITEMS
+  try {
+    loadAuthData();
+  } catch (e) {
+    console.warn('loadAuthData notice:', e);
+  }
+
+  try {
+    loadData();
+  } catch (e) {
+    console.warn('loadData notice (falling back to INITIAL_ITEMS):', e);
+    if (typeof INITIAL_ITEMS !== 'undefined' && Array.isArray(INITIAL_ITEMS)) {
+      items = JSON.parse(JSON.stringify(INITIAL_ITEMS));
     }
   }
-  setInterval(updateBorrowedCountdowns, 1000);
 
-  // Initialize Featured Items Hero Carousel
-  initHeroCarousel();
+  // Ensure items is populated synchronously
+  if (!Array.isArray(items) || items.length === 0) {
+    if (typeof INITIAL_ITEMS !== 'undefined' && Array.isArray(INITIAL_ITEMS)) {
+      items = JSON.parse(JSON.stringify(INITIAL_ITEMS));
+    } else {
+      items = [];
+    }
+  }
+
+  // 2. Immediate synchronous rendering of items grid & hero carousel
+  try {
+    populateDropdowns();
+  } catch (e) {
+    console.warn('populateDropdowns notice:', e);
+  }
+
+  try {
+    renderItems();
+  } catch (e) {
+    console.error('Critical render error:', e);
+  }
+
+  try {
+    initHeroCarousel();
+  } catch (e) {
+    console.warn('initHeroCarousel notice:', e);
+  }
+
+  // 3. Safe live campus clock and countdown timers
+  try {
+    updateCampusClock();
+    setInterval(updateCampusClock, 1000);
+  } catch (e) {
+    console.warn('Safe campus clock initialization notice:', e);
+  }
+
+  try {
+    setInterval(updateBorrowedCountdowns, 1000);
+  } catch (e) {
+    console.warn('updateBorrowedCountdowns notice:', e);
+  }
+
+  // 4. UI and event binding
+  try {
+    initUI();
+    setupImageUploadAndPreview();
+    bindDemoAndOfferEvents();
+    bindEvents();
+    bindAuthEvents();
+    bindStateMachineEvents();
+    updateWishlistCount();
+    updateAuthUI();
+    updateNotificationBadges();
+  } catch (e) {
+    console.warn('UI setup notice:', e);
+  }
+
+  // 5. Supabase non-blocking background initialization (never blocks rendering)
+  try {
+    initSupabase();
+  } catch (e) {
+    console.warn('Supabase init notice:', e);
+  }
 });
 
 /**
@@ -498,6 +550,10 @@ function updateAuthUI() {
 
 function updateCampusClock() {
   try {
+    const campusClockDisplay = document.getElementById('campusClockDisplay');
+    const mobileClockDisplay = document.getElementById('mobileClockDisplay');
+    const navCampusClock = document.getElementById('navCampusClock');
+    const navClockText = document.getElementById('navClockText');
     const navClockTime = document.getElementById('campusClockTime');
     const navClockDate = document.getElementById('campusClockDate');
     const topTickerClockTime = document.getElementById('topTickerClockTime');
@@ -505,14 +561,16 @@ function updateCampusClock() {
     const mobileClockTime = document.getElementById('mobileClockTime');
     const mobileClockDate = document.getElementById('mobileClockDate');
 
-    // If no clock display elements exist in the DOM, safely return
-    if (!navClockTime && !navClockDate && !topTickerClockTime && !topTickerClockDate && !mobileClockTime && !mobileClockDate) {
+    // If no header or mobile clock element is found in the DOM, simply return or exit safely
+    if (!campusClockDisplay && !mobileClockDisplay && !navCampusClock && !navClockText && 
+        !navClockTime && !navClockDate && !topTickerClockTime && 
+        !topTickerClockDate && !mobileClockTime && !mobileClockDate) {
       return;
     }
 
     const now = new Date();
 
-    // 12-Hour format with AM/PM and seconds: e.g. "10:58:30 PM"
+    // 12-Hour format with AM/PM and seconds: e.g. "11:15:30 PM"
     let hours = now.getHours();
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const seconds = String(now.getSeconds()).padStart(2, '0');
@@ -522,23 +580,29 @@ function updateCampusClock() {
     const formattedHours = String(hours).padStart(2, '0');
     const timeString = `${formattedHours}:${minutes}:${seconds} ${ampm}`;
 
-    // Date format: e.g. "Tuesday, 17 Nov 2026"
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    // Date format: e.g. "20 Nov 2026"
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const dayName = days[now.getDay()];
     const dayNum = now.getDate();
     const monthName = months[now.getMonth()];
     const year = now.getFullYear();
-    const dateString = `${dayName}, ${dayNum} ${monthName} ${year}`;
+    const dateShortString = `${dayNum} ${monthName} ${year}`;
+    const dateFullString = `${dayName}, ${dayNum} ${monthName} ${year}`;
 
+    // Unified full clock string as requested: "11:15:30 PM • 20 Nov 2026"
+    const fullClockString = `${timeString} • ${dateShortString}`;
+
+    // Strict null-checked element updates to NEVER throw null reference or type errors
+    if (campusClockDisplay) campusClockDisplay.textContent = fullClockString;
+    if (mobileClockDisplay) mobileClockDisplay.textContent = fullClockString;
+    if (navClockText) navClockText.textContent = fullClockString;
     if (navClockTime) navClockTime.textContent = timeString;
-    if (navClockDate) navClockDate.textContent = dateString;
-
+    if (navClockDate) navClockDate.textContent = dateShortString;
     if (topTickerClockTime) topTickerClockTime.textContent = timeString;
-    if (topTickerClockDate) topTickerClockDate.textContent = dateString;
-
+    if (topTickerClockDate) topTickerClockDate.textContent = dateFullString;
     if (mobileClockTime) mobileClockTime.textContent = timeString;
-    if (mobileClockDate) mobileClockDate.textContent = dateString;
+    if (mobileClockDate) mobileClockDate.textContent = dateShortString;
   } catch (err) {
     console.warn('Campus clock update safely skipped:', err);
   }
@@ -549,53 +613,6 @@ const updateClock = updateCampusClock;
 if (typeof window !== 'undefined') {
   window.updateCampusClock = updateCampusClock;
   window.updateClock = updateCampusClock;
-  // 12-Hour format with AM/PM and seconds: e.g. "11:15:30 PM"
-  let hours = now.getHours();
-  const minutes = String(now.getMinutes()).padStart(2, '0');
-  const seconds = String(now.getSeconds()).padStart(2, '0');
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12;
-  hours = hours ? hours : 12; // 0 hour should be 12
-  const formattedHours = String(hours).padStart(2, '0');
-  const timeString = `${formattedHours}:${minutes}:${seconds} ${ampm}`;
-
-  // Date format: e.g. "20 Nov 2026"
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  const dayNum = now.getDate();
-  const monthName = months[now.getMonth()];
-  const year = now.getFullYear();
-  const dateShortString = `${dayNum} ${monthName} ${year}`;
-
-  // Unified full clock string as requested: "11:15:30 PM • 20 Nov 2026"
-  const fullClockString = `${timeString} • ${dateShortString}`;
-
-  // Strict null-checked element updates to NEVER throw null reference errors
-  const campusClockDisplay = document.getElementById('campusClockDisplay');
-  if (campusClockDisplay) campusClockDisplay.textContent = fullClockString;
-
-  const mobileClockDisplay = document.getElementById('mobileClockDisplay');
-  if (mobileClockDisplay) mobileClockDisplay.textContent = fullClockString;
-
-  const navClockText = document.getElementById('navClockText');
-  if (navClockText) navClockText.textContent = fullClockString;
-
-  const navClockTime = document.getElementById('campusClockTime');
-  if (navClockTime) navClockTime.textContent = timeString;
-
-  const navClockDate = document.getElementById('campusClockDate');
-  if (navClockDate) navClockDate.textContent = dateShortString;
-
-  const topTickerClockTime = document.getElementById('topTickerClockTime');
-  if (topTickerClockTime) topTickerClockTime.textContent = timeString;
-
-  const topTickerClockDate = document.getElementById('topTickerClockDate');
-  if (topTickerClockDate) topTickerClockDate.textContent = dateShortString;
-
-  const mobileClockTime = document.getElementById('mobileClockTime');
-  if (mobileClockTime) mobileClockTime.textContent = timeString;
-
-  const mobileClockDate = document.getElementById('mobileClockDate');
-  if (mobileClockDate) mobileClockDate.textContent = dateShortString;
 }
 
 /**
