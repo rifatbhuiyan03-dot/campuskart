@@ -354,6 +354,14 @@ function updateAuthUI() {
 
             <div class="border-t border-slate-100 pt-1">
               <button type="button" 
+                      id="menuResetDemoBtn" 
+                      onclick="resetDemoData()" 
+                      class="reset-demo-btn w-full text-left px-4 py-2 text-xs font-semibold text-slate-700 hover:text-orange-600 hover:bg-orange-50 flex items-center gap-2.5 transition"
+                      title="Reset demo data to 10 factory default items">
+                <i class="fa-solid fa-arrows-rotate text-xs text-orange-500"></i>
+                <span>🔄 Reset Demo Data</span>
+              </button>
+              <button type="button" 
                       id="menuLogoutBtn" 
                       class="w-full text-left px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 flex items-center gap-2.5 transition">
                 <i class="fa-solid fa-arrow-right-from-bracket text-xs"></i>
@@ -2510,6 +2518,113 @@ function bindStateMachineEvents() {
 
 /**
  * =========================================================================
+ * VIVA DEFENSE "RESET DEMO STATE" & SEARCH CLEAR UTILITIES
+ * =========================================================================
+ */
+
+function clearSearch() {
+  activeFilters.searchQuery = '';
+  const searchInput = document.getElementById('searchInput');
+  const headerSearchInput = document.getElementById('headerSearchInput');
+  const mobileStickySearchInput = document.getElementById('mobileStickySearchInput');
+  const headerClearSearchBtn = document.getElementById('headerClearSearchBtn');
+  const mobileClearSearchBtn = document.getElementById('mobileClearSearchBtn');
+
+  if (searchInput) searchInput.value = '';
+  if (headerSearchInput) headerSearchInput.value = '';
+  if (mobileStickySearchInput) mobileStickySearchInput.value = '';
+
+  if (headerClearSearchBtn) headerClearSearchBtn.classList.add('hidden');
+  if (mobileClearSearchBtn) mobileClearSearchBtn.classList.add('hidden');
+
+  renderItems();
+  if (headerSearchInput) headerSearchInput.focus();
+}
+window.clearSearch = clearSearch;
+
+/**
+ * Resets marketplace data back to factory default (10 original campus items)
+ * Clears dynamic overrides and resets all borrow/return transactions.
+ */
+function resetDemoData() {
+  try {
+    // Clear dynamic overrides from browser localStorage
+    localStorage.removeItem(STORAGE_ITEMS_KEY);
+    localStorage.removeItem(STORAGE_WISHLIST_KEY);
+    localStorage.removeItem(STORAGE_REVIEWS_KEY);
+    localStorage.removeItem('campuskart_chat_messages_v1');
+    localStorage.removeItem('campuskart_peer_offers_v1');
+
+    // Instantly re-seed all 10 original default campus listings
+    items = JSON.parse(JSON.stringify(INITIAL_ITEMS));
+    wishlist = new Set();
+    reviews = typeof INITIAL_REVIEWS !== 'undefined' ? JSON.parse(JSON.stringify(INITIAL_REVIEWS)) : [];
+
+    // Save pristine factory default state
+    saveItemsToStorage();
+    saveWishlistToStorage();
+    saveReviewsToStorage();
+
+    // Reset all filter options
+    activeFilters.searchQuery = '';
+    activeFilters.courseCode = 'All Courses';
+    activeFilters.category = 'All Categories';
+    activeFilters.transaction = 'All';
+    activeFilters.condition = 'All';
+    activeFilters.sortBy = 'featured';
+    activeFilters.showWishlistOnly = false;
+
+    // Reset search inputs across all bars
+    const searchInput = document.getElementById('searchInput');
+    const headerSearchInput = document.getElementById('headerSearchInput');
+    const mobileStickySearchInput = document.getElementById('mobileStickySearchInput');
+    const headerClearSearchBtn = document.getElementById('headerClearSearchBtn');
+    const mobileClearSearchBtn = document.getElementById('mobileClearSearchBtn');
+
+    if (searchInput) searchInput.value = '';
+    if (headerSearchInput) headerSearchInput.value = '';
+    if (mobileStickySearchInput) mobileStickySearchInput.value = '';
+    if (headerClearSearchBtn) headerClearSearchBtn.classList.add('hidden');
+    if (mobileClearSearchBtn) mobileClearSearchBtn.classList.add('hidden');
+
+    // Close any active user dropdown menu
+    const menu = document.getElementById('userDropdownMenu');
+    if (menu) menu.classList.add('hidden');
+
+    // Refresh UI components
+    populateDropdowns();
+    updateCategoryPillsUI();
+    updateQuickCourseChipsUI();
+    renderItems();
+    updateWishlistCount();
+    updateNotificationBadges();
+
+    // Re-render dashboard if open
+    const dashModal = document.getElementById('dashboardModal');
+    if (dashModal && !dashModal.classList.contains('hidden') && typeof renderDashboard === 'function') {
+      renderDashboard();
+    }
+
+    // Quick toast notification as specified
+    showToast({
+      title: 'Demo State Reset',
+      message: 'Demo data reset to factory default! 🚀',
+      type: 'success',
+      icon: 'fa-solid fa-arrows-rotate'
+    });
+  } catch (err) {
+    console.error('Error resetting demo state:', err);
+    showToast({
+      title: 'Reset Notice',
+      message: 'Demo data reset to factory default! 🚀',
+      type: 'success'
+    });
+  }
+}
+window.resetDemoData = resetDemoData;
+
+/**
+ * =========================================================================
  * DATA INITIALIZATION & FILTERING
  * =========================================================================
  */
@@ -2855,7 +2970,7 @@ function setupImageUploadAndPreview() {
     });
   }
 
-  // File Upload handling
+  // File Upload handling with JavaScript FileReader (readAsDataURL)
   function handleFileSelected(file) {
     if (!file) return;
     if (!file.type.startsWith('image/')) {
@@ -2868,21 +2983,54 @@ function setupImageUploadAndPreview() {
     }
     const reader = new FileReader();
     reader.onload = (e) => {
-      currentUploadedImageDataUrl = e.target.result;
-      const statusBox = document.getElementById('uploadedFileStatus');
-      const nameSpan = document.getElementById('uploadedFileName');
-      if (statusBox && nameSpan) {
-        nameSpan.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
-        statusBox.classList.remove('hidden');
-      }
-      if (urlInput) urlInput.value = '';
-      updatePostImagePreview(currentUploadedImageDataUrl, 'Device Photo', file.name);
-      showToast({
-        title: 'Photo Uploaded',
-        message: `Photo "${file.name}" loaded for instant preview!`,
-        type: 'success',
-        icon: 'fa-solid fa-camera'
-      });
+      const rawDataUrl = e.target.result;
+
+      // Downscale to max 900px so Base64 stores comfortably in localStorage without quota issues
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const maxDim = 900;
+          let width = img.width;
+          let height = img.height;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          currentUploadedImageDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+        } catch (err) {
+          currentUploadedImageDataUrl = rawDataUrl;
+        }
+
+        const statusBox = document.getElementById('uploadedFileStatus');
+        const nameSpan = document.getElementById('uploadedFileName');
+        if (statusBox && nameSpan) {
+          nameSpan.textContent = `${file.name} (${Math.round(file.size / 1024)} KB)`;
+          statusBox.classList.remove('hidden');
+        }
+        if (urlInput) urlInput.value = '';
+        updatePostImagePreview(currentUploadedImageDataUrl, 'Local Photo', file.name);
+        showToast({
+          title: 'Photo Uploaded',
+          message: `Photo "${file.name}" loaded for 200px instant preview!`,
+          type: 'success',
+          icon: 'fa-solid fa-camera'
+        });
+      };
+      img.onerror = () => {
+        currentUploadedImageDataUrl = rawDataUrl;
+        updatePostImagePreview(currentUploadedImageDataUrl, 'Local Photo', file.name);
+      };
+      img.src = rawDataUrl;
     };
     reader.readAsDataURL(file);
   }
@@ -3497,6 +3645,14 @@ function bindEvents() {
       });
     }
   });
+
+  // Wire all Reset Demo Data buttons across Dashboard, Profile Menu, Footer, and Mobile Drawer
+  document.querySelectorAll('.reset-demo-btn, #dashResetDemoBtn, #footerResetDemoBtn, #menuResetDemoBtn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      resetDemoData();
+    });
+  });
 }
 
 function updateCategoryPillsUI() {
@@ -3581,10 +3737,13 @@ function getFilteredItems() {
     }
 
     if (activeFilters.searchQuery) {
-      const q = activeFilters.searchQuery;
+      const q = activeFilters.searchQuery.trim().toLowerCase();
+      const qClean = q.replace(/[-\s]+/g, '');
       const matchTitle = (item.title || '').toLowerCase().includes(q);
       const matchDesc = (item.description || '').toLowerCase().includes(q);
-      const matchCourse = (item.courseCode || '').toLowerCase().includes(q);
+      const course = (item.courseCode || '').toLowerCase();
+      const courseClean = course.replace(/[-\s]+/g, '');
+      const matchCourse = course.includes(q) || (qClean.length >= 2 && courseClean.includes(qClean));
       const matchCategory = (item.category || '').toLowerCase().includes(q);
       const matchLocation = (item.location || '').toLowerCase().includes(q);
       const matchSeller = (item.seller?.name || '').toLowerCase().includes(q);
@@ -3674,21 +3833,42 @@ function renderItems() {
   }
 
   if (filtered.length === 0) {
+    const isSearchQuery = Boolean(activeFilters.searchQuery && activeFilters.searchQuery.trim().length > 0);
+
     container.innerHTML = `
-      <div class="col-span-full py-16 text-center bg-white rounded-2xl border border-dashed border-slate-300 p-8">
-        <div class="w-16 h-16 mx-auto mb-4 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-500 text-2xl">
-          <i class="fa-solid fa-search"></i>
+      <div class="col-span-full py-16 px-6 text-center bg-white rounded-3xl border border-dashed border-slate-300 shadow-sm max-w-xl mx-auto my-6 animate-pop">
+        <div class="w-16 h-16 mx-auto mb-4 bg-orange-50 text-orange-500 rounded-2xl flex items-center justify-center text-2xl shadow-inner">
+          <i class="fa-solid fa-magnifying-glass"></i>
         </div>
-        <h3 class="text-lg font-semibold text-slate-900 mb-1">No items found</h3>
-        <p class="text-sm text-slate-500 max-w-md mx-auto mb-6">
-          We couldn't find any listings matching your active filters. Try adjusting your course code, transaction type, or keywords.
+        <h3 class="text-base sm:text-lg font-bold text-slate-900 mb-2">
+          ${isSearchQuery ? 'No campus items found for this query' : 'No items match your filters'}
+        </h3>
+        <p class="text-xs sm:text-sm text-slate-500 max-w-md mx-auto mb-6 leading-relaxed">
+          ${isSearchQuery 
+            ? 'No campus items found for this query. Try searching by course code (e.g., CSE 111, MATH 101).' 
+            : 'We couldn’t find any listings matching your active filters. Try adjusting your course code, transaction type, or keywords.'}
         </p>
-        <div class="flex justify-center gap-3">
-          <button onclick="resetFilters()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition shadow-sm">
-            Reset Filters
-          </button>
-          <button class="open-post-modal-btn px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl text-sm font-medium transition">
-            Post an Item
+        <div class="flex flex-wrap items-center justify-center gap-3">
+          ${isSearchQuery ? `
+            <button type="button" 
+                    id="emptyClearSearchBtn" 
+                    onclick="clearSearch()" 
+                    class="px-5 py-2.5 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-orange-500/25 transition-all flex items-center gap-2 active:scale-95">
+              <i class="fa-solid fa-circle-xmark text-xs"></i>
+              <span>Clear Search</span>
+            </button>
+          ` : `
+            <button type="button" 
+                    onclick="resetFilters()" 
+                    class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md shadow-indigo-600/25 transition-all flex items-center gap-2 active:scale-95">
+              <i class="fa-solid fa-arrows-rotate text-xs"></i>
+              <span>Reset Filters</span>
+            </button>
+          `}
+          <button type="button" 
+                  class="open-post-modal-btn px-4 py-2.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-2">
+            <i class="fa-solid fa-plus text-xs text-indigo-600"></i>
+            <span>+ Post an Item</span>
           </button>
         </div>
       </div>
